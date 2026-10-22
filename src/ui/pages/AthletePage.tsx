@@ -12,6 +12,7 @@ import { buildCardData, STAT_NAMES } from '../cards/cardData';
 import { AthleteEditor } from '../components/AthleteEditor';
 import { KIND_LABEL, PerformanceEditor } from '../components/PerformanceEditor';
 import { AvatarEditor } from '../avatar/AvatarEditor';
+import { AchievementModal, FreezeModal } from '../components/AthleteExtras';
 import { fullName, displayName } from '../../engine/display';
 import { formatKm, formatTime } from '../../engine/format';
 import { formatLongDate, formatShortDate } from '../../engine/dates';
@@ -88,6 +89,8 @@ export function AthletePage() {
   const d = id ? derived.athletes.get(id) : undefined;
   const [editing, setEditing] = useState(false);
   const [avatarOpen, setAvatarOpen] = useState(false);
+  const [freezeOpen, setFreezeOpen] = useState(false);
+  const [achOpen, setAchOpen] = useState(false);
   const [perfEdit, setPerfEdit] = useState<Performance | null>(null);
   const [view, setView] = useState<'current' | 'vault' | 'deleted'>('current');
   const scores = useMemo(() => new Map((d?.ratings.perfScores ?? []).map((s) => [s.perfId, s])), [d]);
@@ -203,7 +206,7 @@ export function AthletePage() {
       </div>
 
       <div className="grid-2">
-        <Panel title={`Streak: ${d.streak.currentStreak} week${d.streak.currentStreak === 1 ? '' : 's'} (best ${d.streak.bestStreak})`}>
+        <Panel title={`Streak: ${d.streak.currentStreak} week${d.streak.currentStreak === 1 ? '' : 's'} (best ${d.streak.bestStreak})`} actions={<button className="btn btn-sm" onClick={() => setFreezeOpen(true)}>Apply freeze…</button>}>
           <StreakCalendar d={d} />
           {d.inForm.length > 0 && (
             <p className="small" style={{ marginTop: 10 }}>
@@ -211,7 +214,7 @@ export function AthletePage() {
             </p>
           )}
         </Panel>
-        <Panel title={`Badges (${d.badges.length})`}>
+        <Panel title={`Badges (${d.badges.length})`} actions={<button className="btn btn-sm" onClick={() => setAchOpen(true)}>Add achievement…</button>}>
           {d.badges.length === 0 ? (
             <p className="muted small">No badges yet. Race caps, parkruns, distances, streaks, ARM levels, Surges and records all earn them.</p>
           ) : (
@@ -354,6 +357,8 @@ export function AthletePage() {
       {editing && <AthleteEditor athlete={a} onClose={() => setEditing(false)} />}
       {avatarOpen && <AvatarEditor athlete={a} unlocks={d.avatarUnlocks} onClose={() => setAvatarOpen(false)} />}
       {perfEdit && <PerformanceEditor perf={perfEdit} onClose={() => setPerfEdit(null)} />}
+      {freezeOpen && <FreezeModal athlete={a} onClose={() => setFreezeOpen(false)} />}
+      {achOpen && <AchievementModal athlete={a} onClose={() => setAchOpen(false)} />}
     </div>
   );
 }

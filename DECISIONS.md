@@ -100,3 +100,11 @@ Every choice made while building unattended, why, and what is configurable. Open
 - Ties share a rank (1, 2, 2, 4). The SPD board shows raw best Circuit times from the last 24 months, grouped by sex and year band using each athlete's current year group. Course records use the year group at the time of the run, and an opted-out record holder appears as "Record holder (private)".
 - **Projector mode** is a separate full-screen dark page with very large type, readable from the back of a room. ← and → change board, C (or the button) cycles through all boards every 20 s, F goes full screen, and Esc exits. The controls fade until the mouse is over them.
 - **Printing boards**: choose A4 or A3 on the Boards page, then Print. Boards use their own named CSS pages with 12–14 mm margins, independent of the card sheets.
+
+## In-Form, streaks, Surge, handicap, badges UI (milestone 5)
+
+- **In-Form** shows on the card (special frame and "PB −12 s" tag), on the In-Form board, on the Home page, and as a Print Studio filter ("In-Form this week").
+- **Streak calendar** on the athlete page: the last 52 weeks as squares (counted, holiday, freeze, missed, this week, holiday-bonus ring).
+- **Freezes** are applied from the athlete page ("Apply freeze…"). The dialog shows which half-term the week falls in and warns when that half-term's freeze is used, or when the week is outside every half-term.
+- **Manual achievements** (expeditions and others) are added from the athlete page, optionally for several athletes at once (everyone on the expedition). They appear as badges.
+- **Handicap start sheet**: choose runners (default: every active student), then print a start list grouped into waves ("GO", "+0:15", …). Each row shows the display name, year and PB, plus a tick box for the starter.
