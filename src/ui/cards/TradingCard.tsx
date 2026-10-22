@@ -39,13 +39,16 @@ function Lock() {
 function StatCell({ s, coach }: { s: CardStat; coach: boolean }) {
   return (
     <div className={`tc-stat ${s.locked ? 'is-locked' : ''}`} data-stat={s.key}>
-      <div className="tc-stat-label">
-        {s.key}
-        {coach && s.provisional && !s.locked && (
-          <span className="prov tc-prov" title={`${STAT_NAMES[s.key]} uses a provisional table or formula`}>
-            prov
-          </span>
-        )}
+      <div className="tc-stat-top">
+        <span className="tc-stat-label">
+          {s.key}
+          {coach && s.provisional && !s.locked && (
+            <span className="prov tc-prov" title={`${STAT_NAMES[s.key]} uses a provisional table or formula`}>
+              prov
+            </span>
+          )}
+        </span>
+        {!s.locked && s.date && <span className="tc-stat-date">{s.date}</span>}
       </div>
       {s.locked ? (
         <div className="tc-stat-locked" title={`${STAT_NAMES[s.key]} is locked`}>
@@ -55,10 +58,7 @@ function StatCell({ s, coach }: { s: CardStat; coach: boolean }) {
           </span>
         </div>
       ) : (
-        <>
-          <div className="tc-stat-value num">{s.value}</div>
-          {s.date && <div className="tc-stat-date">{s.date}</div>}
-        </>
+        <div className="tc-stat-value num">{s.value}</div>
       )}
     </div>
   );

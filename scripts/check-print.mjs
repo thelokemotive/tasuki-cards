@@ -87,6 +87,8 @@ try {
   check('no clipped names, stats or borders', report.issues.length === 0, report.issues.slice(0, 15).join('\n'));
   check('no ISO dates (e.g. a DOB) printed on cards', !report.dobVisible);
 
+  const firstSheet = await page.$('.print-sheet');
+  if (firstSheet) await firstSheet.screenshot({ path: join(outDir, 'sheet1-print.png') });
   const pdf = await page.pdf({ preferCSSPageSize: true, printBackground: true, scale: 1 });
   writeFileSync(join(outDir, 'cards-print.pdf'), pdf);
   const pdfText = Buffer.from(pdf).toString('latin1');
