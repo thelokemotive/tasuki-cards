@@ -31,6 +31,8 @@ export default defineConfig(({ mode }) => {
     test: {
       environment: 'node',
       include: ['src/**/*.test.{ts,tsx}'],
+      // One worker: this laptop runs close to its memory commit limit, and parallel forks crashed.
+      maxWorkers: 1,
     },
   };
 });
