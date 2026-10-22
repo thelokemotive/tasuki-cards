@@ -38,6 +38,17 @@ try {
   if (confirm) await confirm.click();
   await page.waitForFunction(() => document.body.innerText.includes('Demo data is loaded'), { timeout: 15000 });
 
+  // 1b. Persistence from file:// — reload and the data must still be there, saved in IndexedDB.
+  await new Promise((r) => setTimeout(r, 800));
+  await page.reload({ waitUntil: 'load' });
+  await page.waitForFunction(() => document.body.innerText.includes('Settings'), { timeout: 15000 });
+  await new Promise((r) => setTimeout(r, 800));
+  const persisted = await page.evaluate(() => ({
+    demo: document.body.innerText.includes('Demo data is loaded'),
+    memoryOnly: document.body.innerText.includes('Browser storage is unavailable'),
+  }));
+  check('data survives a reload when opened from file:// (IndexedDB)', persisted.demo && !persisted.memoryOnly, JSON.stringify(persisted));
+
   // 2. Print studio with every card selected.
   await page.goto(`${url}#/cards?select=all`, { waitUntil: 'load' });
   await page.waitForSelector('.print-sheet .tcard', { timeout: 15000 });

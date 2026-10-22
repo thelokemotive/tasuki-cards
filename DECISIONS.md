@@ -108,3 +108,16 @@ Every choice made while building unattended, why, and what is configurable. Open
 - **Freezes** are applied from the athlete page ("Apply freeze…"). The dialog shows which half-term the week falls in and warns when that half-term's freeze is used, or when the week is outside every half-term.
 - **Manual achievements** (expeditions and others) are added from the athlete page, optionally for several athletes at once (everyone on the expedition). They appear as badges.
 - **Handicap start sheet**: choose runners (default: every active student), then print a start list grouped into waves ("GO", "+0:15", …). Each row shows the display name, year and PB, plus a tick box for the starter.
+
+## Settings, help, polish (milestone 6)
+
+- **Scoring constants editor**: every value in the config object is editable, grouped by spec section. That includes the bleep table row by row, the fallback age factors and the badge distances. Editing shows a live **impact preview** (how many ratings change, for how many athletes, the largest change, and a full list) before anything is applied. Applying creates a new config version with an optional note. Earlier versions can be loaded back into the editor and re-applied, which creates a newer version, so history is never rewritten.
+- **No network at runtime**: the single-file build contains no external scripts, styles or fonts (system fonts only: Bahnschrift for numbers, Segoe UI / Yu Gothic UI / Meiryo for text). Dictation is the one feature that depends on a browser service.
+
+## Open questions for the coach
+
+1. Surge sanity gate: minimum of 3 legs with a baseline per event and distance (see above). Is that right?
+2. Every stat counts verified results only. OK?
+3. Growth Shield covers the six OVR stats but not RACE. OK?
+4. Bleep "laps" are 20 m shuttles, and the norms still need checking against Tomkinson et al. 2017.
+5. Year groups do not roll over automatically in September. Would an automatic roll-over be better?
