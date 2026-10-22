@@ -1,0 +1,51 @@
+/* A4 card sheets. On screen each sheet is drawn as a paper preview; in print each sheet is one page. */
+
+.print-sheets { display: flex; flex-direction: column; align-items: center; gap: 10mm; }
+.print-sheet {
+  position: relative;
+  width: 210mm;
+  height: 297mm;
+  background: #fff;
+  box-shadow: 0 1mm 6mm rgb(0 0 0 / 18%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex: none;
+}
+.print-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 63mm);
+  grid-template-rows: repeat(3, 88mm);
+  gap: 3mm;
+  width: 195mm;
+  height: 270mm;
+  align-content: start;
+}
+.print-slot { position: relative; width: 63mm; height: 88mm; }
+.print-slot .tcard { box-shadow: none; }
+
+/* crop marks: hairlines outside each card corner, in the 3 mm gutters */
+.crop { position: absolute; width: 2.4mm; height: 2.4mm; pointer-events: none; }
+.crop::before, .crop::after { content: ''; position: absolute; background: #222; }
+.crop::before { width: 2.4mm; height: 0.15mm; }
+.crop::after { width: 0.15mm; height: 2.4mm; }
+.crop-tl { left: -2.6mm; top: -2.6mm; }
+.crop-tl::before { bottom: 0; left: 0; } .crop-tl::after { right: 0; top: 0; }
+.crop-tr { right: -2.6mm; top: -2.6mm; }
+.crop-tr::before { bottom: 0; right: 0; } .crop-tr::after { left: 0; top: 0; }
+.crop-bl { left: -2.6mm; bottom: -2.6mm; }
+.crop-bl::before { top: 0; left: 0; } .crop-bl::after { right: 0; bottom: 0; }
+.crop-br { right: -2.6mm; bottom: -2.6mm; }
+.crop-br::before { top: 0; right: 0; } .crop-br::after { left: 0; bottom: 0; }
+.print-sheet-label { position: absolute; bottom: 4mm; left: 0; right: 0; text-align: center; font-size: 3mm; color: #999; }
+
+/* Named page: only card sheets get A4 with zero margins (boards use their own page rules). */
+@page cards { size: A4 portrait; margin: 0; }
+
+@media print {
+  .print-sheets { display: block; gap: 0; }
+  .print-sheet { page: cards; box-shadow: none; margin: 0; break-after: page; page-break-after: always; }
+  .print-sheet:last-child { break-after: auto; page-break-after: auto; }
+  .print-hide { display: none !important; }
+}

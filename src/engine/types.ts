@@ -34,7 +34,7 @@ export interface PerfScore {
   age: number;
   ageEstimated: boolean;
   provisional: boolean;
-  /** Why the performance does not count, e.g. 'unverified', 'clean run not completed', 'set this course's benchmark in Settings'. */
+  /** Why the performance does not count, e.g. 'unverified', 'not a clean run', 'set this course's benchmark in Settings'. */
   unscoredReason?: string;
   configVersion: number;
 }

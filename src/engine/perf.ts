@@ -30,6 +30,8 @@ export function makeLookup(courses: Course[], events: TasukiEvent[]): Lookup {
  * Resolve where a performance was run. Course: performance.courseId, else the event's courseId.
  * Distance/climb: the performance's own values, else the course's, else the event's.
  * Terrain factor: the performance's, else the course's, else 1.00.
+ * dEff is left undefined unless it is a positive, finite number (a terrain factor of 0 or a large
+ * negative climb entered by mistake must not reach the standards table or a division).
  */
 export function resolveContext(perf: Performance, lookup: Lookup): PerfContext {
   const event = perf.eventId ? lookup.events.get(perf.eventId) : undefined;
@@ -38,7 +40,8 @@ export function resolveContext(perf: Performance, lookup: Lookup): PerfContext {
   const distanceKm = perf.distanceKm ?? course?.distanceKm ?? event?.distanceKm;
   const climbM = perf.climbM ?? course?.climbM ?? event?.climbM ?? 0;
   const terrainFactor = perf.terrainFactor ?? course?.terrainFactor ?? 1;
-  const dEff = distanceKm != null && distanceKm > 0 ? effectiveDistance(distanceKm, climbM, terrainFactor) : undefined;
+  const raw = distanceKm != null && distanceKm > 0 ? effectiveDistance(distanceKm, climbM, terrainFactor) : undefined;
+  const dEff = raw != null && Number.isFinite(raw) && raw > 0 ? raw : undefined;
   return { perf, course, event, distanceKm, climbM, terrainFactor, dEff };
 }
 

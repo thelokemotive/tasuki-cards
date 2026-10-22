@@ -40,6 +40,8 @@ export interface Config {
     academicYearStartDay: number;
     /** Reference age for the open standard in fixed-benchmark mode (spec 3.6: Std(25, sex, 5)). */
     fixedReferenceAge: number;
+    /** Reference distance (km) for the fixed-benchmark age adjustment (spec 3.6: Std(age, sex, 5)). */
+    fixedReferenceKm: number;
   };
 
   runScore: {
@@ -93,6 +95,8 @@ export interface Config {
     maxErrors: number;
     /** Fallback reference pace: best verified race pace with D_eff <= this (km). */
     refRaceMaxKmEff: number;
+    /** Efficiency that scores the minimum (spec 3.9: NAV = 40 + 59 × (eff − 0.5) / 0.5). */
+    effAtMin: number;
     provisional: boolean;
   };
 
@@ -137,6 +141,11 @@ export interface Config {
     goldPct: number;
     sanityMedianPct: number;
     sanityOffsetPct: number;
+    /**
+     * The sanity gate applies only to groups (same event and leg distance) with at least this many legs
+     * that have a baseline. A lone runner would otherwise be their own median and could never medal.
+     */
+    sanityMinLegs: number;
   };
 
   handicap: {
@@ -171,6 +180,8 @@ export interface Config {
     slowestPaceSecPerKm: number;
     /** Jaro–Winkler threshold for fuzzy suggestions. */
     fuzzyThreshold: number;
+    /** Distance assumed for a parkrun entered without one (km). */
+    parkrunDefaultKm: number;
     /** Any parsed time outside this range is rejected with a warning. */
     minTimeSec: number;
     maxTimeSec: number;
@@ -210,6 +221,7 @@ export const DEFAULT_CONFIG: Config = {
     academicYearStartMonth: 9,
     academicYearStartDay: 1,
     fixedReferenceAge: 25,
+    fixedReferenceKm: 5,
   },
 
   runScore: { anchorAG: 0.8, min: 40, max: 99 },
@@ -257,7 +269,7 @@ export const DEFAULT_CONFIG: Config = {
     bleepProvisional: true,
   },
 
-  nav: { allowance: 1.15, penaltySecPerError: 120, maxErrors: 3, refRaceMaxKmEff: 5, provisional: true },
+  nav: { allowance: 1.15, penaltySecPerError: 120, maxErrors: 3, refRaceMaxKmEff: 5, effAtMin: 0.5, provisional: true },
 
   arm: {
     ankleCm: [5, 8, 10, 12, 14],
@@ -283,6 +295,7 @@ export const DEFAULT_CONFIG: Config = {
     goldPct: 5.0,
     sanityMedianPct: 2.0,
     sanityOffsetPct: 0.7,
+    sanityMinLegs: 3,
   },
 
   handicap: { roundSec: 5 },
@@ -316,6 +329,7 @@ export const DEFAULT_CONFIG: Config = {
     fastestPaceSecPerKm: 150,
     slowestPaceSecPerKm: 720,
     fuzzyThreshold: 0.88,
+    parkrunDefaultKm: 5,
     minTimeSec: 20,
     maxTimeSec: 48 * 3600,
   },

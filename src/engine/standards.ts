@@ -80,7 +80,9 @@ function fallbackStandard(age: number, sex: Sex, d: number, config: Config): num
 
 /** Std(age, sex, D): the age- and sex-specific standard time in seconds at distance D (km). */
 export function standardTime(age: number, sex: Sex, dKm: number, config: Config): number {
-  if (!(dKm > 0)) throw new Error(`standardTime: distance must be positive (got ${dKm})`);
+  if (!(dKm > 0 && Number.isFinite(dKm))) throw new Error(`standardTime: distance must be a positive, finite number (got ${dKm})`);
+  if (!Number.isFinite(age)) throw new Error(`standardTime: age must be a finite number (got ${age})`);
+  if (sex !== 'M' && sex !== 'F') throw new Error(`standardTime: sex must be 'M' or 'F' (got ${String(sex)})`);
   return config.ageGrade.table === 'fallback_provisional' ? fallbackStandard(age, sex, dKm, config) : tableStandard(age, sex, dKm);
 }
 

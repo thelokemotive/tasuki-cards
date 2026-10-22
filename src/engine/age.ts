@@ -1,7 +1,7 @@
 // Age on a date (spec 3.2).
 import type { Athlete, ISODate } from '../types';
 import type { Config } from './config';
-import { academicYearOf, daysBetween, parts } from './dates';
+import { academicYearOf, daysBetween, isISODate, parts } from './dates';
 
 export interface AgeOnDate {
   /** Decimal age in years. */
@@ -17,6 +17,8 @@ export interface AgeOnDate {
  *   refers to athlete.yearGroupYear (default: the academic year containing `asOf`), so results from
  *   earlier years use the age the athlete had then.
  * - Staff without dob: config.age.staffDefaultAge (30).
+ * A dob that is not a real ISO date (e.g. '12/03/2012' from an import), or that falls after `date`, is
+ * treated as no dob: it would give a NaN or negative age, which the standards table cannot use.
  */
 export function ageOnDate(
   athlete: Pick<Athlete, 'dob' | 'yearGroup' | 'yearGroupYear'>,
@@ -24,13 +26,18 @@ export function ageOnDate(
   config: Config,
   asOf: ISODate = date,
 ): AgeOnDate {
-  if (athlete.dob) return { age: daysBetween(athlete.dob, date) / 365.25, estimated: false };
+  if (usableDob(athlete.dob, date)) return { age: daysBetween(athlete.dob, date) / 365.25, estimated: false };
   if (athlete.yearGroup === 'Staff') return { age: config.age.staffDefaultAge, estimated: true };
   const { academicYearStartMonth: sm, academicYearStartDay: sd } = config.age;
   const refYear = athlete.yearGroupYear ?? academicYearOf(asOf, sm, sd);
   const sept1 = `${refYear}-${String(sm).padStart(2, '0')}-${String(sd).padStart(2, '0')}`;
   const base = config.age.yearGroupAgeOnSept1[athlete.yearGroup];
   return { age: base + config.age.midYearOffset + daysBetween(sept1, date) / 365.25, estimated: true };
+}
+
+/** A dob the age formula can use: a valid ISO date on or before `date`. */
+function usableDob(dob: string | undefined, date: ISODate): dob is ISODate {
+  return dob != null && isISODate(dob) && dob <= date;
 }
 
 /** Whole years, for table lookups that use floor(age). */
