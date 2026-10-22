@@ -6,6 +6,7 @@ import { ToastProvider, useToast } from './components/Toast';
 import { Link, useRoute, type Route } from './router';
 import { backupOverdueDays, exportEverything } from './data/backup';
 import { formatLongDate } from '../engine/dates';
+import { BrandMark } from './components/BrandMark';
 import { HomePage } from './pages/HomePage';
 import { QuickEntryPage } from './pages/QuickEntryPage';
 import { PastePage } from './pages/PastePage';
@@ -57,17 +58,6 @@ const TITLES: Record<string, string> = {
   settings: 'Settings',
   help: 'Help',
 };
-
-export function BrandMark({ size = 30 }: { size?: number }) {
-  // Original mark: a rounded tile crossed by a diagonal tasuki sash.
-  return (
-    <svg className="nav-brand-mark" width={size} height={size} viewBox="0 0 32 32" aria-hidden="true">
-      <rect x="1" y="1" width="30" height="30" rx="7" fill="#fff" />
-      <path d="M1 22 L22 1 H30 L1 30 Z" fill="#d4442a" />
-      <path d="M8 31 L31 8 V13 L13 31 Z" fill="#1f3a6e" opacity="0.18" />
-    </svg>
-  );
-}
 
 function renderPage(route: Route): ReactNode {
   switch (route.page) {

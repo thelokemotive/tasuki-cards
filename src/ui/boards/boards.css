@@ -1,0 +1,51 @@
+/* Leaderboards: screen, projector (dark, huge type) and print (A4/A3). */
+.board { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 18px 20px; box-shadow: var(--shadow); position: relative; overflow: hidden; }
+.board::before { content: ''; position: absolute; right: -60px; top: -40px; width: 260px; height: 46px; transform: rotate(32deg); background: repeating-linear-gradient(90deg, transparent 0 14px, rgb(255 255 255 / 25%) 14px 16px), var(--shu); opacity: 0.9; }
+.board-head { margin-bottom: 12px; position: relative; }
+.board-title { margin: 0; font-size: 1.5rem; letter-spacing: -0.01em; }
+.board-sub { margin: 2px 0 0; color: var(--ink-3); font-size: 0.9rem; }
+.board-empty { color: var(--ink-3); }
+.board-groups--multi { display: grid; grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr)); gap: 14px 22px; }
+.board-group-title { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ai); margin: 0 0 6px; border-bottom: 2px solid var(--ai); padding-bottom: 3px; }
+.board-rows { list-style: none; margin: 0; padding: 0; }
+.board-row { display: grid; grid-template-columns: 2.2em minmax(0, 1fr) auto; grid-template-areas: 'rank name value' 'rank detail detail'; align-items: baseline; column-gap: 10px; padding: 5px 4px; border-bottom: 1px solid var(--line); }
+.board-row:last-child { border-bottom: 0; }
+.board-rank { grid-area: rank; font-weight: 800; color: var(--ink-3); text-align: right; }
+.board-name { grid-area: name; font-weight: 700; min-width: 0; overflow-wrap: anywhere; }
+.board-year { margin-left: 6px; font-size: 0.72em; font-weight: 600; color: var(--ink-3); }
+.board-value { grid-area: value; font-weight: 800; font-size: 1.1em; white-space: nowrap; }
+.board-detail { grid-area: detail; font-size: 0.8em; color: var(--ink-3); }
+.board-row--top1 .board-rank { color: #b8901a; }
+.board-row--top2 .board-rank { color: #7d8793; }
+.board-row--top3 .board-rank { color: #a8693a; }
+.board-foot { margin-top: 12px; font-size: 0.72rem; color: var(--ink-3); letter-spacing: 0.06em; text-align: right; }
+
+/* projector: dark, very large, readable from the back of a room */
+.projector { position: fixed; inset: 0; background: #0f1426; color: #f4f1ea; overflow: auto; padding: 2.5vw 3vw 1.5vw; font-size: clamp(16px, 1.55vw, 34px); }
+.projector .board { background: transparent; border: 0; box-shadow: none; padding: 0; color: #f4f1ea; overflow: visible; max-width: 1150px; margin: 0 auto; }
+.projector .board:has(.board-groups--multi) { max-width: none; }
+.projector .board::before { position: fixed; right: -5vw; top: 1.2vw; width: 24vw; height: 2.2vw; transform: rotate(14deg); z-index: 0; }
+.projector .board-head, .projector .board-groups, .projector .board-empty { position: relative; z-index: 1; }
+.projector .board-title { font-size: 2.6em; }
+.projector .board-sub { color: #a9b3c9; font-size: 1em; }
+.projector .board-group-title { color: #ffd166; border-color: #ffd166; font-size: 0.85em; }
+.projector .board-row { border-color: rgb(255 255 255 / 12%); padding: 0.32em 0.2em; }
+.projector .board-rank, .projector .board-year, .projector .board-detail { color: #a9b3c9; }
+.projector .board-row--top1 .board-rank { color: #ffd166; }
+.projector .board-row--top2 .board-rank { color: #d6dbe3; }
+.projector .board-row--top3 .board-rank { color: #e0a173; }
+.projector .board-foot { color: #6f7a94; }
+.projector-bar { position: fixed; bottom: 12px; right: 12px; display: flex; gap: 8px; opacity: 0.25; transition: opacity 0.2s; z-index: 5; }
+.projector-bar:hover { opacity: 1; }
+.projector-bar .btn { background: rgb(255 255 255 / 10%); color: #fff; border-color: rgb(255 255 255 / 25%); }
+
+/* print: A4 or A3 portrait, chosen on the Boards page */
+@page boardA4 { size: A4 portrait; margin: 12mm; }
+@page boardA3 { size: A3 portrait; margin: 14mm; }
+@media print {
+  .board-print { page: boardA4; }
+  .board-print.a3 { page: boardA3; font-size: 15pt; }
+  .board-print .board { border: 0; box-shadow: none; padding: 0; break-inside: auto; }
+  .board-print .board-row { break-inside: avoid; }
+  .board-print .board::before { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
