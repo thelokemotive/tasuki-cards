@@ -14,6 +14,8 @@ Trading cards and leaderboards for Harrow International School Appi Japan Trail 
 - `src/engine/explain.ts`: the plain-English working behind every rating (athlete page and student sheet). `src/engine/benchmark.ts`: descent benchmarks from a reference run.
 - `src/engine/parse/`: Paste-and-Match (plus `newAthletes.ts`, the roster from pasted results, and `xlsx.ts`, the dependency-free .xlsx reader): the Tasuki line format (`docs/LINE-FORMAT.md`), results tables, Forms CSV, roster import, and the import plan (review, then one change set).
 - `src/store/`: persistence behind the `Store` interface (`dexieStore.ts` = IndexedDB via Dexie; `memoryStore.ts` for tests and as a fallback). Export and import live in `exportImport.ts`. A shared database can replace IndexedDB later by implementing `Store`.
+- `docs/YAMA-PLAN.md`: the Yama release (art, coaching, reveal, squad) and what comes next.
+- `src/engine/coach.ts`: summit ladder, development focus, checklist and to-dos, level-ups, climbers, house cup. `src/ui/art/YamaScene.tsx`: the generated landscapes (gallery at `#/scenes`).
 - `src/ui/`: React screens. Every change goes through `commit(changes)` in `ui/data/DataContext.tsx`, which autosaves.
 - `src/demo/demoData.ts`: obviously fictional demo data (every record is tagged `demo: true`).
 - `scripts/convert-age-tables.mjs`: regenerates `src/engine/data/ageGradeRoad2025.json` from the cloned tables.

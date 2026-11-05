@@ -81,6 +81,14 @@ export function HelpPage() {
         <p>
           Bronze below {c.tiers.silverMin}; Silver {c.tiers.silverMin}–{c.tiers.goldMin - 1}; Gold {c.tiers.goldMin}+ with at least {c.tiers.goldMinCaps} race cap; Icon: {c.tiers.iconMinCaps}+ race caps and RACE {c.tiers.iconMinRace}+. In-Form cards (a PB in the last {c.inForm.days} days) get a special style for the week.
         </p>
+        <h3>The mountain</h3>
+        <p>
+          Each tier is a camp on the climb: Bronze is the foothills (麓), Silver the forest line (森), Gold the ridge (稜線) and Icon the summit (山頂). Cards show the season of their camp: autumn dusk, a winter morning, summer&apos;s golden hour and the night sky. In-Form cards get a rising sun. Every athlete page shows the shape of the runner (the six stats on a hexagon), what the next camp needs, and what to work on next, with session ideas.
+        </p>
+        <h3>Boards for everyone</h3>
+        <p>
+          Biggest climbers (most improved this half-term) and the House cup (points per runner for turning up, PBs, race caps and Surge medals, so a small house can win) reward effort, not talent. On the projector, <strong>Reveal</strong> flips over the cards of everyone who levelled up in the last 7 days, smallest moment first.
+        </p>
         <h3>Fairness and safety</h3>
         <p>
           Racing more earns caps and badges, never rating points. Improvement (In-Form, Tasuki Surge) and turning up (streaks) are rewarded on their own boards, and never inflate ability ratings. Provisional ratings carry a small <span className="prov">prov</span> marker in the coach view only (never on printed cards).
