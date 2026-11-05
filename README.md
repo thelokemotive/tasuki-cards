@@ -9,8 +9,10 @@ Trading cards and leaderboards for Harrow International School Appi Japan Trail 
 
 ## Structure
 
+- `docs/GO-LIVE-PLAN.md`: the coach's go-live requirements (all seven built, 5 Nov 2026).
 - `src/engine/`: pure scoring functions with unit tests (time parsing, name matching, age-grading with the Alan Jones 2025 road tables, every stat, freshness, Growth Shield, tiers, streaks, Tasuki Surge, PBs, badges, handicap, boards). `deriveAll()` turns raw data plus a config version into every rating. UI code never calculates a rating itself.
-- `src/engine/parse/`: Paste-and-Match: the Tasuki line format (`docs/LINE-FORMAT.md`), results tables, Forms CSV, roster import, and the import plan (review, then one change set).
+- `src/engine/explain.ts`: the plain-English working behind every rating (athlete page and student sheet). `src/engine/benchmark.ts`: descent benchmarks from a reference run.
+- `src/engine/parse/`: Paste-and-Match (plus `newAthletes.ts`, the roster from pasted results, and `xlsx.ts`, the dependency-free .xlsx reader): the Tasuki line format (`docs/LINE-FORMAT.md`), results tables, Forms CSV, roster import, and the import plan (review, then one change set).
 - `src/store/`: persistence behind the `Store` interface (`dexieStore.ts` = IndexedDB via Dexie; `memoryStore.ts` for tests and as a fallback). Export and import live in `exportImport.ts`. A shared database can replace IndexedDB later by implementing `Store`.
 - `src/ui/`: React screens. Every change goes through `commit(changes)` in `ui/data/DataContext.tsx`, which autosaves.
 - `src/demo/demoData.ts`: obviously fictional demo data (every record is tagged `demo: true`).
@@ -32,7 +34,7 @@ npm install
 npm test               # unit tests (Vitest)
 npm run dev            # dev server at http://localhost:5173
 npm run build:single   # dist-single/tasuki-cards.html (one self-contained file)
-npm run check:print    # print acceptance check (after build:single)
+npm run check:print    # print acceptance check (after build:single; set CHROME=/path/to/chrome if it is not found)
 npm run convert-tables # rebuild the age-grade JSON from ../tasuki-cards-data
 ```
 
