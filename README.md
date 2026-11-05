@@ -1,4 +1,5 @@
 # Tasuki Cards
+n_Like FIFA cards, but for my trail runners._
 
 Trading cards and leaderboards for Harrow International School Appi Japan Trail Running. Stage 1: coach-operated on one laptop. No accounts, no backend, no network calls at runtime.
 
