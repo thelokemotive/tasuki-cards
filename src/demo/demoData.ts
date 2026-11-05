@@ -216,6 +216,8 @@ export type DemoData = Pick<DataSnapshot, 'athletes' | 'courses' | 'events' | 'p
  * over 24 months old, PBs in the last 7 days, a correction with history, a soft-deleted duplicate and
  * an expedition. Courses returned are the demo courses only (the Campus Circuit comes from seedCourses).
  */
+const DEMO_HOUSES = ['Matsu', 'Take', 'Ume'];
+
 export function buildDemoData(today: ISODate): DemoData {
   const rand = generator(hashString('tasuki-cards-demo'));
   const between = (a: number, b: number) => a + (b - a) * rand();
@@ -260,6 +262,8 @@ export function buildDemoData(today: ISODate): DemoData {
       displayMode: spec.mode,
       publicAlias: spec.publicAlias,
       absoluteBoardOptOut: spec.optOut === true,
+      // Invented demo houses (pine, bamboo, plum), so the house cup has something to show.
+      house: spec.year === 'Staff' ? undefined : DEMO_HOUSES[hashString(`${id}:house`) % DEMO_HOUSES.length],
       avatar,
       active: spec.leftWeeksAgo == null,
       notes: spec.leftWeeksAgo != null ? 'Demo athlete (invented). Left the academy.' : 'Demo athlete (invented).',

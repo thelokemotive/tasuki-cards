@@ -11,7 +11,7 @@
   --band: #3a2618;
   --band-ink: #fff4e6;
   --sash: #d4442a;
-  --cell: rgb(255 255 255 / 72%);
+  --cell: rgb(255 255 255 / 80%);
 
   position: relative;
   width: 63mm;
@@ -32,7 +32,7 @@
 
 .tcard--silver { --frame-a: #6f7883; --frame-b: #cfd5dc; --inner-a: #fbfcfd; --inner-b: #e6eaef; --ink-c: #1f2630; --ink-c2: #56606d; --accent: #6f7883; --band: #27303b; --band-ink: #f2f5f8; }
 .tcard--gold { --frame-a: #9b7414; --frame-b: #f0d27a; --inner-a: #fffbea; --inner-b: #f5e7b5; --ink-c: #2b2006; --ink-c2: #6f5a1c; --accent: #b08a1e; --band: #2f2408; --band-ink: #fff3c4; }
-.tcard--icon { --frame-a: #2b1d63; --frame-b: #7d5fd6; --inner-a: #24194d; --inner-b: #3b2a7a; --ink-c: #f6f1ff; --ink-c2: #cfc2f5; --accent: #e9c75a; --band: #e9c75a; --band-ink: #24194d; --cell: rgb(255 255 255 / 10%); }
+.tcard--icon { --frame-a: #2b1d63; --frame-b: #7d5fd6; --inner-a: #1a1f4d; --inner-b: #2b2a6e; --ink-c: #f6f1ff; --ink-c2: #cfc2f5; --accent: #e9c75a; --band: #e9c75a; --band-ink: #24194d; --cell: rgb(255 255 255 / 12%); }
 .tcard--inform { --frame-a: #b8321c; --frame-b: #ff9a3d; }
 
 .tc-sash {
@@ -48,7 +48,7 @@
     linear-gradient(180deg, var(--sash), color-mix(in srgb, var(--sash) 70%, #000));
   border-top: 0.5mm solid rgb(255 255 255 / 75%);
   border-bottom: 0.5mm solid rgb(255 255 255 / 75%);
-  opacity: 0.85;
+  opacity: 0.8;
   z-index: 0;
   pointer-events: none;
 }
@@ -66,8 +66,13 @@
   padding: 1.6mm 1.8mm 1.2mm;
   overflow: hidden;
 }
-/* content sits above the sash; translucent stat cells let it show through */
-.tc-inner > :not(.tc-sash) { position: relative; z-index: 1; }
+/* content sits above the scene and the sash; translucent stat cells let them show through */
+.tc-inner > :not(.tc-sash):not(.tc-scene):not(.tc-wash) { position: relative; z-index: 1; }
+/* the tier's landscape fills the card; its foreground fades into the card's paper like a watercolour wash */
+.tc-scene { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+.tc-scene svg { width: 100%; height: 100%; display: block; }
+.tc-wash { position: absolute; inset: 0; z-index: 0; pointer-events: none; background: linear-gradient(180deg, transparent 0 60%, color-mix(in srgb, var(--inner-a) 70%, transparent) 66%, var(--inner-a) 72%, var(--inner-b) 100%); }
+.tc-id { background: color-mix(in srgb, var(--inner-a) 78%, transparent); border-radius: 1.6mm; padding: 0.6mm 1.4mm; align-self: center; }
 
 /* header */
 .tc-head { display: grid; grid-template-columns: 13.6mm 1fr; gap: 1.6mm; align-items: center; min-width: 0; }

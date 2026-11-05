@@ -21,7 +21,12 @@
 .board-foot { margin-top: 12px; font-size: 0.72rem; color: var(--ink-3); letter-spacing: 0.06em; text-align: right; }
 
 /* projector: dark, very large, readable from the back of a room */
-.projector { position: fixed; inset: 0; background: #0f1426; color: #f4f1ea; overflow: auto; padding: 2.5vw 3vw 1.5vw; font-size: clamp(16px, 1.55vw, 34px); }
+.projector { position: fixed; inset: 0; background: #0b1030; color: #f4f1ea; overflow: auto; font-size: clamp(16px, 1.55vw, 34px); }
+.projector-art { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; }
+.projector-shade { position: fixed; inset: 0; z-index: 0; background: linear-gradient(180deg, rgb(8 12 36 / 78%) 0%, rgb(8 12 36 / 62%) 55%, rgb(8 12 36 / 25%) 100%); }
+.projector-body { position: relative; z-index: 1; padding: 2.5vw 3vw 4vw; }
+.projector-brand { display: flex; align-items: center; gap: 0.6em; margin-bottom: 1em; opacity: 0.9; letter-spacing: 0.04em; }
+.projector-jp { font-size: 1.2em; opacity: 0.8; margin-left: 0.2em; }
 .projector .board { background: transparent; border: 0; box-shadow: none; padding: 0; color: #f4f1ea; overflow: visible; max-width: 1150px; margin: 0 auto; }
 .projector .board:has(.board-groups--multi) { max-width: none; }
 .projector .board::before { position: fixed; right: -5vw; top: 1.2vw; width: 24vw; height: 2.2vw; transform: rotate(14deg); z-index: 0; }
@@ -29,7 +34,12 @@
 .projector .board-title { font-size: 2.6em; }
 .projector .board-sub { color: #a9b3c9; font-size: 1em; }
 .projector .board-group-title { color: #ffd166; border-color: #ffd166; font-size: 0.85em; }
-.projector .board-row { border-color: rgb(255 255 255 / 12%); padding: 0.32em 0.2em; }
+.projector .board-row { border-color: rgb(255 255 255 / 12%); padding: 0.32em 0.4em; border-radius: 0.4em; }
+/* the podium: top three glow in gold, silver and bronze */
+.projector .board-row--top1 { background: linear-gradient(90deg, rgb(255 209 102 / 26%), rgb(255 209 102 / 4%)); border-bottom-color: transparent; }
+.projector .board-row--top2 { background: linear-gradient(90deg, rgb(214 219 227 / 20%), rgb(214 219 227 / 3%)); border-bottom-color: transparent; }
+.projector .board-row--top3 { background: linear-gradient(90deg, rgb(224 161 115 / 20%), rgb(224 161 115 / 3%)); border-bottom-color: transparent; }
+.projector .board-row--top1 .board-name, .projector .board-row--top1 .board-value { font-size: 1.15em; }
 .projector .board-rank, .projector .board-year, .projector .board-detail { color: #a9b3c9; }
 .projector .board-row--top1 .board-rank { color: #ffd166; }
 .projector .board-row--top2 .board-rank { color: #d6dbe3; }
@@ -49,3 +59,33 @@
   .board-print .board-row { break-inside: avoid; }
   .board-print .board::before { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
+
+/* ---------- Reveal: the week's level-ups, one card at a time ---------- */
+.reveal-intro, .reveal-finale { text-align: center; padding-top: 6vh; }
+.reveal-intro h1, .reveal-finale h1 { font-size: 3.2em; margin: 0.1em 0 0.3em; text-shadow: 0 4px 24px rgb(0 0 0 / 45%); }
+.reveal-intro p { font-size: 1.3em; color: #dfe4f5; }
+.reveal-jp { font-size: 1.6em; letter-spacing: 0.3em; color: #ffd166; }
+.reveal-item { display: grid; grid-template-columns: auto 1fr; gap: 4vw; align-items: center; min-height: 70vh; }
+.reveal-card { width: calc(63mm * 1.9); height: calc(88mm * 1.9); perspective: 1600px; }
+.reveal-flip { position: relative; width: 63mm; height: 88mm; transform-origin: top left; transform: scale(1.9); transform-style: preserve-3d; }
+.reveal-face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.reveal-front { animation: reveal-front 1.1s cubic-bezier(.2,.8,.2,1) both 0.25s; }
+.reveal-back { animation: reveal-back 1.1s cubic-bezier(.2,.8,.2,1) both 0.25s; }
+@keyframes reveal-front { from { transform: rotateY(-180deg); } to { transform: rotateY(0); } }
+@keyframes reveal-back { from { transform: rotateY(0); } to { transform: rotateY(180deg); } }
+.reveal-front .tcard { box-shadow: 0 2mm 8mm rgb(0 0 0 / 50%), 0 0 10mm rgb(255 209 102 / 35%); }
+.card-back { position: relative; width: 63mm; height: 88mm; border-radius: 3.2mm; overflow: hidden; border: 2mm solid #e9c75a; box-sizing: border-box; background: #0b1030; }
+.card-back-art { position: absolute; inset: 0; width: 100%; height: 100%; }
+.card-back-mark { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2mm; color: #fff; font-weight: 900; letter-spacing: 0.12em; font-size: 3.4mm; text-shadow: 0 1mm 3mm rgb(0 0 0 / 60%); }
+.card-back-jp { font-size: 10mm; color: #ffd166; }
+.reveal-count { color: #a9b3c9; font-weight: 700; letter-spacing: 0.1em; }
+.reveal-name { font-size: 3.4em; margin: 0.1em 0 0.2em; text-shadow: 0 4px 24px rgb(0 0 0 / 45%); animation: reveal-up 0.6s ease both 0.8s; }
+.reveal-tier { display: inline-block; font-size: 1.4em; font-weight: 900; padding: 0.2em 0.7em; border-radius: 0.4em; color: #2b2006; background: linear-gradient(90deg, #f0d27a, #fff3c4, #e2bf55); background-size: 200% 100%; animation: reveal-up 0.6s ease both 1s, shimmer 2.4s linear infinite 1.6s; margin-bottom: 0.4em; }
+@keyframes shimmer { from { background-position: 200% 0; } to { background-position: 0 0; } }
+.reveal-lines { list-style: none; margin: 0.4em 0 0; padding: 0; display: flex; flex-direction: column; gap: 0.35em; }
+.reveal-lines li { font-size: 1.55em; font-weight: 800; animation: reveal-up 0.5s ease both; }
+.reveal-lines li::before { content: '▲ '; color: #7ee2a8; font-size: 0.7em; vertical-align: 0.15em; }
+@keyframes reveal-up { from { opacity: 0; transform: translateY(0.6em); } to { opacity: 1; transform: none; } }
+.reveal-grid { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; margin-top: 2vh; }
+.reveal-grid .tcard { animation: reveal-up 0.5s ease both; }
+@media (prefers-reduced-motion: reduce) { .reveal-front, .reveal-back, .reveal-lines li, .reveal-name, .reveal-tier, .reveal-grid .tcard { animation: none !important; } .reveal-back { display: none; } }

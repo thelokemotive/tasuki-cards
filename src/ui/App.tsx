@@ -19,6 +19,9 @@ import { BoardsPage } from './pages/BoardsPage';
 import { ProjectorPage } from './pages/ProjectorPage';
 import { HandicapPage } from './pages/HandicapPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { ScenesPage } from './pages/ScenesPage';
+import { SquadPage } from './pages/SquadPage';
+import { YamaScene } from './art/YamaScene';
 import { HelpPage } from './pages/HelpPage';
 
 interface NavItem {
@@ -34,6 +37,7 @@ const NAV: (NavItem | 'sep')[] = [
   { page: 'paste', to: '/paste', label: 'Paste & Match', icon: '⇣' },
   'sep',
   { page: 'roster', to: '/roster', label: 'Roster', icon: '☰' },
+  { page: 'squad', to: '/squad', label: 'Squad', icon: '▦' },
   { page: 'events', to: '/events', label: 'Events', icon: '⚑' },
   'sep',
   { page: 'cards', to: '/cards', label: 'Cards & Print', icon: '▣' },
@@ -49,6 +53,8 @@ const TITLES: Record<string, string> = {
   entry: 'Quick Entry',
   paste: 'Paste & Match',
   roster: 'Roster',
+  squad: 'Squad',
+  scenes: 'Scenes',
   athlete: 'Athlete',
   events: 'Events',
   event: 'Event',
@@ -85,6 +91,10 @@ function renderPage(route: Route): ReactNode {
       return <SettingsPage />;
     case 'help':
       return <HelpPage />;
+    case 'scenes':
+      return <ScenesPage />;
+    case 'squad':
+      return <SquadPage />;
     default:
       return <HomePage />;
   }
@@ -168,7 +178,11 @@ function Shell() {
             </Link>
           ),
         )}
-        <div className="nav-foot">Stage 1 · built {__BUILD_DATE__}</div>
+        <div className="nav-foot">山 Yama · built {__BUILD_DATE__}</div>
+        <div className="nav-stars" aria-hidden="true" />
+        <div className="nav-scene" aria-hidden="true">
+          <YamaScene mood="night" shape="tall" seed={3} trail={false} sky={false} />
+        </div>
       </nav>
       <div className="main">
         <header className="topbar no-print">

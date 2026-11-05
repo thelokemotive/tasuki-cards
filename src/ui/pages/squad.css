@@ -1,0 +1,8 @@
+.squad-table th.sortable { cursor: pointer; user-select: none; }
+.squad-table th.sorted { color: var(--shu); }
+.squad-cell { font-weight: 800; text-align: center !important; border-left: 2px solid var(--surface); }
+.tier-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; vertical-align: middle; }
+.tier-dot-bronze { background: var(--bronze); }
+.tier-dot-silver { background: var(--silver); }
+.tier-dot-gold { background: var(--gold); }
+.tier-dot-icon { background: var(--icon); }

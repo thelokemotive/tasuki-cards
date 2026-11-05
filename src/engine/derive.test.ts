@@ -112,6 +112,7 @@ describe('boards (spec 6)', () => {
     for (const id of BOARD_IDS) {
       for (const r of buildBoard(id, d, { full: true }).groups.flatMap((g) => g.rows)) {
         expect(r.name).not.toMatch(/\d{4}-\d{2}-\d{2}/);
+        if (r.athleteId.startsWith('house:')) continue; // house cup rows are houses, not athletes
         const a = s.athletes.find((x) => x.id === r.athleteId)!;
         if (a.absoluteBoardOptOut && id === 'records') expect(r.name).toBe(PRIVATE_RECORD_HOLDER);
         else if (a.displayMode === 'first_initial') expect(r.name).toBe(`${a.preferredName || a.givenName} ${a.familyName[0]}.`);

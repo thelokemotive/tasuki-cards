@@ -7,14 +7,15 @@ import type { Athlete, DataSnapshot, Sex, TasukiEvent, YearGroup } from '../type
 import type { Config } from './config';
 import type { CourseRecord, InFormEntry, StatValue, SurgeResult, YearBand } from './types';
 import { YEAR_BANDS } from './types';
-import { dayNumber, formatLongDate, formatShortDate, monthsBetween } from './dates';
+import { addDays, dayNumber, formatLongDate, formatShortDate, monthsBetween } from './dates';
 import { displayName, yearBand } from './display';
 import { formatKm, formatTime } from './format';
 import { courseTimeOf } from './pbs';
 import type { AthleteDerived, Derived } from './derive';
+import { climbers, HOUSE_POINTS, houseCup } from './coach';
 
-export type BoardId = 'race' | 'spd' | 'records' | 'end' | 'inform' | 'streak' | 'surge' | 'caps';
-export const BOARD_IDS: BoardId[] = ['race', 'spd', 'records', 'end', 'inform', 'streak', 'surge', 'caps'];
+export type BoardId = 'race' | 'spd' | 'records' | 'end' | 'inform' | 'streak' | 'surge' | 'caps' | 'climbers' | 'houses';
+export const BOARD_IDS: BoardId[] = ['race', 'spd', 'records', 'end', 'inform', 'streak', 'surge', 'caps', 'climbers', 'houses'];
 
 export interface BoardRow {
   /** Competition ranking within the group (ties share a rank: 1, 2, 2, 4). */
@@ -22,7 +23,8 @@ export interface BoardRow {
   athleteId: string;
   /** Per displayMode (or 'Record holder (private)' on the records board). */
   name: string;
-  yearGroup: YearGroup;
+  /** Absent on rows that are not one athlete (the house cup). */
+  yearGroup?: YearGroup;
   value: string;
   sortValue: number;
   detail?: string;
@@ -52,6 +54,10 @@ export interface BoardOptions {
   eventId?: string;
   /** SPD board: the circuit course (default: the circuit course with most results). Records: one course only. */
   courseId?: string;
+  /** Climbers and house cup: the window (default: the last six weeks to asOf). */
+  window?: { from: string; to: string; label: string };
+  /** Climbers: everything derived as of window.from (computed by the caller, which holds the snapshot). */
+  before?: Derived;
 }
 
 /** Name shown on the records board when the holder has opted out of absolute boards. */
@@ -60,7 +66,7 @@ export const PRIVATE_RECORD_HOLDER = 'Record holder (private)';
 /** Default minimum current streak for the Streak board (spec 6: "everyone on 2+ weeks"). */
 export const STREAK_BOARD_MIN_DEFAULT = 2;
 
-const ABSOLUTE: Record<BoardId, boolean> = { race: true, spd: true, records: true, end: true, caps: true, inform: false, streak: false, surge: false };
+const ABSOLUTE: Record<BoardId, boolean> = { race: true, spd: true, records: true, end: true, caps: true, inform: false, streak: false, surge: false, climbers: false, houses: false };
 
 const BAND_LABEL: Record<YearBand, string> = { 'Y7-8': 'Y7–8', 'Y9-11': 'Y9–11', 'Y12-13': 'Y12–13', Staff: 'Staff' };
 const SEXES: Sex[] = ['F', 'M'];
@@ -423,10 +429,70 @@ export function buildBoard(id: BoardId, derived: Derived, opts: BoardOptions = {
       subtitle = 'Verified races and relay legs';
       groups = capsBoard(derived);
       break;
+    case 'climbers': {
+      const w = opts.window ?? { from: addDays(derived.asOf, -42), to: derived.asOf, label: 'the last six weeks' };
+      title = 'Biggest climbers';
+      subtitle = `Most improved since ${formatLongDate(w.from)} (${w.label}): OVR, then the best single-stat rise`;
+      groups = climbersBoard(derived, opts.before);
+      break;
+    }
+    case 'houses': {
+      const w = opts.window ?? { from: addDays(derived.asOf, -42), to: derived.asOf, label: 'the last six weeks' };
+      title = 'House cup';
+      subtitle = `${w.label}: points for turning up (${HOUSE_POINTS.week} a week), PBs (${HOUSE_POINTS.pb}), race caps (${HOUSE_POINTS.cap}) and Surge medals (${HOUSE_POINTS.surgeBronze}/${HOUSE_POINTS.surgeGold}), per runner`;
+      groups = housesBoard(derived, w.from, w.to);
+      break;
+    }
   }
   const c = cut(groups, absolute, derived.config, opts.full);
   if (c.truncated) subtitle = subtitle ? `${subtitle} · ${top}` : top;
   return { id, title, subtitle, absolute, groups: c.groups, truncated: c.truncated };
+}
+
+function climbersBoard(derived: Derived, before: Derived | undefined): BoardGroup[] {
+  if (!before) return [{ title: 'Climbers', rows: [] }];
+  const rows: BoardRow[] = climbers(before, derived)
+    .slice(0, Math.max(derived.config.boards.topN, 10))
+    .map((c) => {
+      const d = derived.athletes.get(c.athleteId)!;
+      const best = c.best ? `${c.best.key} ${c.best.from} → ${c.best.to}` : '';
+      return {
+        rank: 0,
+        athleteId: c.athleteId,
+        name: displayName(d.athlete),
+        yearGroup: d.athlete.yearGroup,
+        value: c.delta > 0 ? `+${c.delta}` : best,
+        sortValue: c.delta * 100 + (c.best ? c.best.to - c.best.from : 0),
+        detail: [c.delta > 0 && c.from != null ? `OVR ${c.from} → ${c.to}` : '', c.delta > 0 ? best : ''].filter(Boolean).join(' · ') || undefined,
+      };
+    });
+  return [{ title: 'Climbers', rows: rankPlain(rows) }];
+}
+
+function housesBoard(derived: Derived, from: string, to: string): BoardGroup[] {
+  const rows: BoardRow[] = houseCup(derived, from, to).map((h) => ({
+    rank: 0,
+    athleteId: `house:${h.house}`,
+    name: h.house,
+    value: `${h.perMember}`,
+    sortValue: h.perMember,
+    detail: `${h.points} pts from ${h.members} runner${h.members === 1 ? '' : 's'} · ${h.weeks} weeks · ${h.pbs} PBs · ${h.caps} caps${h.surges ? ` · ${h.surges} Surge medals` : ''}`,
+  }));
+  return [{ title: 'Houses', rows: rankPlain(rows) }];
+}
+
+/** Competition ranking (1, 2, 2, 4) on sortValue, highest first, for rows built without a Candidate. */
+function rankPlain(rows: BoardRow[]): BoardRow[] {
+  const sorted = [...rows].sort((a, b) => b.sortValue - a.sortValue || a.name.localeCompare(b.name, 'en'));
+  const out: BoardRow[] = [];
+  sorted.forEach((r, i) => out.push({ ...r, rank: i > 0 && sorted[i - 1].sortValue === r.sortValue ? out[i - 1].rank : i + 1 }));
+  return out;
+}
+
+/** Boards worth showing for this data: the house cup needs at least two houses. */
+export function availableBoards(derived: Derived): BoardId[] {
+  const houses = new Set([...derived.athletes.values()].filter((d) => d.athlete.active && d.athlete.house?.trim()).map((d) => d.athlete.house!.trim()));
+  return BOARD_IDS.filter((b) => b !== 'houses' || houses.size >= 2);
 }
 
 /** Athletes left off absolute boards (opted out or inactive): for the coach view's footnote. */

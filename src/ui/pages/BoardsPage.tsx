@@ -1,10 +1,12 @@
 // Boards (spec 6): screen, projector mode, A4/A3 print.
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { currentWindow } from '../../engine/coach';
+import { deriveAll } from '../../engine/derive';
 import { PageHeader, Panel } from '../components/common';
 import { useData } from '../data/DataContext';
 import { navigate, useRoute } from '../router';
 import { BoardView } from '../boards/BoardView';
-import { BOARD_IDS, boardEvents, buildBoard, hiddenFromAbsoluteBoards, type BoardId } from '../../engine/boards';
+import { availableBoards, BOARD_IDS, boardEvents, buildBoard, hiddenFromAbsoluteBoards, type BoardId, type BoardOptions } from '../../engine/boards';
 import { fullName } from '../../engine/display';
 import { formatLongDate } from '../../engine/dates';
 
@@ -17,6 +19,8 @@ export const BOARD_LABELS: Record<BoardId, string> = {
   streak: 'Streaks',
   surge: 'Tasuki Surge',
   caps: 'Caps ★',
+  climbers: 'Climbers',
+  houses: 'House cup',
 };
 
 /** Query string shared by the page, the projector and print. */
@@ -29,12 +33,21 @@ export function boardQuery(q: URLSearchParams) {
   };
 }
 
+/** Options every board needs: the half-term window, and (for Climbers) everything as of its start. */
+export function useBoardExtras(id: BoardId | 'reveal'): Pick<BoardOptions, 'window' | 'before'> {
+  const { snapshot, derived, config } = useData();
+  const window = useMemo(() => currentWindow(snapshot, derived.asOf), [snapshot, derived.asOf]);
+  const before = useMemo(() => (id === 'climbers' ? deriveAll(snapshot, window.from, config) : undefined), [id, snapshot, window.from, config]);
+  return { window, before };
+}
+
 export function BoardsPage() {
   const { derived, snapshot } = useData();
   const route = useRoute();
   const { id, full, courseId, eventId } = boardQuery(route.query);
   const [paper, setPaper] = useState<'a4' | 'a3'>('a4');
-  const board = buildBoard(id, derived, { full, courseId, eventId });
+  const extras = useBoardExtras(id);
+  const board = buildBoard(id, derived, { full, courseId, eventId, ...extras });
   const set = (patch: Record<string, string | undefined>) => {
     const q = new URLSearchParams(route.query);
     for (const [k, v] of Object.entries(patch)) v == null || v === '' ? q.delete(k) : q.set(k, v);
@@ -68,7 +81,7 @@ export function BoardsPage() {
         <Panel>
           <div className="row">
             <div className="seg" role="group" aria-label="Board">
-              {BOARD_IDS.map((b) => (
+              {availableBoards(derived).map((b) => (
                 <button key={b} type="button" className={b === id ? 'on' : ''} onClick={() => set({ board: b })}>
                   {BOARD_LABELS[b]}
                 </button>

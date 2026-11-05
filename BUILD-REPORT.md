@@ -3,6 +3,10 @@
 Built 22–23 Oct 2026 in `C:\Users\finga\Documents\tasuki-cards`, one git commit per milestone.
 **Open the app:** double-click `TASUKI-CARDS-OPEN-ME.html` (a copy of `dist-single\tasuki-cards.html`, about 640 KB, works offline in Chrome).
 
+## Yama release (5 Nov 2026)
+
+A visual and coaching release on top of go-live: landscape cards (a season per tier), a themed app, a coach's dashboard, the summit ladder and development focus on every athlete page, a squad heatmap, the projector **Reveal** of the week's level-ups, and two effort boards (Biggest climbers, House cup). Details: `docs/YAMA-PLAN.md`; decisions: `DECISIONS.md` → "Yama release". **734 unit tests pass**, the **print check passes 9/9** with the scenery on the cards, and every new screen was checked in Chromium with demo data. The single file is about 730 KB (was 640 KB) and still makes no network calls.
+
 ## Go-live build (5 Nov 2026)
 
 The seven items of `docs/GO-LIVE-PLAN.md`, one commit each, built in a cloud session from the GitHub copy. **723 unit tests pass** (was 598) and the **print check passes 9/9**.

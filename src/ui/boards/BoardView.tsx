@@ -25,7 +25,7 @@ export function BoardView({ board, variant = 'screen', coach = false }: { board:
                     <span className="board-rank num">{r.rank}</span>
                     <span className="board-name">
                       {r.name}
-                      <span className="board-year">{r.yearGroup === 'Staff' ? 'Staff' : r.yearGroup}</span>
+                      {r.yearGroup && <span className="board-year">{r.yearGroup}</span>}
                     </span>
                     <span className="board-value num">
                       {r.value}

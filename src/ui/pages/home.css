@@ -1,0 +1,40 @@
+/* Home: landscape hero, tiles, checklist, level-ups, the squad on the mountain. */
+.home-hero { position: relative; border-radius: var(--r-lg); overflow: hidden; min-height: 280px; box-shadow: var(--shadow); isolation: isolate; }
+.home-hero-art { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; }
+.home-hero-body { padding: 26px 28px 22px; display: flex; flex-direction: column; gap: 10px; max-width: 760px; }
+.home-greet { font-size: 2rem; font-weight: 800; letter-spacing: -0.02em; color: #fff; text-shadow: 0 2px 10px rgb(10 20 50 / 45%); }
+.home-jp { font-size: 1.1rem; font-weight: 700; display: block; letter-spacing: 0.1em; opacity: 0.9; }
+.home-sub { color: #fff; font-weight: 600; margin: 0; text-shadow: 0 1px 6px rgb(10 20 50 / 55%); }
+.home-hero .btn:not(.btn-primary):not(.btn-accent) { background: rgb(255 253 248 / 88%); }
+.home-steps { margin: 0; padding-left: 20px; line-height: 1.7; }
+
+.home-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 900px) { .home-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.tile { display: flex; flex-direction: column; gap: 2px; padding: 14px 16px; border-radius: var(--r); background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); text-decoration: none; color: var(--ink); transition: transform 0.15s ease, box-shadow 0.15s ease; }
+.tile:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+.tile-n { font-size: 2.1rem; font-weight: 800; line-height: 1; color: var(--ai); }
+.tile-l { font-size: 0.85rem; color: var(--ink-2); }
+.tile-shu { background: linear-gradient(135deg, #fff4ec, #ffe3d6); border-color: #f2c1b0; }
+.tile-shu .tile-n { color: var(--shu); }
+
+.checklist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.checklist li { display: flex; gap: 10px; align-items: flex-start; }
+.check-mark { width: 22px; height: 22px; border-radius: 50%; flex: none; display: inline-flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 800; background: var(--warn-soft); color: var(--warn); }
+.checklist li.is-done .check-mark { background: var(--moss-soft); color: var(--moss); }
+.checklist li.is-done { color: var(--ink-3); }
+.check-mark.todo { background: var(--ai-soft); color: var(--ai); min-width: 22px; width: auto; padding: 0 6px; border-radius: 11px; }
+
+.levelups { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.levelups li { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.levelups a { font-weight: 700; }
+.levelup-lines { font-size: 0.85rem; color: var(--ink-2); }
+
+.squad-mtn { position: relative; height: 170px; }
+.squad-mtn-art { position: absolute; inset: 0; width: 100%; height: 100%; }
+.squad-camp { position: absolute; display: flex; align-items: center; gap: 6px; background: rgb(255 253 248 / 92%); border-radius: 99px; padding: 2px 10px 2px 3px; box-shadow: 0 2px 8px rgb(0 0 0 / 15%); font-size: 0.78rem; font-weight: 700; white-space: nowrap; }
+.squad-camp-n { min-width: 24px; height: 24px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: #fff; font-size: 0.85rem; }
+.squad-camp-bronze .squad-camp-n { background: var(--bronze); }
+.squad-camp-silver .squad-camp-n { background: var(--silver); }
+.squad-camp-gold .squad-camp-n { background: var(--gold); }
+.squad-camp-icon .squad-camp-n { background: var(--icon); }
+.house-mini { margin-top: 10px; font-size: 0.88rem; }

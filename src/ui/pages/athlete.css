@@ -25,3 +25,33 @@
 .student-sheet h2 { font-size: 1.15rem; margin: 18px 0 6px; }
 .student-stat { break-inside: avoid; page-break-inside: avoid; border-top: 1px solid var(--line); padding-top: 4px; }
 @media print { .student-sheet { max-width: none; font-size: 10.5pt; } .student-sheet .table td, .student-sheet .table th { padding: 3px 6px; } }
+
+/* Yama: radar, summit ladder, development focus */
+.athlete-mountain { display: grid; grid-template-columns: minmax(240px, 0.9fr) minmax(260px, 1fr) minmax(280px, 1.2fr); gap: 16px; align-items: stretch; }
+.athlete-mountain .panel + .panel { margin-top: 0; }
+@media (max-width: 1100px) { .athlete-mountain { grid-template-columns: 1fr; } }
+.radar text { font-family: var(--font-num); }
+.ladder { display: flex; flex-direction: column; gap: 12px; }
+.ladder-camps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; position: relative; }
+.ladder-camp { display: flex; align-items: center; gap: 10px; padding: 6px 10px; border-radius: 10px; background: var(--surface-2); color: var(--ink-3); }
+.ladder-jp { font-weight: 800; width: 2.6em; text-align: center; font-size: 0.95rem; }
+.ladder-name { flex: 1; font-weight: 600; }
+.ladder-here { color: #fff; box-shadow: 0 4px 14px rgb(0 0 0 / 18%); }
+.ladder-passed { color: var(--ink-2); opacity: 0.75; }
+.ladder-next { outline: 2px dashed var(--line-strong); outline-offset: -2px; color: var(--ink); background: transparent; }
+.ladder-here.tier-bg-bronze { background: linear-gradient(90deg, #8a5a35, #c99062); }
+.ladder-here.tier-bg-silver { background: linear-gradient(90deg, #6f7883, #aeb7c2); }
+.ladder-here.tier-bg-gold { background: linear-gradient(90deg, #9b7414, #e2bf55); }
+.ladder-here.tier-bg-icon { background: linear-gradient(90deg, #2b1d63, #7d5fd6); }
+.ladder-here .muted { color: rgb(255 255 255 / 80%); }
+.ladder-bar { height: 10px; border-radius: 5px; background: var(--surface-2); overflow: hidden; margin: 6px 0; }
+.ladder-bar span { display: block; height: 100%; border-radius: 5px; background: linear-gradient(90deg, var(--moss), var(--gold)); }
+.ladder-goal ul, .ladder ul { margin: 4px 0 0; padding-left: 0; list-style: none; }
+.focus-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.focus-list li { display: flex; gap: 10px; align-items: flex-start; font-size: 0.9rem; }
+.focus-tag { flex: none; font-size: 0.7rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; padding: 2px 8px; border-radius: 99px; background: var(--ai-soft); color: var(--ai); margin-top: 1px; }
+.focus-superpower .focus-tag { background: #fff2c2; color: #8a6300; }
+.focus-focus .focus-tag { background: var(--shu-soft); color: var(--shu); }
+.focus-refresh .focus-tag { background: var(--moss-soft); color: var(--moss); }
+.focus-ideas { display: block; color: var(--ink-2); font-size: 0.82rem; margin-top: 2px; }
+.student-top { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; break-inside: avoid; margin-bottom: 8px; }
