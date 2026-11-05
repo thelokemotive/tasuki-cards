@@ -134,7 +134,7 @@ export function developmentFocus(d: AthleteDerived, config: Config, gap = 5): Fo
   }
   if (sorted.length) {
     const best = sorted[sorted.length - 1];
-    out.push({ kind: 'superpower', stat: best, text: `Superpower: ${best} ${r.stats[best].value}.`, ideas: [] });
+    out.push({ kind: 'superpower', stat: best, text: `${best} ${r.stats[best].value}: the strongest stat.`, ideas: [] });
   }
   return out;
 }

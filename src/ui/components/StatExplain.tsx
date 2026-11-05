@@ -10,6 +10,7 @@ import { explainAll, explainOvr, explainStat, explanationText, type ConsideredSt
 import { formatLongDate, formatShortDate } from '../../engine/dates';
 import { displayName } from '../../engine/display';
 import { STAT_NAMES } from '../cards/cardData';
+import { DevelopmentFocus, StatRadar, SummitLadder } from './Mountain';
 
 const STATUS_PILL: Record<ConsideredStatus, string> = {
   used: 'pill-ok',
@@ -137,6 +138,17 @@ export function StudentSheet({ d }: { d: AthleteDerived }) {
       <p className="muted small">
         As of {formatLongDate(derived.asOf)}. Every number comes from your verified results; ages are in whole years. Results that did not count are listed with the reason.
       </p>
+      <section className="student-top">
+        <StatRadar d={d} size={200} />
+        <div style={{ flex: 1, minWidth: 240 }}>
+          <h2 style={{ marginTop: 0 }}>Your climb</h2>
+          <SummitLadder d={d} config={derived.config} />
+        </div>
+      </section>
+      <section className="student-stat">
+        <h2>What to work on</h2>
+        <DevelopmentFocus d={d} config={derived.config} max={5} />
+      </section>
       {all.map((e) => (
         <section key={e.key} className="student-stat">
           <h2>
