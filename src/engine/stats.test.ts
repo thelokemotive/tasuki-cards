@@ -1048,11 +1048,11 @@ describe('race pathways (go-live plan 1)', () => {
     expect(r.stats.SPD.basis?.perfIds).toEqual(['fast3k']);
   });
 
-  it('a race over 3 km effort does not feed SPD', () => {
+  it('a race over 3.5 km effort does not feed SPD', () => {
     const r = rateL(coach, [perf({ kind: 'race', eventId: 'e-xc', timeSec: 1200 })]);
     expect(r.perfScores[0].feeds).not.toContain('SPD');
-    expect(r.stats.SPD).toMatchObject({ locked: true, unlockHint: 'Circuit or 3K' });
-    expect(r.stats.SPD.unlockHelp).toBe('Run the Circuit, or a verified race, relay leg or parkrun of up to 3 km effort, to unlock SPD.');
+    expect(r.stats.SPD).toMatchObject({ locked: true, unlockHint: 'Circuit or 3.5K' });
+    expect(r.stats.SPD.unlockHelp).toBe('Run the Circuit, or a verified race, relay leg or parkrun of up to 3.5 km effort, to unlock SPD.');
   });
 
   it('a hill race (≥ 150 m and ≥ 50 m/km) feeds CLB, scored on effective distance', () => {
@@ -1081,7 +1081,7 @@ describe('race pathways (go-live plan 1)', () => {
 
   it('the thresholds come from config, and the pathways can be switched off', () => {
     const c = cloneConfig(cfg);
-    c.spd.raceMaxKmEff = 2.5;
+    c.spd.raceMaxKmEff = 2.9;
     c.clb.raceMinClimbM = 500;
     let r = rateL(coach, [perf({ kind: 'race', eventId: 'e-3k', timeSec: 600 }), perf({ kind: 'race', eventId: 'e-hill', timeSec: 3000 })], c);
     expect(r.perfScores.map((p) => p.feeds)).toEqual([['RACE'], ['RACE', 'END']]);

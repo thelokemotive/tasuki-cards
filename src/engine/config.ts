@@ -250,7 +250,8 @@ export const DEFAULT_CONFIG: Config = {
 
   race: { weights3: [0.5, 0.3, 0.2], weights2: [0.6, 0.4] },
 
-  spd: { allowRaces: true, raceMaxKmEff: 3.0 },
+  // 3.5, not 3.0: the coach's own example (a 3 km race with 40 m of climb = 3.4 km effort) counts for SPD.
+  spd: { allowRaces: true, raceMaxKmEff: 3.5 },
 
   clb: { allowRaces: true, raceMinClimbM: 150, raceMinClimbPerKm: 50 },
 

@@ -35,6 +35,8 @@ Chrome keeps the data per browser and per computer, so use the same Chrome profi
 
 ## Good to know
 
+- **Why is it 84?** On an athlete page, click any stat (or **Why?**) for the working: which result set it, the calculation in plain English, freshness, Growth Shield, and every other result with the reason it did not count. **Student version** gives a printable sheet the student can read (display name only, no date of birth).
+
 - Ratings are age-graded, so a Year 7 and a Year 13 compete fairly. Racing more earns caps (★) and badges, never rating points.
 - A stat with 🔒 is locked: the card says how to unlock it, and it never shows a made-up number.
 - **prov** next to a rating (coach view only, never printed) means it uses a table or formula marked provisional. Since go-live (Nov 2026) nothing is marked provisional; you can switch the markers back on in Settings → Scoring constants (END, NAV, ARM).

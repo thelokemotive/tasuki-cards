@@ -18,3 +18,10 @@
 .badge-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 99px; background: var(--surface-2); border: 1px solid var(--line); font-size: 0.85rem; }
 .badge-gold { background: #fff4c8; border-color: #e6cf6f; }
 .badge-bronze { background: #f6e5d6; border-color: #dcb592; }
+
+.clickable { cursor: pointer; }
+.explain p { margin: 0 0 10px; line-height: 1.5; }
+.student-sheet { max-width: 820px; }
+.student-sheet h2 { font-size: 1.15rem; margin: 18px 0 6px; }
+.student-stat { break-inside: avoid; page-break-inside: avoid; border-top: 1px solid var(--line); padding-top: 4px; }
+@media print { .student-sheet { max-width: none; font-size: 10.5pt; } .student-sheet .table td, .student-sheet .table th { padding: 3px 6px; } }
