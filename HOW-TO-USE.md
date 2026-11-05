@@ -36,5 +36,5 @@ Chrome keeps the data per browser and per computer, so use the same Chrome profi
 
 - Ratings are age-graded, so a Year 7 and a Year 13 compete fairly. Racing more earns caps (★) and badges, never rating points.
 - A stat with 🔒 is locked: the card says how to unlock it, and it never shows a made-up number.
-- **prov** next to a rating (coach view only, never printed) means it uses a table still to be verified (the bleep norms, NAV, ARM thresholds).
+- **prov** next to a rating (coach view only, never printed) means it uses a table or formula marked provisional. Since go-live (Nov 2026) nothing is marked provisional; you can switch the markers back on in Settings → Scoring constants (END, NAV, ARM).
 - **Settings → Scoring constants** lets you change every number, with a preview of how many ratings would change before you apply.

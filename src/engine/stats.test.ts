@@ -55,6 +55,15 @@ function rate(a: Athlete, perfs: Performance[], opts: { config?: Config; asOf?: 
   return computeAthleteRatings({ athlete: a, perfs, lookup, config: opts.config ?? cfg, asOf: opts.asOf ?? AS_OF, streakActiveOrFrozen: opts.streak ?? false });
 }
 
+/** The pre-go-live markers: bleep table, NAV and ARM provisional. */
+function provCfg(): Config {
+  const c = cloneConfig(cfg);
+  c.end.bleepProvisional = true;
+  c.nav.provisional = true;
+  c.arm.provisional = true;
+  return c;
+}
+
 const words = (s: string | undefined) => (s ?? '').trim().split(/\s+/).filter(Boolean).length;
 
 describe('SPD', () => {
@@ -78,9 +87,9 @@ describe('END', () => {
     // floor(13.5) = 13 → Boys 13 row; 60 laps between P70 (56) and P80 (64): P = 70 + 4/8 × 10 = 75
     // rating = 40 + 0.59 × 75 = 84.25 → 84; 1 month old → no penalty
     const r = rate(ben, [perf({ id: 'b1', athleteId: 'a-ben', kind: 'bleep', bleepLaps: 60, date: '2026-09-01' })]);
-    expect(r.stats.END).toMatchObject({ locked: false, value: 84, provisional: true });
+    expect(r.stats.END).toMatchObject({ locked: false, value: 84, provisional: false });
     expect(r.stats.END.basis?.label).toBe('from bleep test, 1 Sep');
-    expect(r.provisionalAny).toBe(true);
+    expect(r.provisionalAny).toBe(false);
   });
 
   it('worked example via long run: 10 km race in 42:00 → 78 beats a 52-lap bleep (64)', () => {
@@ -178,7 +187,7 @@ describe('NAV', () => {
       perf({ kind: 'nav', courseId: 'c-nav', timeSec: 690, navErrors: 1, date: '2026-10-10' }),
       perf({ kind: 'nav', courseId: 'c-nav', timeSec: 600, navErrors: 3, routeKmEff: 3, date: '2026-10-12' }),
     ]);
-    expect(r.stats.NAV).toMatchObject({ locked: false, value: 82, provisional: true });
+    expect(r.stats.NAV).toMatchObject({ locked: false, value: 82, provisional: false });
     expect(r.stats.NAV.basis?.label).toBe('from Forest Nav, 10 Oct');
     expect(r.perfScores.find((p) => p.kind === 'nav' && p.date === '2026-10-12')?.score).toBe(40);
   });
@@ -210,7 +219,7 @@ describe('ARM', () => {
     // Best: ankle L3 + calf L4 + balance L5 = 12 → ARM = round(40 + (12 − 3) × 59 / 12) = round(84.25) = 84
     const r = rate(coach, [old, t1, t2]);
     expect(r.arm).toEqual({ ankle: 3, calf: 4, balance: 5, missing: [] });
-    expect(r.stats.ARM).toMatchObject({ locked: false, value: 84, provisional: true });
+    expect(r.stats.ARM).toMatchObject({ locked: false, value: 84, provisional: false });
     expect(r.stats.ARM.basis).toEqual({ perfIds: ['arm2', 'arm1'], date: '2026-10-10', label: 'from ARM tests, 10 Oct' });
   });
 
@@ -566,7 +575,7 @@ describe('Growth Shield boundaries', () => {
     // Ben on 2025-11-22 (estimated): 13.5 − 283 / 365.25 = 12.73 → Boys 12 row (P80 57, P90 67)
     // 60 laps: P = 80 + 3 / 10 × 10 = 83 → 40 + 0.59 × 83 = 88.97 → 89; 11 months old → 89 − 5 = 84
     // Shield: max(84, 89 − 2) = 87, resting on the provisional bleep table
-    const r = rate(ben, [perf({ athleteId: 'a-ben', kind: 'bleep', bleepLaps: 60, date: '2025-11-22' })], { streak: true });
+    const r = rate(ben, [perf({ athleteId: 'a-ben', kind: 'bleep', bleepLaps: 60, date: '2025-11-22' })], { streak: true, config: provCfg() });
     expect(r.stats.END).toMatchObject({ value: 87, current: 84, peak12m: 89, shielded: true, provisional: true });
   });
 });
@@ -742,13 +751,22 @@ describe('locked stats never show numbers, whatever the inputs', () => {
 });
 
 describe('provisional markers', () => {
-  it('NAV, ARM and bleep-based END are provisional; age-graded SPD is not', () => {
+  it('go-live defaults mark nothing provisional', () => {
+    const r = rate(coach, [
+      perf({ kind: 'nav', courseId: 'c-nav', timeSec: 690, navErrors: 1 }),
+      perf({ kind: 'arm', arm: { ankleCm: 11, calfReps: 18, storkSec: 22 } }),
+      perf({ kind: 'bleep', bleepLaps: 52 }),
+    ]);
+    expect([r.stats.NAV.provisional, r.stats.ARM.provisional, r.stats.END.provisional, r.provisionalAny]).toEqual([false, false, false, false]);
+  });
+
+  it('with the markers switched on, NAV, ARM and bleep-based END are provisional; age-graded SPD is not', () => {
     const r = rate(coach, [
       perf({ courseId: 'c-circuit', timeSec: 260 }),
       perf({ kind: 'nav', courseId: 'c-nav', timeSec: 690, navErrors: 1 }),
       perf({ kind: 'arm', arm: { ankleCm: 11, calfReps: 18, storkSec: 22 } }),
       perf({ kind: 'bleep', bleepLaps: 52 }),
-    ]);
+    ], { config: provCfg() });
     expect(r.stats.SPD.provisional).toBe(false);
     expect(r.stats.NAV.provisional).toBe(true);
     expect(r.stats.ARM.provisional).toBe(true);
@@ -793,7 +811,7 @@ describe('a full card: every stat unlocked (worked example)', () => {
     expect(r.race).toMatchObject({ value: 78, caps: 1 });
     expect(r.tier).toBe('gold');
     expect(r.tierNote).toBeUndefined();
-    expect(r.provisionalAny).toBe(true); // NAV and ARM are provisional
+    expect(r.provisionalAny).toBe(false); // nothing provisional since go-live
   });
 });
 
@@ -864,7 +882,7 @@ describe('edge cases', () => {
 
   it('END: an unverified 10 km is ignored, so the bleep test (52 laps → 64) sets END', () => {
     const r = rate(coach, [perf({ kind: 'race', distanceKm: 10, timeSec: 2520, verified: false }), perf({ kind: 'bleep', bleepLaps: 52, date: '2026-10-10' })]);
-    expect(r.stats.END).toMatchObject({ value: 64, provisional: true });
+    expect(r.stats.END).toMatchObject({ value: 64, provisional: false });
     expect(r.stats.END.basis?.label).toBe('from bleep test, 10 Oct');
   });
 

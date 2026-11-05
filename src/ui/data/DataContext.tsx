@@ -2,7 +2,7 @@
 // — the only way pages change data. Every commit autosaves through the Store.
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { DataSnapshot, ISODate } from '../../types';
-import { currentConfig, DEFAULT_CONFIG, type Config } from '../../engine/config';
+import { currentConfig, DEFAULT_CONFIG, goLiveMigration, type Config } from '../../engine/config';
 import { todayTokyo } from '../../engine/dates';
 import { deriveAll, type Derived } from '../../engine/derive';
 import { seedCourses } from '../../demo/demoData';
@@ -41,10 +41,17 @@ export interface DataApi {
 
 const Ctx = createContext<DataApi | null>(null);
 
-/** First-run seed: the Campus Circuit course and config version 1. */
-export function withSeed(s: DataSnapshot): { snapshot: DataSnapshot; changes: Changes } {
+/**
+ * First-run seed (the Campus Circuit course and config version 1), plus one-off migrations of stored
+ * data (the go-live config version that removes the provisional markers).
+ */
+export function withSeed(s: DataSnapshot, now: string = new Date().toISOString()): { snapshot: DataSnapshot; changes: Changes } {
   const changes: Changes = { put: {} };
   if (s.configs.length === 0) changes.put!.configs = [DEFAULT_CONFIG];
+  else {
+    const goLive = goLiveMigration(s.configs, now);
+    if (goLive) changes.put!.configs = [goLive];
+  }
   if (s.courses.length === 0) changes.put!.courses = seedCourses();
   return { snapshot: applyChanges(s, changes), changes };
 }
@@ -116,6 +123,7 @@ export function DataProvider({ children, storeOverride }: { children: ReactNode;
   }, []);
 
   const replaceAll = useCallback(async (s: DataSnapshot) => {
+    // An imported backup from before go-live is migrated too (replaceAll stores the seeded snapshot).
     const { snapshot: seeded } = withSeed(s);
     snapRef.current = seeded;
     setSnapshot(seeded);

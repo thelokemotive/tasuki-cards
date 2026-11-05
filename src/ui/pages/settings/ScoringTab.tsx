@@ -141,7 +141,7 @@ function Section({ draft, setDraft, section }: { draft: Config; setDraft: (c: Co
       if (key === 'end.bleepTable') {
         fields.push(
           <div key={key} style={{ gridColumn: '1 / -1' }}>
-            <div className="small" style={{ fontWeight: 600 }}>Bleep table (laps at P{BLEEP_PERCENTILES.join(', P')}) · provisional until checked against Tomkinson et al. 2017</div>
+            <div className="small" style={{ fontWeight: 600 }}>Bleep table (laps at P{BLEEP_PERCENTILES.join(', P')}) · attributed to Tomkinson et al. 2017, accepted by the coach for go-live (Nov 2026)</div>
             <div className="grid-2" style={{ marginTop: 6 }}>
               {(['M', 'F'] as const).map((sex) =>
                 Object.keys((v as Record<string, Record<string, number[]>>)[sex]).map((age) => (
