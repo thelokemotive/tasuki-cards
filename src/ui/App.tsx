@@ -20,6 +20,7 @@ import { ProjectorPage } from './pages/ProjectorPage';
 import { HandicapPage } from './pages/HandicapPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { ScenesPage } from './pages/ScenesPage';
+import { YamaScene } from './art/YamaScene';
 import { HelpPage } from './pages/HelpPage';
 
 interface NavItem {
@@ -171,7 +172,11 @@ function Shell() {
             </Link>
           ),
         )}
-        <div className="nav-foot">Stage 1 · built {__BUILD_DATE__}</div>
+        <div className="nav-foot">山 Yama · built {__BUILD_DATE__}</div>
+        <div className="nav-stars" aria-hidden="true" />
+        <div className="nav-scene" aria-hidden="true">
+          <YamaScene mood="night" shape="tall" seed={3} trail={false} sky={false} />
+        </div>
       </nav>
       <div className="main">
         <header className="topbar no-print">

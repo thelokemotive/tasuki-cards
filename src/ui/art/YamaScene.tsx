@@ -184,8 +184,10 @@ function Cloud({ x, y, s, p, flip = false }: { x: number; y: number; s: number; 
 
 export interface YamaSceneProps {
   mood: SceneMood;
-  /** 'wide' for banners and the projector, 'tall' for cards. */
-  shape?: 'wide' | 'tall';
+  /** 'wide' (2:1) for panels and the projector, 'banner' (3:1) for page heroes, 'tall' for cards. */
+  shape?: 'wide' | 'banner' | 'tall';
+  /** Leave the sky transparent (to sit on another background, e.g. the navigation). */
+  sky?: boolean;
   /** Changes cloud and tree placement, so cards do not all look identical. */
   seed?: number;
   /** A rising sun with rays (the In-Form card). */
@@ -198,18 +200,21 @@ export interface YamaSceneProps {
   preserveAspectRatio?: string;
 }
 
-export function YamaScene({ mood, shape = 'wide', seed = 7, risingSun = false, trail = true, className, style, preserveAspectRatio = 'xMidYMax slice' }: YamaSceneProps) {
+export function YamaScene({ mood, shape: shapeIn = 'wide', seed = 7, risingSun = false, trail = true, sky = true, className, style, preserveAspectRatio = 'xMidYMax slice' }: YamaSceneProps) {
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
   const p = PALETTES[mood];
-  const W = shape === 'wide' ? 480 : 240;
+  const banner = shapeIn === 'banner';
+  // A banner is a wide scene drawn on a wider canvas; the rest of the geometry treats it as 'wide'.
+  const shape: 'wide' | 'tall' = shapeIn === 'tall' ? 'tall' : 'wide';
+  const W = banner ? 760 : shape === 'wide' ? 480 : 240;
   const H = shape === 'wide' ? 240 : 340;
   const art = useMemo(() => {
     const r = rng(seed * 9973 + (shape === 'wide' ? 1 : 2));
     const horizon = shape === 'wide' ? 0.56 : 0.5;
-    const peakX = W * (0.38 + r() * 0.24);
+    const peakX = banner ? W * (0.62 + r() * 0.14) : W * (0.38 + r() * 0.24);
     const peakTop = H * (shape === 'wide' ? 0.2 : 0.26);
     const base = H * (horizon + 0.12);
-    const span = W * (shape === 'wide' ? 0.62 : 0.95);
+    const span = banner ? W * 0.42 : W * (shape === 'wide' ? 0.62 : 0.95);
     const peak = `M${peakX - span},${base} C${peakX - span * 0.45},${base - 8} ${peakX - span * 0.16},${peakTop + 26} ${peakX - 13},${peakTop + 3} L${peakX - 5},${peakTop} L${peakX + 6},${peakTop + 1} L${peakX + 14},${peakTop + 4} C${peakX + span * 0.18},${peakTop + 30} ${peakX + span * 0.5},${base - 10} ${peakX + span},${base} Z`;
     // A lower shoulder peak on one side (Iwate-san has one), and the shaded flank away from the light.
     const side = r() > 0.5 ? 1 : -1;
@@ -231,16 +236,17 @@ export function YamaScene({ mood, shape = 'wide', seed = 7, risingSun = false, t
     cap += ' Z';
     const amp = shape === 'wide' ? [26, 30, 26, 22] : [30, 34, 30, 26];
     const bases = shape === 'wide' ? [0.64, 0.72, 0.82, 0.93] : [0.6, 0.68, 0.78, 0.9];
-    const ridges = bases.map((b, i) => ridgePoints(W, H * b, amp[i], seed + i * 3.3, shape === 'wide' ? 9 : 6));
-    const clouds = Array.from({ length: shape === 'wide' ? 4 : 3 }, (_, i) => ({
-      x: (W * (i + 0.3 + r() * 0.5)) / (shape === 'wide' ? 4 : 3),
+    const ridges = bases.map((b, i) => ridgePoints(W, H * b, amp[i], seed + i * 3.3, banner ? 13 : shape === 'wide' ? 9 : 6));
+    const nClouds = banner ? 6 : shape === 'wide' ? 4 : 3;
+    const clouds = Array.from({ length: nClouds }, (_, i) => ({
+      x: (W * (i + 0.3 + r() * 0.5)) / nClouds,
       y: H * (0.1 + r() * (shape === 'wide' ? 0.26 : 0.2)),
       s: (shape === 'wide' ? 0.55 : 0.42) + r() * 0.35,
       flip: r() > 0.5,
     }));
     const front = ridges[3];
     const mid = ridges[2];
-    const treesFront = Array.from({ length: shape === 'wide' ? 34 : 18 }, () => {
+    const treesFront = Array.from({ length: banner ? 54 : shape === 'wide' ? 34 : 18 }, () => {
       const x = r() * W;
       return { x, y: yAt(front, x) + 2 + r() * 3, h: 10 + r() * 14 };
     });
@@ -249,12 +255,12 @@ export function YamaScene({ mood, shape = 'wide', seed = 7, risingSun = false, t
       return { x, y: yAt(mid, x) + 2, h: 6 + r() * 7 };
     });
     const dots = p.dots ? Array.from({ length: shape === 'wide' ? 46 : 24 }, () => ({ x: r() * W, y: 0, r: 1 + r() * 2.2, c: p.dots![Math.floor(r() * p.dots!.length)] })).map((d) => ({ ...d, y: yAt(front, d.x) + 4 + r() * (H - yAt(front, d.x)) * 0.5 })) : [];
-    const stars = p.stars ? Array.from({ length: shape === 'wide' ? 70 : 40 }, () => ({ x: r() * W, y: r() * H * 0.55, r: 0.4 + r() * 1.1, o: 0.4 + r() * 0.6 })) : [];
-    const sun = { x: W * (0.12 + r() * 0.2) + (peakX < W / 2 ? W * 0.55 : 0), y: H * (mood === 'night' ? 0.16 : mood === 'dawn' ? 0.5 : 0.22) };
-    const tx = W * 0.5;
+    const stars = p.stars ? Array.from({ length: banner ? 110 : shape === 'wide' ? 70 : 40 }, () => ({ x: r() * W, y: r() * H * 0.55, r: 0.4 + r() * 1.1, o: 0.4 + r() * 0.6 })) : [];
+    const sun = { x: banner ? W * (0.4 + r() * 0.12) : W * (0.12 + r() * 0.2) + (peakX < W / 2 ? W * 0.55 : 0), y: H * (mood === 'night' ? 0.16 : mood === 'dawn' ? 0.5 : 0.22) };
+    const tx = banner ? W * 0.8 : W * 0.5;
     const trailD = `M${tx - 10},${H + 4} C${tx + 50},${H * 0.94} ${tx - 70},${H * 0.88} ${tx - 20},${H * 0.83} S${tx + 40},${H * 0.76} ${tx + 8},${yAt(front, tx + 8) + 6}`;
     return { peak, shoulder, shade, cap, ridges, clouds, treesFront, treesMid, dots, stars, sun, trailD, peakX, peakTop };
-  }, [W, H, seed, shape, mood, p.dots, p.stars]);
+  }, [W, H, seed, shape, banner, mood, p.dots, p.stars]);
 
   const id = (k: string) => `${k}${uid}`;
   const sunR = shape === 'wide' ? 15 : 13;
@@ -281,7 +287,7 @@ export function YamaScene({ mood, shape = 'wide', seed = 7, risingSun = false, t
           <stop offset="1" stopColor="#fff" stopOpacity="0" />
         </linearGradient>
       </defs>
-      <rect width={W} height={H} fill={`url(#${id('sky')})`} />
+      {sky && <rect width={W} height={H} fill={`url(#${id('sky')})`} />}
       {mood === 'night' && <path d={`M${-20},${H * 0.42} Q${W * 0.45},${H * 0.02} ${W + 20},${H * 0.2}`} stroke="#c9c6ff" strokeOpacity="0.12" strokeWidth={shape === 'wide' ? 40 : 30} fill="none" strokeLinecap="round" />}
       {art.stars.map((s, i) => (
         <circle key={i} cx={s.x} cy={s.y} r={s.r} fill="#fff" opacity={s.o} />

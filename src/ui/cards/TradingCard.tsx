@@ -6,6 +6,11 @@ import type { CSSProperties } from 'react';
 import type { CardData, CardStat } from './cardData';
 import { STAT_NAMES } from './cardData';
 import { AvatarSvg } from '../avatar/AvatarSvg';
+import { YamaScene, type SceneMood } from '../art/YamaScene';
+import { hashString } from '../../engine/avatarDefaults';
+
+/** Each tier is a season on the mountain: Bronze autumn dusk, Silver a winter morning, Gold summer's golden hour, Icon the night sky. */
+export const TIER_SCENE: Record<CardData['tier'], SceneMood> = { bronze: 'autumn', silver: 'winter', gold: 'summer', icon: 'night' };
 
 const TIER_LABEL = { bronze: 'Bronze', silver: 'Silver', gold: 'Gold', icon: 'Icon' } as const;
 
@@ -73,6 +78,10 @@ export function TradingCard({ data, coach = false, style }: { data: CardData; co
   return (
     <article className={cls} style={style} data-athlete={data.athleteId} aria-label={`Card for ${data.name}`}>
       <div className="tc-inner">
+        <div className="tc-scene" aria-hidden="true">
+          <YamaScene mood={TIER_SCENE[data.tier]} shape="tall" seed={hashString(data.athleteId) % 997} risingSun={data.inForm} preserveAspectRatio="xMidYMid slice" />
+        </div>
+        <div className="tc-wash" aria-hidden="true" />
         <div className="tc-sash" aria-hidden="true" />
         <header className="tc-head">
           <div className="tc-ovr">
