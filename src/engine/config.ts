@@ -12,6 +12,8 @@ export interface Config {
   createdAt: string;
   /** Free-text note shown in the config history ("Raised anchor to 0.82"). */
   note?: string;
+  /** Set on a version the app created by itself (a one-off migration), so it is never applied twice. */
+  migration?: string;
 
   ageGrade: {
     /** Which standard table to use. 'fallback_provisional' marks every age-graded rating provisional. */
@@ -70,6 +72,22 @@ export interface Config {
     weights2: [number, number];
   };
 
+  spd: {
+    /** Short races also feed SPD (go-live plan 1): SPD = best of the Circuit and short races. */
+    allowRaces: boolean;
+    /** A verified race, relay leg or parkrun with D_eff at or below this (km) feeds SPD. */
+    raceMaxKmEff: number;
+  };
+
+  clb: {
+    /** Hill races also feed CLB (go-live plan 1). The climb course still counts. */
+    allowRaces: boolean;
+    /** A verified race, relay leg, parkrun or long run needs at least this much climb (m)… */
+    raceMinClimbM: number;
+    /** …and at least this much climb per km of distance (m/km) to feed CLB. */
+    raceMinClimbPerKm: number;
+  };
+
   end: {
     allowLongRuns: boolean;
     /** Minimum D_eff (km) for a race/parkrun/long run to set END. */
@@ -97,6 +115,11 @@ export interface Config {
     refRaceMaxKmEff: number;
     /** Efficiency that scores the minimum (spec 3.9: NAV = 40 + 59 × (eff − 0.5) / 0.5). */
     effAtMin: number;
+    /**
+     * Riegel exponent for predicting a nav route time from a race of another distance (go-live plan 6):
+     * T_route = T_race × (route ÷ race D_eff)^riegelExponent. Used only with no Circuit and no short race.
+     */
+    riegelExponent: number;
     provisional: boolean;
   };
 
@@ -232,6 +255,11 @@ export const DEFAULT_CONFIG: Config = {
 
   race: { weights3: [0.5, 0.3, 0.2], weights2: [0.6, 0.4] },
 
+  // 3.5, not 3.0: the coach's own example (a 3 km race with 40 m of climb = 3.4 km effort) counts for SPD.
+  spd: { allowRaces: true, raceMaxKmEff: 3.5 },
+
+  clb: { allowRaces: true, raceMinClimbM: 150, raceMinClimbPerKm: 50 },
+
   end: {
     allowLongRuns: true,
     longRunMinKmEff: 5.0,
@@ -266,17 +294,17 @@ export const DEFAULT_CONFIG: Config = {
     bleepCapAtP95: 96,
     bleepTopMultiplier: 1.2,
     bleepTopScore: 99,
-    bleepProvisional: true,
+    bleepProvisional: false,
   },
 
-  nav: { allowance: 1.15, penaltySecPerError: 120, maxErrors: 3, refRaceMaxKmEff: 5, effAtMin: 0.5, provisional: true },
+  nav: { allowance: 1.15, penaltySecPerError: 120, maxErrors: 3, refRaceMaxKmEff: 5, effAtMin: 0.5, riegelExponent: 1.06, provisional: false },
 
   arm: {
     ankleCm: [5, 8, 10, 12, 14],
     calfReps: [10, 15, 20, 25, 30],
     storkSec: [5, 10, 20, 30],
     windowMonths: 12,
-    provisional: true,
+    provisional: false,
   },
 
   ovr: { minUnlocked: 2 },
@@ -342,7 +370,30 @@ export const DEFAULT_CONFIG: Config = {
 /** The current config is the highest version in the list (falls back to defaults). */
 export function currentConfig(configs: Config[] | undefined): Config {
   if (!configs || configs.length === 0) return DEFAULT_CONFIG;
-  return configs.reduce((a, b) => (b.version > a.version ? b : a));
+  // Stored versions from an older app may lack constants added since: fill them from the defaults.
+  return withDefaults(configs.reduce((a, b) => (b.version > a.version ? b : a)));
+}
+
+/** Marks the go-live config version (go-live plan 2). */
+export const GO_LIVE_MIGRATION = 'go-live-2026-11';
+export const GO_LIVE_NOTE = 'Go-live: provisional markers removed';
+
+/**
+ * One-off go-live migration (plan 2): if the current stored config still marks the bleep table, NAV or ARM
+ * provisional, return a new version with those markers off, so the change shows in the version history.
+ * Runs at most once: a store that already holds the go-live version is left alone, so a coach who turns a
+ * marker back on later keeps it. Returns undefined when nothing needs doing.
+ */
+export function goLiveMigration(configs: Config[] | undefined, createdAt: string): Config | undefined {
+  if (!configs || configs.length === 0) return undefined;
+  if (configs.some((c) => c.migration === GO_LIVE_MIGRATION)) return undefined;
+  const cur = currentConfig(configs);
+  if (!cur.end.bleepProvisional && !cur.nav.provisional && !cur.arm.provisional) return undefined;
+  const draft = cloneConfig(cur);
+  draft.end.bleepProvisional = false;
+  draft.nav.provisional = false;
+  draft.arm.provisional = false;
+  return { ...nextConfigVersion(cur, draft, createdAt, GO_LIVE_NOTE), migration: GO_LIVE_MIGRATION };
 }
 
 /** Deep clone a config for editing. */
@@ -352,7 +403,9 @@ export function cloneConfig(c: Config): Config {
 
 /** Create the next version from an edited draft. */
 export function nextConfigVersion(previous: Config, draft: Config, createdAt: string, note?: string): Config {
-  return { ...cloneConfig(draft), version: previous.version + 1, createdAt, note };
+  const next: Config = { ...cloneConfig(draft), version: previous.version + 1, createdAt, note };
+  delete next.migration; // only the version a migration created carries its marker
+  return next;
 }
 
 /**

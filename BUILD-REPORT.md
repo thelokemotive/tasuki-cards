@@ -3,6 +3,22 @@
 Built 22–23 Oct 2026 in `C:\Users\finga\Documents\tasuki-cards`, one git commit per milestone.
 **Open the app:** double-click `TASUKI-CARDS-OPEN-ME.html` (a copy of `dist-single\tasuki-cards.html`, about 640 KB, works offline in Chrome).
 
+## Go-live build (5 Nov 2026)
+
+The seven items of `docs/GO-LIVE-PLAN.md`, one commit each, built in a cloud session from the GitHub copy. **723 unit tests pass** (was 598) and the **print check passes 9/9**.
+
+| # | What changed | Where to look |
+|---|---|---|
+| 1 | Short races (≤ 3.5 km effort) feed SPD; hill races and hilly long runs (≥ 150 m and ≥ 50 m/km) feed CLB. Card hints "Circuit or 3.5K" and "Race a hill". | Athlete page, Settings → Scoring → SPD / CLB |
+| 2 | No provisional markers. Opening the app once adds config version "Go-live: provisional markers removed" (only if the stored config still had them). | Settings → Scoring → Version history |
+| 3 | Paste & Match: **New athlete** on any unknown runner; **Our school** names (Settings → Data, default Harrow, ハロウ, 安比, Appi) flag our runners; **Add all N academy runners**. | Paste & Match |
+| 4 | Click any stat (or **Why?**) for the working and every result considered; results table shows pace, effort, standard, AG %, score, freshness, feeds; **Student version** sheet (display name, no DOB). | Athlete page |
+| 5 | **Set the benchmark from a reference run…** for fixed-benchmark courses (default score 90, other sex from 834/769). | Settings → Courses → Edit a descent |
+| 6 | NAV reference speed from any race (Riegel, exponent 1.06) when there is no Circuit and no race ≤ 5 km. | Paste an orienteering result |
+| 7 | Drag a .xlsx, .csv or .txt onto Paste & Match (or **Choose a file…**). Shift_JIS CSVs are read correctly. | Paste & Match |
+
+Checked in a real browser (Chromium, through the app): the Paste & Match new-athlete flow with a Japanese results table, the stat explanations and student sheet on demo data, the reference-run benchmark form, and dropping a Shift_JIS CSV and a LibreOffice .xlsx. Not checked: your own Excel files and printers. Ten minutes with real data on the laptop is the next step (see "Next three steps" below, step 1, which is now easier: the roster can come straight from a results table).
+
 ## What was built
 
 | Milestone | Commit | What it delivers |

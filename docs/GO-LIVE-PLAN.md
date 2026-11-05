@@ -2,6 +2,8 @@
 
 Fabian's requirements after reviewing Stage 1. The next build session works through these in order. Each one ends with tests passing, a rebuild of `TASUKI-CARDS-OPEN-ME.html`, and a commit.
 
+**Status (5 Nov 2026): all seven built**, one commit each, 723 unit tests and 9/9 print checks passing. Details and the choices made are in `DECISIONS.md` → "Go-live changes"; what to check by hand is in `BUILD-REPORT.md` → "Go-live build". One deliberate difference from the plan: `spd.raceMaxKmEff` is **3.5**, not 3.0, so that the plan's own example (a 3 km race with 40 m of climb = 3.4 km effort) counts for SPD.
+
 ## 1. Paste results in and get SPD, END and CLB straight away
 
 - Today SPD only comes from the Campus Circuit, and CLB only from a climb course. Add **race pathways** (configurable, and explained on the athlete page):

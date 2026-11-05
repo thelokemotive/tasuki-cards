@@ -221,6 +221,11 @@ export interface AppMeta {
   demoLoaded?: boolean;
   /** Who is recorded in correction history. */
   coachName?: string;
+  /**
+   * "Our school" names (Harrow, ハロウ, 安比, Appi): a pasted result whose club column contains one of these
+   * is offered as a new athlete instead of being treated as an outsider.
+   */
+  ourSchoolNames?: string[];
 }
 
 /** Everything the app stores. Export/import uses exactly this shape. */

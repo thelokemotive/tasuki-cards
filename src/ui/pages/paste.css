@@ -4,3 +4,7 @@
 .paste-athlete { min-width: 210px; padding: 4px 6px; font-size: 0.88rem; }
 .paste-warn { color: var(--warn); max-width: 280px; }
 .paste-table td { padding-top: 5px; padding-bottom: 5px; }
+
+.drop-zone { position: relative; }
+.drop-zone.drop-on .paste-box { outline: 3px dashed var(--ai); outline-offset: 2px; background: var(--ai-soft); }
+.drop-hint { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--ai); pointer-events: none; }

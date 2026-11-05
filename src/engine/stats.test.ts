@@ -55,6 +55,15 @@ function rate(a: Athlete, perfs: Performance[], opts: { config?: Config; asOf?: 
   return computeAthleteRatings({ athlete: a, perfs, lookup, config: opts.config ?? cfg, asOf: opts.asOf ?? AS_OF, streakActiveOrFrozen: opts.streak ?? false });
 }
 
+/** The pre-go-live markers: bleep table, NAV and ARM provisional. */
+function provCfg(): Config {
+  const c = cloneConfig(cfg);
+  c.end.bleepProvisional = true;
+  c.nav.provisional = true;
+  c.arm.provisional = true;
+  return c;
+}
+
 const words = (s: string | undefined) => (s ?? '').trim().split(/\s+/).filter(Boolean).length;
 
 describe('SPD', () => {
@@ -78,9 +87,9 @@ describe('END', () => {
     // floor(13.5) = 13 → Boys 13 row; 60 laps between P70 (56) and P80 (64): P = 70 + 4/8 × 10 = 75
     // rating = 40 + 0.59 × 75 = 84.25 → 84; 1 month old → no penalty
     const r = rate(ben, [perf({ id: 'b1', athleteId: 'a-ben', kind: 'bleep', bleepLaps: 60, date: '2026-09-01' })]);
-    expect(r.stats.END).toMatchObject({ locked: false, value: 84, provisional: true });
+    expect(r.stats.END).toMatchObject({ locked: false, value: 84, provisional: false });
     expect(r.stats.END.basis?.label).toBe('from bleep test, 1 Sep');
-    expect(r.provisionalAny).toBe(true);
+    expect(r.provisionalAny).toBe(false);
   });
 
   it('worked example via long run: 10 km race in 42:00 → 78 beats a 52-lap bleep (64)', () => {
@@ -178,7 +187,7 @@ describe('NAV', () => {
       perf({ kind: 'nav', courseId: 'c-nav', timeSec: 690, navErrors: 1, date: '2026-10-10' }),
       perf({ kind: 'nav', courseId: 'c-nav', timeSec: 600, navErrors: 3, routeKmEff: 3, date: '2026-10-12' }),
     ]);
-    expect(r.stats.NAV).toMatchObject({ locked: false, value: 82, provisional: true });
+    expect(r.stats.NAV).toMatchObject({ locked: false, value: 82, provisional: false });
     expect(r.stats.NAV.basis?.label).toBe('from Forest Nav, 10 Oct');
     expect(r.perfScores.find((p) => p.kind === 'nav' && p.date === '2026-10-12')?.score).toBe(40);
   });
@@ -191,9 +200,10 @@ describe('NAV', () => {
     expect(navReferencePace(perfs, lookup, cfg, coach)).toEqual({ secPerKm: 200, perfId: 'r5', source: 'race' });
   });
 
-  it('no Circuit and no short race → NAV locked', () => {
+  it('no Circuit and no race at all → NAV locked', () => {
     const r = rate(coach, [perf({ kind: 'nav', courseId: 'c-nav', timeSec: 690, navErrors: 0 })]);
-    expect(r.stats.NAV).toMatchObject({ locked: true, unlockHint: 'Run the Circuit' });
+    expect(r.stats.NAV).toMatchObject({ locked: true, unlockHint: 'Run any race' });
+    expect(r.stats.NAV.unlockHelp).toBe('Run the Circuit or any verified race to set a reference pace, then NAV unlocks.');
     expect(r.stats.NAV.value).toBeUndefined();
   });
 });
@@ -210,7 +220,7 @@ describe('ARM', () => {
     // Best: ankle L3 + calf L4 + balance L5 = 12 → ARM = round(40 + (12 − 3) × 59 / 12) = round(84.25) = 84
     const r = rate(coach, [old, t1, t2]);
     expect(r.arm).toEqual({ ankle: 3, calf: 4, balance: 5, missing: [] });
-    expect(r.stats.ARM).toMatchObject({ locked: false, value: 84, provisional: true });
+    expect(r.stats.ARM).toMatchObject({ locked: false, value: 84, provisional: false });
     expect(r.stats.ARM.basis).toEqual({ perfIds: ['arm2', 'arm1'], date: '2026-10-10', label: 'from ARM tests, 10 Oct' });
   });
 
@@ -566,7 +576,7 @@ describe('Growth Shield boundaries', () => {
     // Ben on 2025-11-22 (estimated): 13.5 − 283 / 365.25 = 12.73 → Boys 12 row (P80 57, P90 67)
     // 60 laps: P = 80 + 3 / 10 × 10 = 83 → 40 + 0.59 × 83 = 88.97 → 89; 11 months old → 89 − 5 = 84
     // Shield: max(84, 89 − 2) = 87, resting on the provisional bleep table
-    const r = rate(ben, [perf({ athleteId: 'a-ben', kind: 'bleep', bleepLaps: 60, date: '2025-11-22' })], { streak: true });
+    const r = rate(ben, [perf({ athleteId: 'a-ben', kind: 'bleep', bleepLaps: 60, date: '2025-11-22' })], { streak: true, config: provCfg() });
     expect(r.stats.END).toMatchObject({ value: 87, current: 84, peak12m: 89, shielded: true, provisional: true });
   });
 });
@@ -742,13 +752,22 @@ describe('locked stats never show numbers, whatever the inputs', () => {
 });
 
 describe('provisional markers', () => {
-  it('NAV, ARM and bleep-based END are provisional; age-graded SPD is not', () => {
+  it('go-live defaults mark nothing provisional', () => {
+    const r = rate(coach, [
+      perf({ kind: 'nav', courseId: 'c-nav', timeSec: 690, navErrors: 1 }),
+      perf({ kind: 'arm', arm: { ankleCm: 11, calfReps: 18, storkSec: 22 } }),
+      perf({ kind: 'bleep', bleepLaps: 52 }),
+    ]);
+    expect([r.stats.NAV.provisional, r.stats.ARM.provisional, r.stats.END.provisional, r.provisionalAny]).toEqual([false, false, false, false]);
+  });
+
+  it('with the markers switched on, NAV, ARM and bleep-based END are provisional; age-graded SPD is not', () => {
     const r = rate(coach, [
       perf({ courseId: 'c-circuit', timeSec: 260 }),
       perf({ kind: 'nav', courseId: 'c-nav', timeSec: 690, navErrors: 1 }),
       perf({ kind: 'arm', arm: { ankleCm: 11, calfReps: 18, storkSec: 22 } }),
       perf({ kind: 'bleep', bleepLaps: 52 }),
-    ]);
+    ], { config: provCfg() });
     expect(r.stats.SPD.provisional).toBe(false);
     expect(r.stats.NAV.provisional).toBe(true);
     expect(r.stats.ARM.provisional).toBe(true);
@@ -793,7 +812,7 @@ describe('a full card: every stat unlocked (worked example)', () => {
     expect(r.race).toMatchObject({ value: 78, caps: 1 });
     expect(r.tier).toBe('gold');
     expect(r.tierNote).toBeUndefined();
-    expect(r.provisionalAny).toBe(true); // NAV and ARM are provisional
+    expect(r.provisionalAny).toBe(false); // nothing provisional since go-live
   });
 });
 
@@ -864,7 +883,7 @@ describe('edge cases', () => {
 
   it('END: an unverified 10 km is ignored, so the bleep test (52 laps → 64) sets END', () => {
     const r = rate(coach, [perf({ kind: 'race', distanceKm: 10, timeSec: 2520, verified: false }), perf({ kind: 'bleep', bleepLaps: 52, date: '2026-10-10' })]);
-    expect(r.stats.END).toMatchObject({ value: 64, provisional: true });
+    expect(r.stats.END).toMatchObject({ value: 64, provisional: false });
     expect(r.stats.END.basis?.label).toBe('from bleep test, 10 Oct');
   });
 
@@ -872,7 +891,7 @@ describe('edge cases', () => {
     const long = perf({ kind: 'long_run', distanceKm: 5, timeSec: 900 }); // 180 s/km, but not a race
     expect(navReferencePace([long], lookup, cfg, coach)).toBeUndefined();
     const r = rate(coach, [long, perf({ kind: 'nav', courseId: 'c-nav', timeSec: 690, navErrors: 0 })]);
-    expect(r.stats.NAV).toMatchObject({ locked: true, unlockHint: 'Run the Circuit' });
+    expect(r.stats.NAV).toMatchObject({ locked: true, unlockHint: 'Run any race' });
   });
 
   it('ARM: L5 balance needs stance ≥ 30 s and hop-and-stick in the same test', () => {
@@ -888,7 +907,7 @@ describe('edge cases', () => {
 
   it('a stat whose only result is waiting for verification shows no number', () => {
     const r = rate(coach, [perf({ kind: 'climb', courseId: 'c-climb', timeSec: 1500, verified: false })], { streak: true });
-    expect(r.stats.CLB).toMatchObject({ locked: true, unlockHint: 'Run a climb' });
+    expect(r.stats.CLB).toMatchObject({ locked: true, unlockHint: 'Race a hill' });
     expect(r.stats.CLB.value).toBeUndefined();
     expect(r.stats.CLB.unlockHelp).toBe('A result is waiting to be verified: tick it to unlock CLB.');
   });
@@ -1003,5 +1022,132 @@ describe('invariants over many generated athletes (deterministic)', () => {
       // Caps never count unverified, deleted or future results.
       expect(res.race.caps).toBe(perfs.filter((p) => (p.kind === 'race' || p.kind === 'relay_leg') && p.verified && !p.deleted && p.date <= AS_OF).length);
     }
+  });
+});
+
+describe('race pathways (go-live plan 1)', () => {
+  const evs: TasukiEvent[] = [
+    { id: 'e-3k', name: 'Hachimantai 3K', date: '2026-10-12', kind: 'race', distanceKm: 3, climbM: 0, official: true },
+    { id: 'e-hill', name: 'Hachimantai Hill Race', date: '2026-10-12', kind: 'race', distanceKm: 6, climbM: 450, official: true },
+    { id: 'e-flat10', name: 'Flat 10K', date: '2026-10-12', kind: 'race', distanceKm: 10, climbM: 200, official: true },
+  ];
+  const lk = makeLookup(courses, evs);
+  const rateL = (a: Athlete, perfs: Performance[], config: Config = cfg) => computeAthleteRatings({ athlete: a, perfs, lookup: lk, config, asOf: AS_OF, streakActiveOrFrozen: false });
+
+  it('a 3 km race feeds RACE and SPD, labelled by the event', () => {
+    const r = rateL(coach, [perf({ id: 'r3k', kind: 'race', eventId: 'e-3k', timeSec: 600, date: '2026-10-12' })]);
+    expect(r.perfScores[0].feeds).toEqual(['RACE', 'SPD']);
+    expect(r.stats.SPD.locked).toBe(false);
+    expect(r.stats.SPD.basis?.label).toBe('from Hachimantai 3K, 12 Oct');
+    expect(r.stats.SPD.value).toBe(r.perfScores[0].fresh);
+  });
+
+  it('SPD is the best of the Circuit and short races', () => {
+    const slowCircuit = perf({ kind: 'circuit', courseId: 'c-circuit', timeSec: 330, date: '2026-10-04' });
+    const fastRace = perf({ id: 'fast3k', kind: 'race', eventId: 'e-3k', timeSec: 560, date: '2026-10-12' });
+    const r = rateL(coach, [slowCircuit, fastRace]);
+    expect(r.stats.SPD.basis?.perfIds).toEqual(['fast3k']);
+  });
+
+  it('a race over 3.5 km effort does not feed SPD', () => {
+    const r = rateL(coach, [perf({ kind: 'race', eventId: 'e-xc', timeSec: 1200 })]);
+    expect(r.perfScores[0].feeds).not.toContain('SPD');
+    expect(r.stats.SPD).toMatchObject({ locked: true, unlockHint: 'Circuit or 3.5K' });
+    expect(r.stats.SPD.unlockHelp).toBe('Run the Circuit, or a verified race, relay leg or parkrun of up to 3.5 km effort, to unlock SPD.');
+  });
+
+  it('a hill race (≥ 150 m and ≥ 50 m/km) feeds CLB, scored on effective distance', () => {
+    const r = rateL(coach, [perf({ id: 'hill', kind: 'race', eventId: 'e-hill', timeSec: 3000, date: '2026-10-12' })]);
+    const ps = r.perfScores[0];
+    expect(ps.feeds).toEqual(['RACE', 'END', 'CLB']);
+    expect(ps.dEff).toBeCloseTo(10.5, 9);
+    expect(r.stats.CLB).toMatchObject({ locked: false, value: ps.fresh });
+    expect(r.stats.CLB.basis?.label).toBe('from Hachimantai Hill Race, 12 Oct');
+  });
+
+  it('enough climb but under 50 m per km is not a hill race', () => {
+    const r = rateL(coach, [perf({ kind: 'race', eventId: 'e-flat10', timeSec: 2400 })]);
+    expect(r.perfScores[0].feeds).toEqual(['RACE', 'END']);
+    expect(r.stats.CLB).toMatchObject({ locked: true, unlockHint: 'Race a hill' });
+  });
+
+  it('a hilly long run feeds CLB; the climb course still counts', () => {
+    const r = rateL(coach, [
+      perf({ kind: 'long_run', distanceKm: 8, climbM: 500, timeSec: 4000 }),
+      perf({ kind: 'climb', courseId: 'c-climb', timeSec: 1500 }),
+    ]);
+    expect(r.perfScores[0].feeds).toEqual(['END', 'CLB']);
+    expect(r.perfScores[1].feeds).toEqual(['CLB']);
+  });
+
+  it('the thresholds come from config, and the pathways can be switched off', () => {
+    const c = cloneConfig(cfg);
+    c.spd.raceMaxKmEff = 2.9;
+    c.clb.raceMinClimbM = 500;
+    let r = rateL(coach, [perf({ kind: 'race', eventId: 'e-3k', timeSec: 600 }), perf({ kind: 'race', eventId: 'e-hill', timeSec: 3000 })], c);
+    expect(r.perfScores.map((p) => p.feeds)).toEqual([['RACE'], ['RACE', 'END']]);
+    const off = cloneConfig(cfg);
+    off.spd.allowRaces = false;
+    off.clb.allowRaces = false;
+    r = rateL(coach, [perf({ kind: 'race', eventId: 'e-3k', timeSec: 600 }), perf({ kind: 'race', eventId: 'e-hill', timeSec: 3000 })], off);
+    expect(r.perfScores.map((p) => p.feeds)).toEqual([['RACE'], ['RACE', 'END']]);
+    expect(r.stats.SPD.unlockHint).toBe('Run the Circuit');
+    expect(r.stats.CLB.unlockHint).toBe('Run a climb');
+  });
+
+  it('a stored config from before the pathways gets the defaults filled in', async () => {
+    const { currentConfig } = await import('./config');
+    const old = cloneConfig(cfg) as Partial<Config>;
+    delete old.spd;
+    delete old.clb;
+    const cur = currentConfig([old as Config]);
+    expect(cur.spd).toEqual(cfg.spd);
+    expect(cur.clb).toEqual(cfg.clb);
+  });
+});
+
+describe('NAV reference from any race: Riegel (go-live plan 6)', () => {
+  it('with no Circuit and no race up to 5 km, a 10 km race predicts the route time', () => {
+    const r10 = perf({ id: 'r10k', kind: 'race', distanceKm: 10, timeSec: 2400, date: '2026-09-20' });
+    // route 3 km: T = 2400 × (3 / 10)^1.06 = 2400 × 0.27900… ; pace = T / 3
+    const ref = navReferencePace([r10], lookup, cfg, coach, AS_OF, 3)!;
+    const T = 2400 * Math.pow(0.3, 1.06);
+    expect(ref).toMatchObject({ perfId: 'r10k', source: 'riegel', raceKmEff: 10, raceSec: 2400 });
+    expect(ref.predictedRouteSec).toBeCloseTo(T, 9);
+    expect(ref.secPerKm).toBeCloseTo(T / 3, 9);
+    // without a route there is nothing to scale to
+    expect(navReferencePace([r10], lookup, cfg, coach, AS_OF)).toBeUndefined();
+  });
+
+  it('NAV unlocks from the race, and the score uses the predicted pace', () => {
+    const r10 = perf({ kind: 'race', distanceKm: 10, timeSec: 2400, date: '2026-09-20' });
+    const T = 2400 * Math.pow(0.3, 1.06); // predicted 3 km route time, ≈ 669.6 s
+    const nav = perf({ kind: 'nav', courseId: 'c-nav', timeSec: 800, navErrors: 1, date: '2026-10-10' });
+    const r = rate(coach, [r10, nav]);
+    // predicted = 3 × (T / 3) × 1.15; eff = predicted / (800 + 120)
+    const eff = (T * 1.15) / 920;
+    expect(r.stats.NAV).toMatchObject({ locked: false, value: Math.round(40 + (59 * (eff - 0.5)) / 0.5) });
+  });
+
+  it('picks the race that predicts the fastest route time; old races (over 24 months) do not count', () => {
+    const slow10 = perf({ id: 'slow', kind: 'race', distanceKm: 10, timeSec: 3000, date: '2026-09-20' });
+    const good21 = perf({ id: 'half', kind: 'race', distanceKm: 21.1, timeSec: 5400, date: '2026-05-01' });
+    const ancient = perf({ id: 'old', kind: 'race', distanceKm: 10, timeSec: 2000, date: '2024-01-01' });
+    expect(navReferencePace([slow10, good21, ancient], lookup, cfg, coach, AS_OF, 3)?.perfId).toBe('half');
+  });
+
+  it('a race up to 5 km still wins over Riegel, and a Circuit over both', () => {
+    const r5 = perf({ id: 'r5', kind: 'race', distanceKm: 5, timeSec: 1200 });
+    const r10 = perf({ kind: 'race', distanceKm: 10, timeSec: 2000 });
+    expect(navReferencePace([r5, r10], lookup, cfg, coach, AS_OF, 3)?.source).toBe('race');
+    const c = perf({ id: 'c', courseId: 'c-circuit', timeSec: 300 });
+    expect(navReferencePace([r5, r10, c], lookup, cfg, coach, AS_OF, 3)?.source).toBe('circuit');
+  });
+
+  it('the exponent comes from config', () => {
+    const c = cloneConfig(cfg);
+    c.nav.riegelExponent = 1.1;
+    const r10 = perf({ kind: 'race', distanceKm: 10, timeSec: 2400, date: '2026-09-20' });
+    expect(navReferencePace([r10], lookup, c, coach, AS_OF, 3)?.predictedRouteSec).toBeCloseTo(2400 * Math.pow(0.3, 1.1), 9);
   });
 });

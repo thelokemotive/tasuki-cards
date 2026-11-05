@@ -232,7 +232,7 @@ describe('NAV score (spec 3.9)', () => {
     const ps = score(p, athlete(), cfg, { navRefPaceSecPerKm: 200 });
     expect(ps.score).toBe(82);
     expect(ps.dEff).toBe(3);
-    expect(ps.provisional).toBe(true);
+    expect(ps.provisional).toBe(false);
     expect(score(perf({ kind: 'nav', timeSec: 690 }), athlete(), cfg, { navRefPaceSecPerKm: 200 }).unscoredReason).toBe(UNSCORED.noRoute);
   });
 });
@@ -245,7 +245,7 @@ describe('ARM per test', () => {
     expect(ps.score).toBe(65);
     expect(ps.penalty).toBe(0);
     expect(ps.feeds).toEqual(['ARM']);
-    expect(ps.provisional).toBe(true);
+    expect(ps.provisional).toBe(false);
   });
 
   it('formula ends: all L1 → 40, all L5 → 99, all L3 → 69.5 → 70', () => {

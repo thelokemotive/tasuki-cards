@@ -20,6 +20,9 @@ import { verifyPerformance } from '../../engine/corrections';
 import { resolveContext } from '../../engine/perf';
 import type { AthleteDerived } from '../../engine/derive';
 import type { PerfScore, RatingKey } from '../../engine/types';
+import { ExplainModal, StudentSheet } from '../components/StatExplain';
+import { paceOf } from '../../engine/explain';
+import { formatPace } from '../../engine/format';
 
 const SPARK_KEYS: RatingKey[] = ['RACE', 'SPD', 'END', 'CLB', 'DSC', 'NAV', 'ARM'];
 
@@ -93,6 +96,7 @@ export function AthletePage() {
   const [achOpen, setAchOpen] = useState(false);
   const [perfEdit, setPerfEdit] = useState<Performance | null>(null);
   const [view, setView] = useState<'current' | 'vault' | 'deleted'>('current');
+  const [why, setWhy] = useState<RatingKey | 'OVR' | null>(null);
   const scores = useMemo(() => new Map((d?.ratings.perfScores ?? []).map((s) => [s.perfId, s])), [d]);
 
   if (!d) {
@@ -106,6 +110,18 @@ export function AthletePage() {
   }
   const a = d.athlete;
   const r = d.ratings;
+  if (route.params[1] === 'share') {
+    return (
+      <div className="stack">
+        <div className="no-print">
+          <Link to={`/athlete/${a.id}`}>← Back to {fullName(a)}</Link>
+        </div>
+        <Panel>
+          <StudentSheet d={d} />
+        </Panel>
+      </div>
+    );
+  }
   const card = buildCardData(d);
   const by = snapshot.meta.coachName || 'Coach';
   const sparks = SPARK_KEYS.map((k) => ({
@@ -138,6 +154,9 @@ export function AthletePage() {
             <Link className="btn" to={`/entry?athlete=${a.id}`}>
               Add a result
             </Link>
+            <Link className="btn" to={`/athlete/${a.id}/share`}>
+              Student version
+            </Link>
             <button className="btn" onClick={() => setAvatarOpen(true)}>
               Edit avatar
             </button>
@@ -164,13 +183,14 @@ export function AthletePage() {
                   <th className="num">Rating</th>
                   <th>Behind it</th>
                   <th>History</th>
+                  <th />
                 </tr>
               </thead>
               <tbody>
                 {sparks.map(({ key, points }) => {
                   const s = key === 'RACE' ? r.race : r.stats[key];
                   return (
-                    <tr key={key}>
+                    <tr key={key} className="clickable" onClick={() => setWhy(key)} title={`How ${key} is worked out`}>
                       <td>
                         <strong>{key}</strong> <span className="muted tiny">{STAT_NAMES[key]}</span>
                       </td>
@@ -183,10 +203,15 @@ export function AthletePage() {
                       <td>
                         <Sparkline points={points} />
                       </td>
+                      <td className="right">
+                        <button className="btn btn-sm btn-ghost" onClick={(e) => (e.stopPropagation(), setWhy(key))}>
+                          Why?
+                        </button>
+                      </td>
                     </tr>
                   );
                 })}
-                <tr>
+                <tr className="clickable" onClick={() => setWhy('OVR')}>
                   <td>
                     <strong>OVR</strong>
                   </td>
@@ -197,10 +222,16 @@ export function AthletePage() {
                     Tier <span className={`tier-${r.tier}`}>{r.tier}</span>
                     {r.tierNote && <span className="muted"> · {r.tierNote}</span>} · ★ {r.race.caps} race caps
                   </td>
+                  <td className="right">
+                    <button className="btn btn-sm btn-ghost" onClick={(e) => (e.stopPropagation(), setWhy('OVR'))}>
+                      Why?
+                    </button>
+                  </td>
                 </tr>
               </tbody>
             </table>
           </div>
+          <p className="tiny muted">Click any stat for the working behind it: which result, the calculation, and why the other results did not count.</p>
           {r.arm.missing.length > 0 && r.arm.missing.length < 3 && <p className="small muted">ARM levels so far: ankle {r.arm.ankle ?? '—'}, calf {r.arm.calf ?? '—'}, balance {r.arm.balance ?? '—'}.</p>}
         </Panel>
       </div>
@@ -298,8 +329,14 @@ export function AthletePage() {
                   <th>Kind</th>
                   <th>Event / course</th>
                   <th>Result</th>
-                  <th className="num">Score</th>
-                  <th>Counts for</th>
+                  <th className="num">Pace</th>
+                  <th className="num" title="Effective distance: (distance + climb ÷ 100) × terrain factor">Effort</th>
+                  <th className="num" title="World-standard time for the athlete's age and sex at the effective distance">Standard</th>
+                  <th className="num" title="Age grade: standard ÷ time">AG %</th>
+                  <th className="num" title="Score before freshness">Score</th>
+                  <th className="num" title="Freshness penalty">Fresh.</th>
+                  <th className="num" title="Score after freshness: what counts today">Counts</th>
+                  <th>Feeds</th>
                   <th>Source</th>
                   <th />
                 </tr>
@@ -317,15 +354,20 @@ export function AthletePage() {
                         {ctx.distanceKm ? <span className="muted"> · {formatKm(ctx.distanceKm)}{ctx.climbM ? ` +${ctx.climbM} m` : ''}</span> : null}
                       </td>
                       <td className="num nowrap">{resultText(p)}</td>
+                      <td className="num nowrap small">{(() => {
+                        const pace = paceOf(p, ctx);
+                        return pace != null ? formatPace(pace) : '—';
+                      })()}</td>
+                      <td className="num nowrap small">{s?.dEff != null && p.kind !== 'bleep' && p.kind !== 'arm' ? formatKm(s.dEff) : '—'}</td>
+                      <td className="num nowrap small">{s?.standardSec != null ? formatTime(s.standardSec) : '—'}</td>
+                      <td className="num nowrap small">{s?.ageGrade != null ? `${(s.ageGrade * 100).toFixed(1)}%` : '—'}</td>
                       <td className="num">
-                        {s?.score != null ? (
-                          <>
-                            {s.fresh != null && s.fresh !== s.score ? <span title={`${s.score} before freshness (−${s.penalty}, ${s.monthsOld} months old)`}>{s.fresh}</span> : s.score}
-                            {s.provisional && <Prov />}
-                          </>
-                        ) : (
-                          '—'
-                        )}
+                        {s?.score != null ? s.score : '—'}
+                        {s?.score != null && s.provisional && <Prov />}
+                      </td>
+                      <td className="num small">{s?.score != null && s.penalty > 0 ? <span title={`${s.monthsOld} months old`}>−{s.penalty}</span> : s?.score != null ? '0' : '—'}</td>
+                      <td className="num">
+                        <strong>{s?.fresh ?? '—'}</strong>
                       </td>
                       <td className="small">
                         {s?.unscoredReason ? <span className="muted">{s.unscoredReason}</span> : s?.expired ? <span className="muted">expired (over {derived.config.freshness.expireMonths} months)</span> : s?.feeds.join(', ')}
@@ -359,6 +401,7 @@ export function AthletePage() {
       {perfEdit && <PerformanceEditor perf={perfEdit} onClose={() => setPerfEdit(null)} />}
       {freezeOpen && <FreezeModal athlete={a} onClose={() => setFreezeOpen(false)} />}
       {achOpen && <AchievementModal athlete={a} onClose={() => setAchOpen(false)} />}
+      {why && <ExplainModal d={d} stat={why} onClose={() => setWhy(null)} />}
     </div>
   );
 }

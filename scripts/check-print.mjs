@@ -9,17 +9,21 @@ import { pathToFileURL } from 'node:url';
 
 const html = resolve(process.argv[2] ?? 'dist-single/tasuki-cards.html');
 const CHROME = [
+  process.env.CHROME,
   'C:/Program Files/Google/Chrome/Application/chrome.exe',
   'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe',
   'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
-].find(existsSync);
+  '/usr/bin/google-chrome',
+  '/usr/bin/chromium',
+  '/opt/pw-browsers/chromium',
+].find((p) => p && existsSync(p));
 if (!existsSync(html)) throw new Error(`Build first: ${html} not found`);
 if (!CHROME) throw new Error('Chrome not found');
 
 const outDir = resolve('test-output');
 mkdirSync(outDir, { recursive: true });
 const profile = mkdtempSync(join(tmpdir(), 'tasuki-print-'));
-const browser = await puppeteer.launch({ executablePath: CHROME, headless: true, userDataDir: profile, args: ['--allow-file-access-from-files'] });
+const browser = await puppeteer.launch({ executablePath: CHROME, headless: true, userDataDir: profile, args: ['--allow-file-access-from-files', ...(process.platform === 'linux' ? ['--no-sandbox'] : [])] });
 const results = [];
 const check = (name, ok, detail = '') => results.push({ name, ok, detail });
 

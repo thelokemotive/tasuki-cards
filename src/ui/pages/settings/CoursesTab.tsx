@@ -7,6 +7,73 @@ import { useData } from '../../data/DataContext';
 import { formatKm, formatTime } from '../../../engine/format';
 import { parseTime } from '../../../engine/time';
 import { effectiveDistance } from '../../../engine/perf';
+import { benchmarkFromReference, DEFAULT_REFERENCE_SCORE, notesWithBenchmark } from '../../../engine/benchmark';
+import { fullName } from '../../../engine/display';
+import { formatLongDate } from '../../../engine/dates';
+
+/** "Set the benchmark from a reference run" (go-live plan 5): the coach's own run, set to score 90. */
+function ReferenceRunForm({ course, onUse }: { course: Course; onUse: (t99M: number, t99F: number, note: string) => void }) {
+  const { snapshot, config, today } = useData();
+  const athletes = [...snapshot.athletes].filter((a) => a.active).sort((a, b) => (a.yearGroup === 'Staff' ? 0 : 1) - (b.yearGroup === 'Staff' ? 0 : 1) || fullName(a).localeCompare(fullName(b)));
+  const [athleteId, setAthleteId] = useState(athletes.find((a) => a.yearGroup === 'Staff')?.id ?? athletes[0]?.id ?? '');
+  const [time, setTime] = useState('');
+  const [date, setDate] = useState(today);
+  const [target, setTarget] = useState(String(DEFAULT_REFERENCE_SCORE));
+  const athlete = snapshot.athletes.find((a) => a.id === athleteId);
+  const parsed = time.trim() ? parseTime(time, { context: 'time' }) : null;
+  const runs = course.id ? snapshot.performances.filter((p) => !p.deleted && p.athleteId === athleteId && p.courseId === course.id && p.timeSec != null).sort((a, b) => (a.date < b.date ? 1 : -1)) : [];
+  const result = athlete && parsed?.ok ? benchmarkFromReference({ athlete, athleteName: fullName(athlete), timeSec: parsed.sec, date, targetScore: Number(target) }, config) : undefined;
+  if (!athletes.length) return <p className="small muted">Add yourself to the roster (year group Staff) to set a benchmark from your own run.</p>;
+  return (
+    <div className="stack" style={{ background: 'var(--surface-2)', padding: 12, borderRadius: 8 }}>
+      <div className="grid-2">
+        <Field label="Reference runner">
+          <select className="select" value={athleteId} onChange={(e) => setAthleteId(e.target.value)}>
+            {athletes.map((a) => (
+              <option key={a.id} value={a.id}>
+                {fullName(a)} ({a.yearGroup}, {a.sex})
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Their time on this course" hint={parsed && !parsed.ok ? parsed.error : runs.length ? undefined : 'e.g. 5:12'}>
+          <input className={`input ${parsed && !parsed.ok ? 'invalid' : ''}`} value={time} onChange={(e) => setTime(e.target.value)} placeholder="m:ss" />
+        </Field>
+        <Field label="Date of the run" hint="Sets the runner's age for the age adjustment.">
+          <input className="input" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+        </Field>
+        <Field label="That run should score" hint={`${config.runScore.min}–${config.runScore.max}`}>
+          <input className="input" type="number" min={config.runScore.min} max={config.runScore.max} value={target} onChange={(e) => setTarget(e.target.value)} />
+        </Field>
+      </div>
+      {runs.length > 0 && (
+        <div className="row small">
+          Their results here:
+          {runs.slice(0, 5).map((p) => (
+            <button key={p.id} type="button" className="btn btn-sm" onClick={() => (setTime(formatTime(p.timeSec!)), setDate(p.date))}>
+              {formatTime(p.timeSec!)} · {formatLongDate(p.date)}
+            </button>
+          ))}
+        </div>
+      )}
+      {result ? (
+        <>
+          <p className="small" style={{ margin: 0 }}>
+            99-point open times: <strong>{formatTime(result.t99OpenM)}</strong> (men), <strong>{formatTime(result.t99OpenF)}</strong> (women). {athlete && fullName(athlete)} is {result.age.toFixed(1)}
+            {result.ageEstimated ? ' (estimated)' : ''}, age adjustment × {result.ageAdj.toFixed(3)}; the other sex comes from the open {config.age.fixedReferenceKm} km standards ratio ({result.sexRatio.toFixed(4)}). With these times the reference run scores {result.check}.
+          </p>
+          <div>
+            <button type="button" className="btn btn-primary btn-sm" onClick={() => onUse(result.t99OpenM, result.t99OpenF, result.note)}>
+              Use this benchmark
+            </button>
+          </div>
+        </>
+      ) : (
+        time.trim() && <p className="small" style={{ color: 'var(--warn)', margin: 0 }}>Enter a time and a score between {config.runScore.min} and {config.runScore.max}.</p>
+      )}
+    </div>
+  );
+}
 
 const KINDS: { value: CourseKind; label: string }[] = [
   { value: 'circuit', label: 'Circuit (SPD)' },
@@ -27,6 +94,7 @@ export function CourseEditor({ course, onClose }: { course: Course; onClose: () 
   const [c, setC] = useState<Course>(course);
   const [t99M, setT99M] = useState(course.t99OpenM ? formatTime(course.t99OpenM) : '');
   const [t99F, setT99F] = useState(course.t99OpenF ? formatTime(course.t99OpenF) : '');
+  const [refOpen, setRefOpen] = useState(false);
   const parseOpt = (s: string) => (s.trim() ? parseTime(s, { context: 'time' }) : null);
   const pm = parseOpt(t99M);
   const pf = parseOpt(t99F);
@@ -105,8 +173,28 @@ export function CourseEditor({ course, onClose }: { course: Course; onClose: () 
             </Field>
           </div>
         )}
+        {c.benchmarkMode === 'fixed' && (
+          <div>
+            <button type="button" className="btn btn-sm" onClick={() => setRefOpen((x) => !x)} data-testid="ref-run">
+              {refOpen ? 'Hide' : 'Set the benchmark from a reference run…'}
+            </button>
+            {refOpen && (
+              <div style={{ marginTop: 8 }}>
+                <ReferenceRunForm
+                  course={c}
+                  onUse={(m, f, note) => {
+                    setT99M(formatTime(m));
+                    setT99F(formatTime(f));
+                    setC((x) => ({ ...x, notes: notesWithBenchmark(x.notes, note) }));
+                    setRefOpen(false);
+                  }}
+                />
+              </div>
+            )}
+          </div>
+        )}
         <Field label="Notes">
-          <input className="input" value={c.notes ?? ''} onChange={(e) => setC({ ...c, notes: e.target.value || undefined })} />
+          <textarea className="textarea" rows={c.notes && c.notes.length > 80 ? 3 : 1} value={c.notes ?? ''} onChange={(e) => setC({ ...c, notes: e.target.value || undefined })} />
         </Field>
         {course.id && used > 0 && <p className="small muted">{used} results use this course; saving recalculates all of them.</p>}
         {err && <p className="small" style={{ color: 'var(--err)' }}>{err}</p>}
