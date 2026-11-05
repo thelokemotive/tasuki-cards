@@ -6,7 +6,7 @@ import type { ArmLevels, AthleteRatings, OvrValue, PerfScore, RaceStat, RatingKe
 import { STAT_KEYS } from './types';
 import { ageOnDate } from './age';
 import { ARM_DOMAINS, armLevelsFromTest, type ArmDomain } from './arm';
-import { formatLongDate, formatShortDate, isISODate } from './dates';
+import { formatLongDate, formatShortDate, isISODate, monthsBetween } from './dates';
 import { formatKm, formatTime } from './format';
 import { byDate, counts, raceCaps, resolveContext, type Lookup, type PerfContext } from './perf';
 import { armScoreClamped, perfFeeds, roundScore, scorePerformance, UNSCORED } from './scoring';
@@ -101,7 +101,7 @@ function lockFor(key: RatingKey, entries: Entry[], config: Config, asOf: ISODate
     return { hint: 'Check athlete details', help: `Results cannot be scored until the athlete's age and sex are known: check the year group, date of birth and sex to unlock ${key}.` };
   }
   if (key === 'NAV' && reasons.has(UNSCORED.noRefPace)) {
-    return { hint: 'Run the Circuit', help: `Run the Circuit (or a race of up to ${config.nav.refRaceMaxKmEff} km effort) to set a reference pace, then NAV unlocks.` };
+    return { hint: 'Run any race', help: 'Run the Circuit or any verified race to set a reference pace, then NAV unlocks.' };
   }
   if (key === 'NAV' && candidates.length > 0 && candidates.every((e) => e.ps.unscoredReason === UNSCORED.noRoute)) {
     return { hint: 'Route distance missing', help: "Record the nav route's distance (km effort) on the result or its course to unlock NAV." };
@@ -298,10 +298,24 @@ function raceStat(entries: Entry[], own: Performance[], input: StatsInput): Race
   };
 }
 
+export interface NavReference {
+  secPerKm: number;
+  perfId: string;
+  /** circuit: best-ever Circuit pace; race: best race pace up to nav.refRaceMaxKmEff; riegel: predicted for the route. */
+  source: 'circuit' | 'race' | 'riegel';
+  /** Riegel only: the race's effective distance and time, and the predicted route time. */
+  raceKmEff?: number;
+  raceSec?: number;
+  predictedRouteSec?: number;
+}
+
 /**
  * NAV reference pace (s/km on D_eff): the athlete's best-ever verified Circuit pace (a PB, so jogging a
  * later test cannot help); with no Circuit, the best verified race, relay leg or parkrun pace with
- * D_eff ≤ config.nav.refRaceMaxKmEff. Results after asOf (when given) are ignored.
+ * D_eff ≤ config.nav.refRaceMaxKmEff. With neither (go-live plan 6), and a route distance given, the route
+ * time is predicted from a recent verified race of any distance by Riegel scaling,
+ * T_route = T × (route ÷ race D_eff)^nav.riegelExponent, using the race that predicts the fastest route
+ * time among races not older than freshness.expireMonths. Results after asOf (when given) are ignored.
  */
 export function navReferencePace(
   perfs: Performance[],
@@ -309,7 +323,8 @@ export function navReferencePace(
   config: Config,
   athlete: Athlete,
   asOf?: ISODate,
-): { secPerKm: number; perfId: string; source: 'circuit' | 'race' } | undefined {
+  routeKmEff?: number,
+): NavReference | undefined {
   const paces = perfs
     .filter((p) => p.athleteId === athlete.id && counts(p) && (asOf == null || p.date <= asOf) && p.timeSec != null && Number.isFinite(p.timeSec) && p.timeSec > 0)
     .flatMap((p) => {
@@ -319,8 +334,17 @@ export function navReferencePace(
   const pick = (xs: typeof paces) => xs.slice().sort((a, b) => a.pace - b.pace || byDate(a.p, b.p))[0];
   const circuit = pick(paces.filter((x) => x.p.kind === 'circuit'));
   if (circuit) return { secPerKm: circuit.pace, perfId: circuit.p.id, source: 'circuit' };
-  const race = pick(paces.filter((x) => (x.p.kind === 'race' || x.p.kind === 'relay_leg' || x.p.kind === 'parkrun') && x.dEff <= config.nav.refRaceMaxKmEff + 1e-9));
-  return race ? { secPerKm: race.pace, perfId: race.p.id, source: 'race' } : undefined;
+  const races = paces.filter((x) => x.p.kind === 'race' || x.p.kind === 'relay_leg' || x.p.kind === 'parkrun');
+  const race = pick(races.filter((x) => x.dEff <= config.nav.refRaceMaxKmEff + 1e-9));
+  if (race) return { secPerKm: race.pace, perfId: race.p.id, source: 'race' };
+  if (!(routeKmEff != null && routeKmEff > 0 && Number.isFinite(routeKmEff))) return undefined;
+  const k = config.nav.riegelExponent;
+  const recent = races.filter((x) => asOf == null || monthsBetween(x.p.date, asOf) <= config.freshness.expireMonths);
+  const predicted = recent
+    .map((x) => ({ x, sec: x.p.timeSec! * Math.pow(routeKmEff / x.dEff, k) }))
+    .sort((a, b) => a.sec - b.sec || -byDate(a.x.p, b.x.p))[0];
+  if (!predicted || !Number.isFinite(predicted.sec)) return undefined;
+  return { secPerKm: predicted.sec / routeKmEff, perfId: predicted.x.p.id, source: 'riegel', raceKmEff: predicted.x.dEff, raceSec: predicted.x.p.timeSec, predictedRouteSec: predicted.sec };
 }
 
 /**
@@ -355,7 +379,9 @@ export function computeAthleteRatings(input: StatsInput): AthleteRatings {
   const navRef = navReferencePace(own, lookup, config, athlete, asOf);
   const entries: Entry[] = own.map((perf) => {
     const ctx = resolveContext(perf, lookup);
-    return { perf, ctx, ps: scorePerformance(ctx, athlete, config, asOf, { navRefPaceSecPerKm: navRef?.secPerKm }) };
+    // With no Circuit or short race, each nav route gets its own Riegel-predicted reference pace.
+    const ref = perf.kind === 'nav' && !navRef ? navReferencePace(own, lookup, config, athlete, asOf, perf.routeKmEff ?? ctx.dEff) : navRef;
+    return { perf, ctx, ps: scorePerformance(ctx, athlete, config, asOf, { navRefPaceSecPerKm: ref?.secPerKm }) };
   });
 
   const { levels, byDomain } = armLevelsInWindow(entries, config);

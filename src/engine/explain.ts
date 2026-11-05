@@ -134,13 +134,16 @@ function scoreWorking(ctx: PerfContext, ps: PerfScore, d: AthleteDerived, w: Who
     return `For ${who}, ${p.bleepLaps} laps is the ${num1(pc)}th percentile${between}. Rating = ${e.bleepBase} + ${e.bleepSlope} × ${num1(pc)} = ${num1(e.bleepBase + e.bleepSlope * pc)} → ${ps.score}.`;
   }
   if (p.kind === 'nav') {
-    const ref = navReferencePace(d.perfs, lookup, config, d.athlete, d.ratings.asOf);
     const route = ps.dEff ?? p.routeKmEff ?? ctx.dEff;
+    const ref = navReferencePace(d.perfs, lookup, config, d.athlete, d.ratings.asOf, route);
     if (!ref || route == null || p.timeSec == null) return '';
     const refPerf = d.perfs.find((x) => x.id === ref.perfId);
     const refCtx = refPerf ? resolveContext(refPerf, lookup) : undefined;
     const from = refCtx ? `${placeOf(refCtx)}, ${formatShortDate(refCtx.perf.date)}` : 'an earlier run';
-    const refText = `${formatPace(ref.secPerKm)} (best ${ref.source === 'circuit' ? 'Circuit' : 'short-race'} pace, from ${from})`;
+    const refText =
+      ref.source === 'riegel' && ref.raceKmEff != null && ref.raceSec != null && ref.predictedRouteSec != null
+        ? `${formatPace(ref.secPerKm)}, predicted from ${from} (${formatTime(ref.raceSec)} for ${km(ref.raceKmEff)} effort; no Circuit or short race yet): ${formatTime(ref.raceSec)} × (${km(route)} ÷ ${km(ref.raceKmEff)})^${config.nav.riegelExponent} = ${formatTime(ref.predictedRouteSec)} for the route`
+        : `${formatPace(ref.secPerKm)} (best ${ref.source === 'circuit' ? 'Circuit' : 'short-race'} pace, from ${from})`;
     const errors = p.navErrors ?? 0;
     if (errors >= config.nav.maxErrors) return `${errors} control errors is the maximum (${config.nav.maxErrors}), so NAV scores ${config.runScore.min}.`;
     const predicted = route * ref.secPerKm * config.nav.allowance;

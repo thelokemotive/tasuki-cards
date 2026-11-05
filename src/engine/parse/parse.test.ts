@@ -280,3 +280,20 @@ describe('roster import (spec 4.5)', () => {
     expect(c[0].errors.join()).toMatch(/Year group not understood.*Sex not understood|Sex not understood/);
   });
 });
+
+describe('orienteering results only → NAV (go-live plan 6)', () => {
+  it('a Butterfly O header plus "name time errors n" scores NAV from a 10 km race (Riegel)', () => {
+    const race = { id: 'r10', athleteId: 'aiko', date: '2026-10-01', kind: 'race' as const, distanceKm: 10, timeSec: 2700, verified: true, source: 'coach' as const, rawInput: '', history: [] };
+    const base = snapshot({ performances: [race] });
+    const plan = buildImportPlan('# event: Butterfly O | 2026-11-12 | nav | 3.2 km | climb 60 m\nAiko Testfield 24:10 errors 1', { snapshot: base, config: cfg, today: TODAY });
+    expect(plan.rows).toHaveLength(1);
+    expect(plan.rows[0]).toMatchObject({ status: 'ready', athleteId: 'aiko', kind: 'nav' });
+    const { changes } = planToChanges(plan, {}, base, { now: '2026-11-12T10:00:00Z', by: 'Coach', newId: ids() });
+    const after = applyChanges(base, changes);
+    const nav = after.performances.find((p) => p.kind === 'nav')!;
+    expect(nav).toMatchObject({ timeSec: 1450, navErrors: 1 });
+    const r = deriveAll(after, '2026-11-12').athletes.get('aiko')!.ratings;
+    expect(r.stats.NAV.locked).toBe(false);
+    expect(r.stats.NAV.basis?.label).toBe('from Butterfly O, 12 Nov');
+  });
+});

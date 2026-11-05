@@ -73,7 +73,7 @@ export function HelpPage() {
           <li><strong>END</strong>: the better of the bleep test rating and the best race or long run of {c.end.longRunMinKmEff} km or more. The card says which.</li>
           <li><strong>CLB</strong>: climb courses{c.clb.allowRaces && <>, and any race or long run with at least {c.clb.raceMinClimbM} m of climb and {c.clb.raceMinClimbPerKm} m per km (a hill race), scored on its effective distance</>}.</li>
           <li><strong>DSC</strong>: descent courses, scored against the course benchmark. A descent that is not a clean run is kept but never scored.</li>
-          <li><strong>NAV</strong>{c.nav.provisional && ' (provisional)'}: navigation time against a prediction from the runner&apos;s own best Circuit pace, with {c.nav.penaltySecPerError} s per control error.</li>
+          <li><strong>NAV</strong>{c.nav.provisional && ' (provisional)'}: navigation time against a prediction from the runner&apos;s own best Circuit pace (or, with no Circuit, a race: a short one directly, any other scaled to the route by Riegel&apos;s formula), with {c.nav.penaltySecPerError} s per control error.</li>
           <li><strong>ARM</strong>{c.arm.provisional && ' (provisional)'}: ankle, calf and balance tests, levels 1–5 each, using the best level in the last {c.arm.windowMonths} months, so ARM never falls on a bad retest.</li>
           <li><strong>OVR</strong>: the average of the unlocked stats (shown as n/6). A locked stat shows a lock and how to unlock it, never a number.</li>
         </ul>

@@ -197,3 +197,11 @@ describe('articles', () => {
     expect(t).toContain('for an 11-year-old girl');
   });
 });
+
+describe('NAV explanation with a Riegel reference', () => {
+  it('names the race and the scaling', () => {
+    const { e } = explain([perf({ eventId: 'e10', date: '2026-09-20', timeSec: 3000 }), perf({ kind: 'nav', distanceKm: 3, timeSec: 1200, navErrors: 0 })], 'NAV');
+    const t = e.paragraphs.join(' ');
+    expect(t).toMatch(/Reference pace \d:\d\d\/km, predicted from Valley 10K, 20 Sep \(50:00 for 10 km effort; no Circuit or short race yet\): 50:00 × \(3 km ÷ 10 km\)\^1\.06 = \d+:\d\d for the route\./);
+  });
+});

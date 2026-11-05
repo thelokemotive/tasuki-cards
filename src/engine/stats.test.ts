@@ -200,9 +200,10 @@ describe('NAV', () => {
     expect(navReferencePace(perfs, lookup, cfg, coach)).toEqual({ secPerKm: 200, perfId: 'r5', source: 'race' });
   });
 
-  it('no Circuit and no short race → NAV locked', () => {
+  it('no Circuit and no race at all → NAV locked', () => {
     const r = rate(coach, [perf({ kind: 'nav', courseId: 'c-nav', timeSec: 690, navErrors: 0 })]);
-    expect(r.stats.NAV).toMatchObject({ locked: true, unlockHint: 'Run the Circuit' });
+    expect(r.stats.NAV).toMatchObject({ locked: true, unlockHint: 'Run any race' });
+    expect(r.stats.NAV.unlockHelp).toBe('Run the Circuit or any verified race to set a reference pace, then NAV unlocks.');
     expect(r.stats.NAV.value).toBeUndefined();
   });
 });
@@ -890,7 +891,7 @@ describe('edge cases', () => {
     const long = perf({ kind: 'long_run', distanceKm: 5, timeSec: 900 }); // 180 s/km, but not a race
     expect(navReferencePace([long], lookup, cfg, coach)).toBeUndefined();
     const r = rate(coach, [long, perf({ kind: 'nav', courseId: 'c-nav', timeSec: 690, navErrors: 0 })]);
-    expect(r.stats.NAV).toMatchObject({ locked: true, unlockHint: 'Run the Circuit' });
+    expect(r.stats.NAV).toMatchObject({ locked: true, unlockHint: 'Run any race' });
   });
 
   it('ARM: L5 balance needs stance ≥ 30 s and hop-and-stick in the same test', () => {
@@ -1102,5 +1103,51 @@ describe('race pathways (go-live plan 1)', () => {
     const cur = currentConfig([old as Config]);
     expect(cur.spd).toEqual(cfg.spd);
     expect(cur.clb).toEqual(cfg.clb);
+  });
+});
+
+describe('NAV reference from any race: Riegel (go-live plan 6)', () => {
+  it('with no Circuit and no race up to 5 km, a 10 km race predicts the route time', () => {
+    const r10 = perf({ id: 'r10k', kind: 'race', distanceKm: 10, timeSec: 2400, date: '2026-09-20' });
+    // route 3 km: T = 2400 × (3 / 10)^1.06 = 2400 × 0.27900… ; pace = T / 3
+    const ref = navReferencePace([r10], lookup, cfg, coach, AS_OF, 3)!;
+    const T = 2400 * Math.pow(0.3, 1.06);
+    expect(ref).toMatchObject({ perfId: 'r10k', source: 'riegel', raceKmEff: 10, raceSec: 2400 });
+    expect(ref.predictedRouteSec).toBeCloseTo(T, 9);
+    expect(ref.secPerKm).toBeCloseTo(T / 3, 9);
+    // without a route there is nothing to scale to
+    expect(navReferencePace([r10], lookup, cfg, coach, AS_OF)).toBeUndefined();
+  });
+
+  it('NAV unlocks from the race, and the score uses the predicted pace', () => {
+    const r10 = perf({ kind: 'race', distanceKm: 10, timeSec: 2400, date: '2026-09-20' });
+    const T = 2400 * Math.pow(0.3, 1.06); // predicted 3 km route time, ≈ 669.6 s
+    const nav = perf({ kind: 'nav', courseId: 'c-nav', timeSec: 800, navErrors: 1, date: '2026-10-10' });
+    const r = rate(coach, [r10, nav]);
+    // predicted = 3 × (T / 3) × 1.15; eff = predicted / (800 + 120)
+    const eff = (T * 1.15) / 920;
+    expect(r.stats.NAV).toMatchObject({ locked: false, value: Math.round(40 + (59 * (eff - 0.5)) / 0.5) });
+  });
+
+  it('picks the race that predicts the fastest route time; old races (over 24 months) do not count', () => {
+    const slow10 = perf({ id: 'slow', kind: 'race', distanceKm: 10, timeSec: 3000, date: '2026-09-20' });
+    const good21 = perf({ id: 'half', kind: 'race', distanceKm: 21.1, timeSec: 5400, date: '2026-05-01' });
+    const ancient = perf({ id: 'old', kind: 'race', distanceKm: 10, timeSec: 2000, date: '2024-01-01' });
+    expect(navReferencePace([slow10, good21, ancient], lookup, cfg, coach, AS_OF, 3)?.perfId).toBe('half');
+  });
+
+  it('a race up to 5 km still wins over Riegel, and a Circuit over both', () => {
+    const r5 = perf({ id: 'r5', kind: 'race', distanceKm: 5, timeSec: 1200 });
+    const r10 = perf({ kind: 'race', distanceKm: 10, timeSec: 2000 });
+    expect(navReferencePace([r5, r10], lookup, cfg, coach, AS_OF, 3)?.source).toBe('race');
+    const c = perf({ id: 'c', courseId: 'c-circuit', timeSec: 300 });
+    expect(navReferencePace([r5, r10, c], lookup, cfg, coach, AS_OF, 3)?.source).toBe('circuit');
+  });
+
+  it('the exponent comes from config', () => {
+    const c = cloneConfig(cfg);
+    c.nav.riegelExponent = 1.1;
+    const r10 = perf({ kind: 'race', distanceKm: 10, timeSec: 2400, date: '2026-09-20' });
+    expect(navReferencePace([r10], lookup, c, coach, AS_OF, 3)?.predictedRouteSec).toBeCloseTo(2400 * Math.pow(0.3, 1.1), 9);
   });
 });

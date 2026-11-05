@@ -34,7 +34,7 @@ export const UNSCORED = {
   noCourse: 'no course set (descents are scored against a course benchmark)',
   benchmark: "set this course's benchmark in Settings",
   notClean: 'not a clean run',
-  noRefPace: 'no reference pace yet (run the Circuit first)',
+  noRefPace: 'no reference pace yet (run the Circuit or any race first)',
   noRoute: 'no route distance',
   noArm: 'no ARM measurements',
   noDate: 'no valid date',

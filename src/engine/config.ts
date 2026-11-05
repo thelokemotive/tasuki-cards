@@ -115,6 +115,11 @@ export interface Config {
     refRaceMaxKmEff: number;
     /** Efficiency that scores the minimum (spec 3.9: NAV = 40 + 59 × (eff − 0.5) / 0.5). */
     effAtMin: number;
+    /**
+     * Riegel exponent for predicting a nav route time from a race of another distance (go-live plan 6):
+     * T_route = T_race × (route ÷ race D_eff)^riegelExponent. Used only with no Circuit and no short race.
+     */
+    riegelExponent: number;
     provisional: boolean;
   };
 
@@ -292,7 +297,7 @@ export const DEFAULT_CONFIG: Config = {
     bleepProvisional: false,
   },
 
-  nav: { allowance: 1.15, penaltySecPerError: 120, maxErrors: 3, refRaceMaxKmEff: 5, effAtMin: 0.5, provisional: false },
+  nav: { allowance: 1.15, penaltySecPerError: 120, maxErrors: 3, refRaceMaxKmEff: 5, effAtMin: 0.5, riegelExponent: 1.06, provisional: false },
 
   arm: {
     ankleCm: [5, 8, 10, 12, 14],

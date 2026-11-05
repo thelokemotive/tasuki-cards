@@ -47,6 +47,7 @@ const HELP: Record<string, string> = {
   'ageGrade.table': 'alan_jones_2025 = the cloned 2025 road tables; fallback_provisional = the spec’s fallback (marks ratings provisional).',
   'input.fuzzyThreshold': 'Jaro–Winkler similarity for name suggestions.',
   'end.longRunMinKmEff': 'Minimum effective distance for a race or long run to set END.',
+  'nav.riegelExponent': 'With no Circuit and no race up to the reference distance, the route time is predicted from any recent race: T × (route ÷ race)^exponent.',
   'spd.raceMaxKmEff': 'A verified race, relay leg or parkrun of up to this effective distance (km) also feeds SPD.',
   'clb.raceMinClimbM': 'A verified race or long run needs at least this much climb (m) to feed CLB…',
   'clb.raceMinClimbPerKm': '…and at least this many metres of climb per km.',
