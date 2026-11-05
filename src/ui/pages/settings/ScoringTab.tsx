@@ -19,6 +19,8 @@ const SECTION_LABELS: Record<string, string> = {
   freshness: 'Freshness (3.7)',
   growthShield: 'Growth Shield (3.8)',
   race: 'RACE weights (3.9)',
+  spd: 'SPD: short races',
+  clb: 'CLB: hill races',
   end: 'END: bleep test and long runs (3.9)',
   nav: 'NAV (3.9)',
   arm: 'ARM thresholds (3.9)',
@@ -45,6 +47,9 @@ const HELP: Record<string, string> = {
   'ageGrade.table': 'alan_jones_2025 = the cloned 2025 road tables; fallback_provisional = the spec’s fallback (marks ratings provisional).',
   'input.fuzzyThreshold': 'Jaro–Winkler similarity for name suggestions.',
   'end.longRunMinKmEff': 'Minimum effective distance for a race or long run to set END.',
+  'spd.raceMaxKmEff': 'A verified race, relay leg or parkrun of up to this effective distance (km) also feeds SPD.',
+  'clb.raceMinClimbM': 'A verified race or long run needs at least this much climb (m) to feed CLB…',
+  'clb.raceMinClimbPerKm': '…and at least this many metres of climb per km.',
 };
 
 const human = (k: string) => k.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase()).replace(/\bAg\b/, 'AG').replace(/ M$/, ' (men)').replace(/ F$/, ' (women)');

@@ -70,6 +70,22 @@ export interface Config {
     weights2: [number, number];
   };
 
+  spd: {
+    /** Short races also feed SPD (go-live plan 1): SPD = best of the Circuit and short races. */
+    allowRaces: boolean;
+    /** A verified race, relay leg or parkrun with D_eff at or below this (km) feeds SPD. */
+    raceMaxKmEff: number;
+  };
+
+  clb: {
+    /** Hill races also feed CLB (go-live plan 1). The climb course still counts. */
+    allowRaces: boolean;
+    /** A verified race, relay leg, parkrun or long run needs at least this much climb (m)… */
+    raceMinClimbM: number;
+    /** …and at least this much climb per km of distance (m/km) to feed CLB. */
+    raceMinClimbPerKm: number;
+  };
+
   end: {
     allowLongRuns: boolean;
     /** Minimum D_eff (km) for a race/parkrun/long run to set END. */
@@ -232,6 +248,10 @@ export const DEFAULT_CONFIG: Config = {
 
   race: { weights3: [0.5, 0.3, 0.2], weights2: [0.6, 0.4] },
 
+  spd: { allowRaces: true, raceMaxKmEff: 3.0 },
+
+  clb: { allowRaces: true, raceMinClimbM: 150, raceMinClimbPerKm: 50 },
+
   end: {
     allowLongRuns: true,
     longRunMinKmEff: 5.0,
@@ -342,7 +362,8 @@ export const DEFAULT_CONFIG: Config = {
 /** The current config is the highest version in the list (falls back to defaults). */
 export function currentConfig(configs: Config[] | undefined): Config {
   if (!configs || configs.length === 0) return DEFAULT_CONFIG;
-  return configs.reduce((a, b) => (b.version > a.version ? b : a));
+  // Stored versions from an older app may lack constants added since: fill them from the defaults.
+  return withDefaults(configs.reduce((a, b) => (b.version > a.version ? b : a)));
 }
 
 /** Deep clone a config for editing. */

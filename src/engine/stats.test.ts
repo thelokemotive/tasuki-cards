@@ -888,7 +888,7 @@ describe('edge cases', () => {
 
   it('a stat whose only result is waiting for verification shows no number', () => {
     const r = rate(coach, [perf({ kind: 'climb', courseId: 'c-climb', timeSec: 1500, verified: false })], { streak: true });
-    expect(r.stats.CLB).toMatchObject({ locked: true, unlockHint: 'Run a climb' });
+    expect(r.stats.CLB).toMatchObject({ locked: true, unlockHint: 'Race a hill' });
     expect(r.stats.CLB.value).toBeUndefined();
     expect(r.stats.CLB.unlockHelp).toBe('A result is waiting to be verified: tick it to unlock CLB.');
   });
@@ -1003,5 +1003,86 @@ describe('invariants over many generated athletes (deterministic)', () => {
       // Caps never count unverified, deleted or future results.
       expect(res.race.caps).toBe(perfs.filter((p) => (p.kind === 'race' || p.kind === 'relay_leg') && p.verified && !p.deleted && p.date <= AS_OF).length);
     }
+  });
+});
+
+describe('race pathways (go-live plan 1)', () => {
+  const evs: TasukiEvent[] = [
+    { id: 'e-3k', name: 'Hachimantai 3K', date: '2026-10-12', kind: 'race', distanceKm: 3, climbM: 0, official: true },
+    { id: 'e-hill', name: 'Hachimantai Hill Race', date: '2026-10-12', kind: 'race', distanceKm: 6, climbM: 450, official: true },
+    { id: 'e-flat10', name: 'Flat 10K', date: '2026-10-12', kind: 'race', distanceKm: 10, climbM: 200, official: true },
+  ];
+  const lk = makeLookup(courses, evs);
+  const rateL = (a: Athlete, perfs: Performance[], config: Config = cfg) => computeAthleteRatings({ athlete: a, perfs, lookup: lk, config, asOf: AS_OF, streakActiveOrFrozen: false });
+
+  it('a 3 km race feeds RACE and SPD, labelled by the event', () => {
+    const r = rateL(coach, [perf({ id: 'r3k', kind: 'race', eventId: 'e-3k', timeSec: 600, date: '2026-10-12' })]);
+    expect(r.perfScores[0].feeds).toEqual(['RACE', 'SPD']);
+    expect(r.stats.SPD.locked).toBe(false);
+    expect(r.stats.SPD.basis?.label).toBe('from Hachimantai 3K, 12 Oct');
+    expect(r.stats.SPD.value).toBe(r.perfScores[0].fresh);
+  });
+
+  it('SPD is the best of the Circuit and short races', () => {
+    const slowCircuit = perf({ kind: 'circuit', courseId: 'c-circuit', timeSec: 330, date: '2026-10-04' });
+    const fastRace = perf({ id: 'fast3k', kind: 'race', eventId: 'e-3k', timeSec: 560, date: '2026-10-12' });
+    const r = rateL(coach, [slowCircuit, fastRace]);
+    expect(r.stats.SPD.basis?.perfIds).toEqual(['fast3k']);
+  });
+
+  it('a race over 3 km effort does not feed SPD', () => {
+    const r = rateL(coach, [perf({ kind: 'race', eventId: 'e-xc', timeSec: 1200 })]);
+    expect(r.perfScores[0].feeds).not.toContain('SPD');
+    expect(r.stats.SPD).toMatchObject({ locked: true, unlockHint: 'Circuit or 3K' });
+    expect(r.stats.SPD.unlockHelp).toBe('Run the Circuit, or a verified race, relay leg or parkrun of up to 3 km effort, to unlock SPD.');
+  });
+
+  it('a hill race (≥ 150 m and ≥ 50 m/km) feeds CLB, scored on effective distance', () => {
+    const r = rateL(coach, [perf({ id: 'hill', kind: 'race', eventId: 'e-hill', timeSec: 3000, date: '2026-10-12' })]);
+    const ps = r.perfScores[0];
+    expect(ps.feeds).toEqual(['RACE', 'END', 'CLB']);
+    expect(ps.dEff).toBeCloseTo(10.5, 9);
+    expect(r.stats.CLB).toMatchObject({ locked: false, value: ps.fresh });
+    expect(r.stats.CLB.basis?.label).toBe('from Hachimantai Hill Race, 12 Oct');
+  });
+
+  it('enough climb but under 50 m per km is not a hill race', () => {
+    const r = rateL(coach, [perf({ kind: 'race', eventId: 'e-flat10', timeSec: 2400 })]);
+    expect(r.perfScores[0].feeds).toEqual(['RACE', 'END']);
+    expect(r.stats.CLB).toMatchObject({ locked: true, unlockHint: 'Race a hill' });
+  });
+
+  it('a hilly long run feeds CLB; the climb course still counts', () => {
+    const r = rateL(coach, [
+      perf({ kind: 'long_run', distanceKm: 8, climbM: 500, timeSec: 4000 }),
+      perf({ kind: 'climb', courseId: 'c-climb', timeSec: 1500 }),
+    ]);
+    expect(r.perfScores[0].feeds).toEqual(['END', 'CLB']);
+    expect(r.perfScores[1].feeds).toEqual(['CLB']);
+  });
+
+  it('the thresholds come from config, and the pathways can be switched off', () => {
+    const c = cloneConfig(cfg);
+    c.spd.raceMaxKmEff = 2.5;
+    c.clb.raceMinClimbM = 500;
+    let r = rateL(coach, [perf({ kind: 'race', eventId: 'e-3k', timeSec: 600 }), perf({ kind: 'race', eventId: 'e-hill', timeSec: 3000 })], c);
+    expect(r.perfScores.map((p) => p.feeds)).toEqual([['RACE'], ['RACE', 'END']]);
+    const off = cloneConfig(cfg);
+    off.spd.allowRaces = false;
+    off.clb.allowRaces = false;
+    r = rateL(coach, [perf({ kind: 'race', eventId: 'e-3k', timeSec: 600 }), perf({ kind: 'race', eventId: 'e-hill', timeSec: 3000 })], off);
+    expect(r.perfScores.map((p) => p.feeds)).toEqual([['RACE'], ['RACE', 'END']]);
+    expect(r.stats.SPD.unlockHint).toBe('Run the Circuit');
+    expect(r.stats.CLB.unlockHint).toBe('Run a climb');
+  });
+
+  it('a stored config from before the pathways gets the defaults filled in', async () => {
+    const { currentConfig } = await import('./config');
+    const old = cloneConfig(cfg) as Partial<Config>;
+    delete old.spd;
+    delete old.clb;
+    const cur = currentConfig([old as Config]);
+    expect(cur.spd).toEqual(cfg.spd);
+    expect(cur.clb).toEqual(cfg.clb);
   });
 });

@@ -193,20 +193,48 @@ export function navScoreFromEfficiency(eff: number, navErrors: number, config: C
   return clampScore(min + ((max - min) * (eff - e0)) / (1 - e0), config);
 }
 
+/** Climb (m) per km of raw distance, when both are known. */
+export function climbPerKm(ctx: PerfContext): number | undefined {
+  return ctx.distanceKm != null && ctx.distanceKm > 0 && Number.isFinite(ctx.climbM) ? ctx.climbM / ctx.distanceKm : undefined;
+}
+
+/** A race, relay leg or parkrun short enough to count as a speed run (go-live plan 1). */
+export function isShortRace(ctx: PerfContext, config: Config): boolean {
+  const k = ctx.perf.kind;
+  return config.spd.allowRaces && (k === 'race' || k === 'relay_leg' || k === 'parkrun') && ctx.dEff != null && ctx.dEff <= config.spd.raceMaxKmEff + 1e-9;
+}
+
+/** A race, relay leg, parkrun or long run with enough climb, steep enough, to count as a climb (go-live plan 1). */
+export function isHillRun(ctx: PerfContext, config: Config): boolean {
+  const k = ctx.perf.kind;
+  if (!config.clb.allowRaces || !(k === 'race' || k === 'relay_leg' || k === 'parkrun' || k === 'long_run')) return false;
+  const perKm = climbPerKm(ctx);
+  return ctx.climbM >= config.clb.raceMinClimbM - 1e-9 && perKm != null && perKm >= config.clb.raceMinClimbPerKm - 1e-9;
+}
+
 /**
- * The ratings a performance belongs to, judged by its kind (and D_eff for the END long-run pathway).
- * race / relay_leg / parkrun → RACE (+ END when D_eff ≥ longRunMinKmEff); long_run → END when long
- * enough; circuit → SPD; climb → CLB; descent → DSC; nav → NAV; bleep → END; arm → ARM.
+ * The ratings a performance belongs to, judged by its kind and where it was run.
+ * race / relay_leg / parkrun → RACE, + SPD when D_eff ≤ spd.raceMaxKmEff, + END when D_eff ≥
+ * end.longRunMinKmEff, + CLB when climb ≥ clb.raceMinClimbM and ≥ clb.raceMinClimbPerKm per km;
+ * long_run → END when long enough, + CLB on the same hill rule; circuit → SPD; climb → CLB;
+ * descent → DSC; nav → NAV; bleep → END; arm → ARM.
  */
 export function perfFeeds(ctx: PerfContext, config: Config): RatingKey[] {
   const longEnough = config.end.allowLongRuns && ctx.dEff != null && ctx.dEff >= config.end.longRunMinKmEff - 1e-9;
+  const out: RatingKey[] = [];
   switch (ctx.perf.kind) {
     case 'race':
     case 'relay_leg':
     case 'parkrun':
-      return longEnough ? ['RACE', 'END'] : ['RACE'];
+      out.push('RACE');
+      if (isShortRace(ctx, config)) out.push('SPD');
+      if (longEnough) out.push('END');
+      if (isHillRun(ctx, config)) out.push('CLB');
+      return out;
     case 'long_run':
-      return longEnough ? ['END'] : [];
+      if (longEnough) out.push('END');
+      if (isHillRun(ctx, config)) out.push('CLB');
+      return out;
     case 'circuit':
       return ['SPD'];
     case 'climb':

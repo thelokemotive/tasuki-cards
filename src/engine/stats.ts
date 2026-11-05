@@ -53,21 +53,29 @@ function listWords(xs: string[]): string {
   return xs.length <= 1 ? (xs[0] ?? '') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`;
 }
 
+function kmLabel(km: number): string {
+  return String(Number(km.toFixed(1)));
+}
+
 function longRunKmLabel(config: Config): string {
-  return String(Number(config.end.longRunMinKmEff.toFixed(1)));
+  return kmLabel(config.end.longRunMinKmEff);
 }
 
 /** Default card hint (≤ 3 words) and coach-view help for a locked rating. */
 function defaultLock(key: RatingKey, config: Config): Lock {
   switch (key) {
     case 'SPD':
-      return { hint: 'Run the Circuit', help: 'Run the Circuit (verified) to unlock SPD.' };
+      return config.spd.allowRaces
+        ? { hint: `Circuit or ${kmLabel(config.spd.raceMaxKmEff)}K`, help: `Run the Circuit, or a verified race, relay leg or parkrun of up to ${kmLabel(config.spd.raceMaxKmEff)} km effort, to unlock SPD.` }
+        : { hint: 'Run the Circuit', help: 'Run the Circuit (verified) to unlock SPD.' };
     case 'END':
       return config.end.allowLongRuns
         ? { hint: `Bleep or ${longRunKmLabel(config)}K+`, help: `Do a bleep test, or a verified race, relay leg, parkrun or long run of ${longRunKmLabel(config)} km effort or more, to unlock END.` }
         : { hint: 'Do a bleep test', help: 'Do a bleep test to unlock END.' };
     case 'CLB':
-      return { hint: 'Run a climb', help: 'Run a climb course (verified) to unlock CLB.' };
+      return config.clb.allowRaces
+        ? { hint: 'Race a hill', help: `Run a climb course, or a verified race or long run with at least ${config.clb.raceMinClimbM} m of climb and ${config.clb.raceMinClimbPerKm} m per km, to unlock CLB.` }
+        : { hint: 'Run a climb', help: 'Run a climb course (verified) to unlock CLB.' };
     case 'DSC':
       return { hint: 'Clean descent run', help: 'Complete a clean run on a descent course (verified) to unlock DSC.' };
     case 'NAV':
@@ -114,7 +122,9 @@ function lockedStat<K extends RatingKey>(key: K, lock: Lock, config: Config): St
   return { key, locked: true, shielded: false, unlockHint: lock.hint, unlockHelp: lock.help, provisional: false, configVersion: config.version };
 }
 
+/** Races are named by their event ("Hachimantai Hill Race"); course runs by their course. */
 function placeName(e: Entry, key: StatKey): string {
+  if (KIND_LABEL[e.perf.kind]) return e.ctx.event?.name ?? e.ctx.course?.name ?? KIND_LABEL[e.perf.kind];
   return e.ctx.course?.name ?? e.ctx.event?.name ?? DEFAULT_PLACE[key];
 }
 
