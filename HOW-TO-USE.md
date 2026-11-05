@@ -7,6 +7,7 @@ Open **`TASUKI-CARDS-OPEN-ME.html`** (in this folder) by double-clicking it. It 
 1. If you loaded demo data to try things out, first go to **Settings → Data → Clear all demo data**.
 2. **Roster → Import roster.** In the school spreadsheet, select the rows (with the header row: Surname, Preferred Name, Year, Gender…), copy, and paste into the box. Check the column mapping, look over the preview (duplicates are flagged), then click **Import**.
    No spreadsheet to hand? Type simple lines instead: `Testfield, Aiko, Y9, F` (add `, 2012-05-04` for a date of birth and `, テストフィールド アイコ; Ai` for aliases).
+   **No spreadsheet at all?** Skip the roster import and paste your first results table into **Paste & Match**. Any runner not on the roster gets a **New athlete** button (name as written, sex from the category column such as 男子/女子 or Boys/Girls; you pick the year group). Runners whose club column matches **Settings → Data → Our school** (Harrow, ハロウ, 安比, Appi by default) are flagged "our school", and **Add all N academy runners** adds them in one go. Kanji and kana names are kept as aliases, so the next table matches them.
 3. **Settings → Calendar**: add the half-terms (one streak freeze each) and the holiday weeks.
 4. **Settings → Courses**: Campus Circuit is already there. Add your climb, descent and nav courses, and set the 99-point times for descents (fixed benchmark).
 

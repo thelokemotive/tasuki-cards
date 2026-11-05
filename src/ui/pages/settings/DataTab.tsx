@@ -9,6 +9,7 @@ import { buildDemoData, mergeDemoCalendar, withoutDemoData } from '../../../demo
 import { emptySnapshot } from '../../../store/Store';
 import { formatLongDate, isISODate } from '../../../engine/dates';
 import type { DataSnapshot } from '../../../types';
+import { ourSchoolNames } from '../../../engine/parse/newAthletes';
 
 export function DataTab() {
   const { snapshot, commit, replaceAll, today, asOf, setAsOf, persistent } = useData();
@@ -110,7 +111,19 @@ export function DataTab() {
               )}
             </div>
           </Field>
-          <Field label="Name recorded in correction history">
+          <Field label="Our school" hint="Names in a results table's club column (所属 / Club / Team) that mean one of ours, separated by commas. Those runners are offered as new athletes in Paste & Match.">
+            <input
+              className="input"
+              defaultValue={ourSchoolNames(snapshot.meta).join(', ')}
+              placeholder="(none)"
+              onBlur={(e) => {
+                const names = e.target.value.split(/[,、，;]/).map((x) => x.trim()).filter(Boolean);
+                if (names.join('|') !== ourSchoolNames(snapshot.meta).join('|')) commit({ meta: { ...snapshot.meta, ourSchoolNames: names } });
+              }}
+              data-testid="our-school"
+            />
+          </Field>
+                    <Field label="Name recorded in correction history">
             <input
               className="input"
               defaultValue={snapshot.meta.coachName ?? ''}

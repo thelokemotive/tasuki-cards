@@ -178,6 +178,8 @@ export function parseTable(text: string, opts: { today: string; config: Config; 
   const iDate = roleIdx('date');
   const iDist = roleIdx('distance');
   const iKind = roleIdx('kind');
+  const iClub = roleIdx('club');
+  const iSex = roleIdx('sex');
 
   lines.forEach((line, idx) => {
     if (layout.headerRow != null && idx <= layout.headerRow) return;
@@ -219,6 +221,8 @@ export function parseTable(text: string, opts: { today: string; config: Config; 
       if (p) row.place = Number(p[1]);
     }
     if (iCat >= 0 && get(iCat)) row.category = get(iCat);
+    if (iClub >= 0 && get(iClub)) row.club = get(iClub);
+    if (iSex >= 0 && get(iSex)) row.sexText = get(iSex);
     let date: string | undefined;
     if (iDate >= 0 && get(iDate)) {
       date = parseDateCell(get(iDate));

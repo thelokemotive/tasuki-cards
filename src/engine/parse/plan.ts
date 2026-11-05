@@ -12,6 +12,8 @@ import { looksLikeLineFormat, parseLineFormat } from './lineFormat';
 import { detectLayout, parseTable } from './table';
 import { normaliseSeparators } from './split';
 import type { ParseFormat, RawParse, RawRow, RawSection, SectionDefaults } from './types';
+import { athleteFromDraft, draftProblem, inferSex, isOurSchool, proposeNewAthlete, type NewAthleteDraft } from './newAthletes';
+import { parseSex } from './roster';
 
 export type RowStatus = 'ready' | 'review' | 'skip' | 'outsider';
 
@@ -37,6 +39,10 @@ export interface PlanRow {
   warnings: string[];
   duplicateOfPerfId?: string;
   dEff?: number;
+  /** An outsider whose club is one of "Our school" names: offered as a new athlete ("New athlete?"). */
+  academy?: boolean;
+  /** For rows with no confident match: the proposed new athlete (name as written, inferred sex). */
+  newAthlete?: NewAthleteDraft;
 }
 
 export interface ImportPlan {
@@ -55,7 +61,11 @@ export interface PlanContext {
   /** The event picked or described in the UI (used for text without # headers). */
   defaults?: SectionDefaults & { eventId?: string };
   format?: 'auto' | ParseFormat;
+  /** "Our school" names from Settings (meta.ourSchoolNames). */
+  ourSchool?: string[];
 }
+
+export const ACADEMY_WARNING = 'our school, not on the roster: add as a new athlete?';
 
 export const MATCH_LABEL: Record<NameMatch['type'], string> = {
   exact_alias: 'exact alias',
@@ -205,6 +215,14 @@ export function buildImportPlan(text: string, ctx: PlanContext): ImportPlan {
       }
     }
     if (raw.unverified || parsed.format === 'forms') row.warnings.push('student-reported: saved as unverified');
+    if (!match.athleteId && raw.name && !raw.errors.length) {
+      row.newAthlete = proposeNewAthlete(raw.name, (raw.sexText ? parseSex(raw.sexText) : undefined) ?? inferSex(raw.sexText) ?? inferSex(raw.category));
+      if (row.status === 'outsider' && isOurSchool(raw.club, ctx.ourSchool)) {
+        row.academy = true;
+        row.status = 'review';
+        row.warnings.push(ACADEMY_WARNING);
+      }
+    }
     plan.rows.push(row);
   });
 
@@ -224,6 +242,13 @@ export function buildImportPlan(text: string, ctx: PlanContext): ImportPlan {
 export interface RowDecision {
   status: RowStatus;
   athleteId?: string;
+  /** Save the row for a new athlete created on approval (the key of a confirmed NewAthleteDraft). */
+  newAthleteKey?: string;
+}
+
+/** The row will be saved: ready, with an athlete or a new athlete. */
+export function willCommit(d: RowDecision): boolean {
+  return d.status === 'ready' && !!(d.athleteId || d.newAthleteKey);
 }
 
 export interface CommitSummary {
@@ -233,12 +258,17 @@ export interface CommitSummary {
   aliasesLearned: number;
   outsiders: number;
   notCommitted: number;
+  newAthletes: number;
 }
 
 export interface CommitContext {
   now: string;
   by: string;
   newId: (prefix: string) => string;
+  /** Confirmed new athletes (by key), created on approval when a committed row uses them. */
+  newAthletes?: NewAthleteDraft[];
+  /** Academic year new athletes' year groups refer to (default: the year of `now`, from 1 September). */
+  yearGroupYear?: number;
 }
 
 /** The decision for a row: the coach's override, else the plan's proposal. */
@@ -252,16 +282,32 @@ export function decisionFor(row: PlanRow, decisions: Record<string, RowDecision>
  * athlete that spelling as a new alias.
  */
 export function planToChanges(plan: ImportPlan, decisions: Record<string, RowDecision>, snapshot: DataSnapshot, ctx: CommitContext): { changes: Changes; summary: CommitSummary } {
-  const summary: CommitSummary = { performances: 0, participation: 0, newEvents: 0, aliasesLearned: 0, outsiders: 0, notCommitted: 0 };
+  const summary: CommitSummary = { performances: 0, participation: 0, newEvents: 0, aliasesLearned: 0, outsiders: 0, notCommitted: 0, newAthletes: 0 };
   const perfs: Performance[] = [];
   const parts: Participation[] = [];
   const events = new Map<string, TasukiEvent>();
   const athletes = new Map<string, Athlete>(snapshot.athletes.map((a) => [a.id, a]));
   const touched = new Set<string>();
+  const created = new Map<string, Athlete>();
+  const drafts = new Map((ctx.newAthletes ?? []).filter((d) => !draftProblem(d)).map((d) => [d.key, d]));
+  const yearGroupYear = ctx.yearGroupYear ?? (Number(ctx.now.slice(5, 7)) >= 9 ? Number(ctx.now.slice(0, 4)) : Number(ctx.now.slice(0, 4)) - 1);
+  /** The decision with a new athlete resolved to its (created-once) id; a draft that is not ready drops the row. */
+  const resolve = (d: RowDecision): RowDecision => {
+    if (!d.newAthleteKey || d.status !== 'ready') return d;
+    const draft = drafts.get(d.newAthleteKey);
+    if (!draft) return { status: 'review' };
+    let a = created.get(draft.key);
+    if (!a) {
+      a = athleteFromDraft(draft, ctx.newId('ath'), ctx.now, yearGroupYear);
+      created.set(draft.key, a);
+      athletes.set(a.id, a);
+    }
+    return { status: 'ready', athleteId: a.id };
+  };
 
   for (const sec of plan.sections) {
     const rows = plan.rows.filter((r) => r.sectionKey === sec.key);
-    const ds = rows.map((r) => ({ r, d: decisionFor(r, decisions) }));
+    const ds = rows.map((r) => ({ r, d: resolve(decisionFor(r, decisions)) }));
     const committed = ds.filter((x) => x.d.status === 'ready' && x.d.athleteId);
     summary.outsiders += ds.filter((x) => x.d.status === 'outsider').length;
     summary.notCommitted += ds.filter((x) => !(x.d.status === 'ready' && x.d.athleteId) && x.d.status !== 'outsider').length;
@@ -345,7 +391,7 @@ export function planToChanges(plan: ImportPlan, decisions: Record<string, RowDec
     // alias learning: the coach confirmed a match the matcher was not sure about
     for (const { r, d } of committed) {
       const confident = r.match.athleteId != null && r.match.athleteId === d.athleteId;
-      if (confident || !r.raw.name) continue;
+      if (confident || !r.raw.name || [...created.values()].some((a) => a.id === d.athleteId)) continue;
       const a = athletes.get(d.athleteId!);
       if (!a) continue;
       const learned = withLearnedAlias(a, r.raw.name, [...athletes.values()]);
@@ -361,6 +407,8 @@ export function planToChanges(plan: ImportPlan, decisions: Record<string, RowDec
   if (perfs.length) changes.put!.performances = perfs;
   if (parts.length) changes.put!.participation = parts;
   if (events.size) changes.put!.events = [...events.values()];
-  if (touched.size) changes.put!.athletes = [...touched].map((id) => athletes.get(id)!);
+  const athletePuts = [...created.values(), ...[...touched].map((id) => athletes.get(id)!)];
+  if (athletePuts.length) changes.put!.athletes = athletePuts;
+  summary.newAthletes = created.size;
   return { changes, summary };
 }

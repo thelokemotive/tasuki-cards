@@ -40,6 +40,10 @@ export interface RawRow {
   place?: number;
   fieldSize?: number;
   category?: string;
+  /** Club / team / school column (所属), used to spot our own runners among outsiders. */
+  club?: string;
+  /** Sex column as written (性別 / Sex / M/F). */
+  sexText?: string;
   legNumber?: number;
   teamName?: string;
   racedEarlierSameDay?: boolean;
