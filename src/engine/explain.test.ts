@@ -23,7 +23,7 @@ const perf = (over: Partial<Performance>): Performance => ({ id: `p${++n}`, athl
 function snap(perfs: Performance[], athletes: Athlete[] = [aiko]): DataSnapshot {
   return {
     schemaVersion: SCHEMA_VERSION, athletes,
-    courses: [...seedCourses(), { id: 'c-desc', name: 'Test Slope Descent', kind: 'descent', distanceKm: 1, climbM: 0, terrainFactor: 1, benchmarkMode: 'fixed', t99OpenM: 180, t99OpenF: 200, version: 1, notes: 'Benchmark from a reference run' }],
+    courses: [...seedCourses(), { id: 'c-desc', name: 'Test Slope Descent', kind: 'descent', distanceKm: 1, climbM: 0, terrainFactor: 1, benchmarkMode: 'fixed', t99OpenM: 180, t99OpenF: 200, version: 1, notes: 'Loose gravel\nBenchmark from a reference run: Coach Example ran 3:40 on 4 Nov 2026 (M, age 40.5), set to score 90. 99-point open times 3:00 (men), 3:20 (women).' }],
     events: [
       { id: 'e3k', name: 'Hachimantai 3K', date: AS_OF, kind: 'race', distanceKm: 3, climbM: 40, official: true },
       { id: 'e10', name: 'Valley 10K', date: '2026-09-20', kind: 'race', distanceKm: 10, official: true },
@@ -112,7 +112,7 @@ describe('explainStat: every kind of working', () => {
   it('fixed-benchmark descent: age adjustment and the course note', () => {
     const { e } = explain([perf({ kind: 'descent', courseId: 'c-desc', timeSec: 260, cleanRun: true })], 'DSC');
     const t = e.paragraphs.join(' ');
-    expect(t).toContain('Test Slope Descent is scored against a fixed benchmark (Benchmark from a reference run): the 99-point time for open women is 3:20.');
+    expect(t).toContain('Test Slope Descent is scored against a fixed benchmark (Coach Example ran 3:40 on 4 Nov 2026 (M, age 40.5), set to score 90): the 99-point time for open women is 3:20.');
     expect(t).toMatch(/For a 13\.6-year-old girl the age adjustment is × 1\.\d{3}, so the 99-point time is \d:\d\d\. Aiko ran 4:20: 99 × \d:\d\d ÷ 4:20 = [\d.]+ → \d+\./);
   });
 

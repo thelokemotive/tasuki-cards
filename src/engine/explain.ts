@@ -14,6 +14,7 @@ import { resolveContext, type Lookup, type PerfContext } from './perf';
 import { bleepPercentile, bleepRow, fixedAgeAdjustment, perfFeeds, UNSCORED } from './scoring';
 import { navReferencePace } from './stats';
 import { BLEEP_PERCENTILES } from './config';
+import { BENCHMARK_NOTE_PREFIX } from './benchmark';
 
 export type Audience = 'coach' | 'student';
 
@@ -155,7 +156,9 @@ function scoreWorking(ctx: PerfContext, ps: PerfScore, d: AthleteDerived, w: Who
     if (t99 == null) return '';
     const adj = fixedAgeAdjustment(ps.age, d.athlete.sex, config);
     const own = t99 * adj;
-    const ref = ctx.course.notes && /benchmark/i.test(ctx.course.notes) ? ` (${ctx.course.notes})` : '';
+    // The reference-run line in the course notes (go-live plan 5), without its own copy of the times.
+    const refLine = (ctx.course.notes ?? '').split('\n').find((l) => l.startsWith(BENCHMARK_NOTE_PREFIX));
+    const ref = refLine ? ` (${refLine.slice(BENCHMARK_NOTE_PREFIX.length).split('. 99-point')[0].trim().replace(/\.$/, '')})` : '';
     return `${ctx.course.name} is scored against a fixed benchmark${ref}: the 99-point time for open ${d.athlete.sex === 'F' ? 'women' : 'men'} is ${formatTime(t99)}. For ${w.aPerson(ps.age)} the age adjustment is × ${adj.toFixed(3)}, so the 99-point time is ${formatTime(own)}. ${w.name} ran ${formatTime(p.timeSec)}: ${max} × ${formatTime(own)} ÷ ${formatTime(p.timeSec)} = ${num1((max * own) / p.timeSec)} → ${ps.score}.`;
   }
   if (ps.standardSec == null || ps.ageGrade == null || ps.dEff == null) return '';

@@ -9,7 +9,7 @@ Open **`TASUKI-CARDS-OPEN-ME.html`** (in this folder) by double-clicking it. It 
    No spreadsheet to hand? Type simple lines instead: `Testfield, Aiko, Y9, F` (add `, 2012-05-04` for a date of birth and `, テストフィールド アイコ; Ai` for aliases).
    **No spreadsheet at all?** Skip the roster import and paste your first results table into **Paste & Match**. Any runner not on the roster gets a **New athlete** button (name as written, sex from the category column such as 男子/女子 or Boys/Girls; you pick the year group). Runners whose club column matches **Settings → Data → Our school** (Harrow, ハロウ, 安比, Appi by default) are flagged "our school", and **Add all N academy runners** adds them in one go. Kanji and kana names are kept as aliases, so the next table matches them.
 3. **Settings → Calendar**: add the half-terms (one streak freeze each) and the holiday weeks.
-4. **Settings → Courses**: Campus Circuit is already there. Add your climb, descent and nav courses, and set the 99-point times for descents (fixed benchmark).
+4. **Settings → Courses**: Campus Circuit is already there. Add your climb, descent and nav courses. For a descent, either type the 99-point times, or use **Set the benchmark from a reference run…**: run it yourself, enter your time and what that run should score (90 by default), and the men's and women's times are worked out for you (add your date of birth on your own athlete page first, so the age adjustment is exact).
 
 ## 2. Weekly routine
 
