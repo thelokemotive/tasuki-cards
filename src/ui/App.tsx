@@ -19,6 +19,7 @@ import { BoardsPage } from './pages/BoardsPage';
 import { ProjectorPage } from './pages/ProjectorPage';
 import { HandicapPage } from './pages/HandicapPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { ScenesPage } from './pages/ScenesPage';
 import { HelpPage } from './pages/HelpPage';
 
 interface NavItem {
@@ -85,6 +86,8 @@ function renderPage(route: Route): ReactNode {
       return <SettingsPage />;
     case 'help':
       return <HelpPage />;
+    case 'scenes':
+      return <ScenesPage />;
     default:
       return <HomePage />;
   }
