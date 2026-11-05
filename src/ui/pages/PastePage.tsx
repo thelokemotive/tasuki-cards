@@ -1,6 +1,7 @@
 // Paste-and-Match (spec 4.2–4.4): paste or dictate → review table → approve. Nothing commits before approval.
 import './paste.css';
-import { useDeferredValue, useMemo, useState } from 'react';
+import { useDeferredValue, useMemo, useRef, useState, type DragEvent } from 'react';
+import { decodeText, droppedKind, readXlsxFirstSheet } from '../../engine/parse/xlsx';
 import type { PerfKind } from '../../types';
 import { PERF_KINDS } from '../../types';
 import { Field, PageHeader, Panel, Seg, newId } from '../components/common';
@@ -41,6 +42,48 @@ export function PastePage() {
   /** Confirmed new athletes, by name key (created on approval). */
   const [newAthletes, setNewAthletes] = useState<Record<string, NewAthleteDraft>>({});
   const [editingDrafts, setEditingDrafts] = useState<NewAthleteDraft[] | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  /** "Drop in data by whatever" (go-live plan 7): .csv/.txt as text, .xlsx first sheet, PDFs by copy and paste. */
+  const loadFiles = async (files: FileList | File[]) => {
+    const list = [...files];
+    const f = list[0];
+    if (!f) return;
+    if (list.length > 1) toast(`One file at a time: reading ${f.name} only.`, 'err');
+    const kind = droppedKind(f.name);
+    try {
+      if (kind === 'pdf') {
+        toast('PDFs cannot be read directly: open the PDF, select the results table, copy it and paste it here.', 'err');
+        return;
+      }
+      if (kind === 'xls') {
+        toast('Old .xls files cannot be read: open it in Excel and save it as .xlsx or CSV first.', 'err');
+        return;
+      }
+      const buf = new Uint8Array(await f.arrayBuffer());
+      if (kind === 'xlsx') {
+        const sheet = await readXlsxFirstSheet(buf);
+        setText(sheet.text);
+        toast(`Read “${sheet.sheetName}”, the first sheet of ${f.name} (${sheet.rows.length} rows).`, 'ok');
+      } else if (kind === 'text' || f.type.startsWith('text/')) {
+        setText(decodeText(buf));
+        toast(`Read ${f.name}.`, 'ok');
+      } else {
+        toast(`${f.name}: drop a .csv, .txt or .xlsx file (or paste the text).`, 'err');
+        return;
+      }
+      setSource('paste');
+      setDecisions({});
+    } catch (e) {
+      toast(`Could not read ${f.name}: ${e instanceof Error ? e.message : String(e)}`, 'err');
+    }
+  };
+  const onDrop = (e: DragEvent) => {
+    e.preventDefault();
+    setDragging(false);
+    if (e.dataTransfer.files.length) void loadFiles(e.dataTransfer.files);
+  };
   const deferredText = useDeferredValue(text);
   const existing = snapshot.events.find((e) => e.id === eventId);
 
@@ -206,6 +249,18 @@ export function PastePage() {
           </>
         }
       >
+        <div
+          className={`drop-zone ${dragging ? 'drop-on' : ''}`}
+          onDragOver={(e) => {
+            if ([...e.dataTransfer.types].includes('Files')) {
+              e.preventDefault();
+              setDragging(true);
+            }
+          }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={onDrop}
+          data-testid="drop-zone"
+        >
         <textarea
           className="textarea paste-box"
           value={text}
@@ -217,6 +272,25 @@ export function PastePage() {
           spellCheck={false}
           data-testid="paste-box"
         />
+          {dragging && <div className="drop-hint">Drop the file to read it</div>}
+        </div>
+        <div className="row small muted" style={{ marginTop: 6 }}>
+          <button type="button" className="btn btn-sm" onClick={() => fileRef.current?.click()}>
+            Choose a file…
+          </button>
+          <span>or drag a .csv, .txt or .xlsx file onto the box (Excel: the first sheet is read). PDFs: select the table in the PDF viewer, copy and paste.</span>
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".csv,.txt,.tsv,.xlsx,.xlsm,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            style={{ display: 'none' }}
+            onChange={(e) => {
+              if (e.target.files?.length) void loadFiles(e.target.files);
+              e.target.value = '';
+            }}
+            data-testid="file-input"
+          />
+        </div>
         {plan?.warnings.map((w) => (
           <p key={w} className="small" style={{ color: 'var(--warn)', margin: '6px 0 0' }}>
             {w}

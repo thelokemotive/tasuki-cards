@@ -13,7 +13,7 @@ Open **`TASUKI-CARDS-OPEN-ME.html`** (in this folder) by double-clicking it. It 
 
 ## 2. Weekly routine
 
-- **After a Circuit or a race**: **Paste & Match**. Paste the results table (from a website, a PDF, Excel, Japanese headers included) or type the Tasuki line format (**Help** has the full format). Every row is matched to an athlete; check the yellow rows (suggestions, typos, implausible paces), tick to confirm, then **Approve**. Nothing is saved before you approve.
+- **After a Circuit or a race**: **Paste & Match**. Drag the results file onto the box (.xlsx, .csv or .txt; **Choose a file…** works too), or paste the results table (from a website, a PDF, Excel, Japanese headers included) or type the Tasuki line format (**Help** has the full format). Every row is matched to an athlete; check the yellow rows (suggestions, typos, implausible paces), tick to confirm, then **Approve**. Nothing is saved before you approve.
 - **One result at a time**: **Quick Entry**. It shows exactly what will change before you save ("SPD 71 → 74 · new PB −9 s · In-Form"). Works on a phone too.
 - **Dictation**: in Paste & Match, press 🎤 and say "Aiko Testfield sixteen fifteen". It types for you to review; it never saves on its own.
 - **Holiday results from students** (Microsoft/Google Forms): export the responses as CSV and paste them in. They arrive *unverified* and count only once you tick them (the athlete page has **Verify**).
