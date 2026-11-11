@@ -9,6 +9,7 @@ import { displayName, fullName, yearBand } from '../../engine/display';
 import { STAT_KEYS, type RatingKey, type YearBand } from '../../engine/types';
 import { CAMPS, developmentFocus } from '../../engine/coach';
 import type { AthleteDerived } from '../../engine/derive';
+import { formatTime } from '../../engine/format';
 
 type Col = RatingKey | 'OVR';
 const COLS: Col[] = ['OVR', 'RACE', ...STAT_KEYS];
@@ -67,6 +68,8 @@ export function SquadPage() {
                     {sort === k ? ' ▾' : ''}
                   </th>
                 ))}
+                <th className="num">5K now</th>
+                <th className="num">Target</th>
                 <th>Focus</th>
               </tr>
             </thead>
@@ -89,6 +92,10 @@ export function SquadPage() {
                         </td>
                       );
                     })}
+                    <td className="num small nowrap" title={d.prediction ? `${formatTime(d.prediction.lowSec)}–${formatTime(d.prediction.highSec)}` : undefined}>
+                      {d.prediction ? `${formatTime(d.prediction.predictedSec)} ±${d.prediction.plusMinusPct.toFixed(0)}%` : '—'}
+                    </td>
+                    <td className="num small">{d.prediction ? <strong>{formatTime(d.prediction.realisticSec)}</strong> : '—'}</td>
                     <td className="small">{focus ? `${focus.kind === 'unlock' ? 'Unlock' : 'Work on'} ${focus.stat}` : ''}</td>
                   </tr>
                 );
@@ -107,7 +114,7 @@ export function SquadPage() {
                     </div>
                   </td>
                 ))}
-                <td />
+                <td colSpan={3} />
               </tr>
             </tfoot>
           </table>

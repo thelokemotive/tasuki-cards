@@ -1,6 +1,7 @@
 // Every scoring constant lives here, in one versioned object (spec section 0 and 8).
 // Settings edits create a new version; every derived rating records the version it used.
 import type { Sex, YearGroup } from '../types';
+import { DEFAULT_PREDICT as DEFAULT_PREDICT_VALUES } from './predict';
 
 /** Percentile points for the bleep (20 m shuttle run) table columns. */
 export const BLEEP_PERCENTILES = [5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95] as const;
@@ -214,6 +215,9 @@ export interface Config {
     topN: number;
   };
 
+  /** Next-5K prediction and targets (src/engine/predict.ts). */
+  predict: import('./predict').PredictConfig;
+
   backup: {
     reminderDays: number;
   };
@@ -363,6 +367,8 @@ export const DEFAULT_CONFIG: Config = {
   },
 
   boards: { topN: 10 },
+
+  predict: DEFAULT_PREDICT_VALUES,
 
   backup: { reminderDays: 7 },
 };

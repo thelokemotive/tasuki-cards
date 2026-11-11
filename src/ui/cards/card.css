@@ -167,6 +167,7 @@
 .tc-badge-count { position: absolute; right: -0.8mm; bottom: -0.6mm; background: var(--band); color: var(--band-ink); font-size: 1.4mm; font-weight: 800; border-radius: 1mm; padding: 0 0.4mm; line-height: 1.3; }
 
 .tc-footer { font-size: 1.6mm; font-weight: 600; letter-spacing: 0.06em; text-align: center; color: var(--ink-c2); white-space: nowrap; align-self: center; }
+.tc-target { font-weight: 900; color: var(--ink-c); letter-spacing: 0.04em; }
 .tc-prov { font-size: 1.4mm; padding: 0 0.5mm; margin-left: 0.4mm; line-height: 1.4; }
 
 @media print {

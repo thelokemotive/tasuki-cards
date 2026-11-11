@@ -162,7 +162,13 @@ export function TradingCard({ data, coach = false, style }: { data: CardData; co
         </section>
 
         <footer className="tc-footer" data-fit>
-          Tasuki Cards · Harrow Appi Trail Running
+          {data.fiveKTarget ? (
+            <>
+              <span className="tc-target">Next 5K target {data.fiveKTarget}</span> · Tasuki Cards
+            </>
+          ) : (
+            'Tasuki Cards · Harrow Appi Trail Running'
+          )}
         </footer>
       </div>
     </article>

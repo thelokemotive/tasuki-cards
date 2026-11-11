@@ -55,13 +55,30 @@ export function counts(p: Performance): boolean {
   return !p.deleted && p.verified;
 }
 
-/** Race caps ★: verified race and relay_leg performances. */
-export function isRaceCap(p: Performance): boolean {
-  return counts(p) && (p.kind === 'race' || p.kind === 'relay_leg');
+/**
+ * Race caps ★: verified races and relay legs at official events. With a lookup, an unofficial event (a training
+ * relay, a stopwatch time trial) earns no cap, and running two legs of one relay is one cap, not two.
+ */
+export function isRaceCap(p: Performance, lookup?: Lookup): boolean {
+  if (!(counts(p) && (p.kind === 'race' || p.kind === 'relay_leg'))) return false;
+  const ev = lookup && p.eventId ? lookup.events.get(p.eventId) : undefined;
+  return !(ev && ev.official === false);
 }
 
-export function raceCaps(perfs: Performance[]): number {
-  return perfs.filter(isRaceCap).length;
+/** One performance per capped event (the first, oldest first), plus every capped result with no event. */
+export function raceCapPerfs(perfs: Performance[], lookup?: Lookup): Performance[] {
+  const seen = new Set<string>();
+  return [...perfs].sort(byDate).filter((p) => {
+    if (!isRaceCap(p, lookup)) return false;
+    if (!p.eventId) return true;
+    if (seen.has(p.eventId)) return false;
+    seen.add(p.eventId);
+    return true;
+  });
+}
+
+export function raceCaps(perfs: Performance[], lookup?: Lookup): number {
+  return raceCapPerfs(perfs, lookup).length;
 }
 
 /** Performances whose time is a running result over a distance (for pace, PBs, END pathway, Surge baselines). */

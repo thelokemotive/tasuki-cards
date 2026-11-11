@@ -21,20 +21,24 @@ Open **`TASUKI-CARDS-OPEN-ME.html`** (in this folder) by double-clicking it. It 
 - **Streak freeze**: athlete page → **Apply freeze…** (one per half-term).
 - **Expedition badges**: athlete page → **Add achievement…** (tick everyone who went).
 
-## 3. The fun bits (Yama)
+## 3. Next 5K
+
+Every athlete page has **Next 5K**: a predicted time today with a 90% range, a **realistic** and a **stretch** target for about a term ahead, and **Why these numbers?** (each result, how it was converted, how much it counts). The realistic target is printed on the card. The Squad page lists everyone's prediction and target. Mark training relays and stopwatch time trials as `unofficial` in the line format, so they help the prediction but do not count as races. A results booklet PDF (select all, copy, paste) and an ekiden write-up (`Name (9:18) → Name (8:26)`) can be pasted straight into Paste & Match.
+
+## 4. The fun bits (Yama)
 
 - **Friday reveal**: Home → **Reveal this week on the projector**. Each runner who levelled up in the last 7 days gets a card flip and their upgrades one by one (→ or space for the next, C to run it on its own). The biggest moments come last.
 - **Boards for everyone**: **Biggest climbers** (most improved this half-term) and the **House cup** (needs houses on the athlete pages: points per runner for turning up, PBs, caps and Surge medals).
 - **Squad**: every runner's ratings as a heatmap, with what each should work on next. Good for planning groups.
 - **Athlete page**: the shape of the runner, what the next camp needs, and what to work on, with session ideas. The **Student version** has the same for the student.
 
-## 4. Printing
+## 5. Printing
 
 - **Cards**: **Cards & Print** → choose *Everyone*, *In-Form this week*, a year group, or hand-pick → **Print**. In Chrome's print dialog: paper **A4**, **Portrait**, scale **100%** (Default), **Background graphics** ticked. Nine cards per sheet; cut along the crop marks.
 - **Boards**: **Boards** → pick a board → choose A4 or A3 → **Print**. For the projector, click **Projector mode** (← → change board, C cycles every 20 s, F full screen, Esc to leave).
 - **Circuit handicap start**: **Handicap Start** → tick the runners → **Print start list**.
 
-## 5. Backups (weekly)
+## 6. Backups (weekly)
 
 **Settings → Data → Export everything** saves one `.json` file with everything (roster, aliases, results and their history, settings). A yellow banner reminds you after 7 days. Keep the file private: it contains dates of birth. To restore, use **Import a backup…** (*Replace everything*, or *Merge*).
 

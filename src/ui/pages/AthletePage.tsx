@@ -22,6 +22,7 @@ import type { AthleteDerived } from '../../engine/derive';
 import type { PerfScore, RatingKey } from '../../engine/types';
 import { ExplainModal, StudentSheet } from '../components/StatExplain';
 import { DevelopmentFocus, StatRadar, SummitLadder } from '../components/Mountain';
+import { NextFiveK } from '../components/NextFiveK';
 import { paceOf } from '../../engine/explain';
 import { formatPace } from '../../engine/format';
 
@@ -236,6 +237,10 @@ export function AthletePage() {
           {r.arm.missing.length > 0 && r.arm.missing.length < 3 && <p className="small muted">ARM levels so far: ankle {r.arm.ankle ?? '—'}, calf {r.arm.calf ?? '—'}, balance {r.arm.balance ?? '—'}.</p>}
         </Panel>
       </div>
+
+      <Panel title="Next 5K">
+        <NextFiveK d={d} config={derived.config} />
+      </Panel>
 
       <div className="athlete-mountain">
         <Panel title="The shape of a runner">

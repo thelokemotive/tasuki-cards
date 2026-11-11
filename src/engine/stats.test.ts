@@ -1052,7 +1052,7 @@ describe('race pathways (go-live plan 1)', () => {
   it('a race over 3.5 km effort does not feed SPD', () => {
     const r = rateL(coach, [perf({ kind: 'race', eventId: 'e-xc', timeSec: 1200 })]);
     expect(r.perfScores[0].feeds).not.toContain('SPD');
-    expect(r.stats.SPD).toMatchObject({ locked: true, unlockHint: 'Circuit or 3.5K' });
+    expect(r.stats.SPD).toMatchObject({ locked: true, unlockHint: 'Circuit or race' });
     expect(r.stats.SPD.unlockHelp).toBe('Run the Circuit, or a verified race, relay leg or parkrun of up to 3.5 km effort, to unlock SPD.');
   });
 
@@ -1149,5 +1149,31 @@ describe('NAV reference from any race: Riegel (go-live plan 6)', () => {
     c.nav.riegelExponent = 1.1;
     const r10 = perf({ kind: 'race', distanceKm: 10, timeSec: 2400, date: '2026-09-20' });
     expect(navReferencePace([r10], lookup, c, coach, AS_OF, 3)?.predictedRouteSec).toBeCloseTo(2400 * Math.pow(0.3, 1.1), 9);
+  });
+});
+
+describe('unofficial events and race caps', () => {
+  const evs: TasukiEvent[] = [
+    { id: 'e-relay', name: 'Training relay', date: '2026-10-01', kind: 'relay', distanceKm: 0.56, official: false },
+    { id: 'e-ekiden', name: 'Real Ekiden', date: '2026-10-10', kind: 'relay', distanceKm: 2, official: true },
+  ];
+  const lk2 = makeLookup(courses, evs);
+  it('a training relay earns no cap and no RACE; two legs of one ekiden are one cap', () => {
+    const r = computeAthleteRatings({
+      athlete: coach,
+      perfs: [
+        perf({ kind: 'relay_leg', eventId: 'e-relay', timeSec: 150, legNumber: 1 }),
+        perf({ kind: 'relay_leg', eventId: 'e-relay', timeSec: 152, legNumber: 3 }),
+        perf({ kind: 'relay_leg', eventId: 'e-ekiden', timeSec: 480, legNumber: 1, date: '2026-10-10' }),
+        perf({ kind: 'relay_leg', eventId: 'e-ekiden', timeSec: 490, legNumber: 3, date: '2026-10-10' }),
+      ],
+      lookup: lk2,
+      config: cfg,
+      asOf: AS_OF,
+      streakActiveOrFrozen: false,
+    });
+    expect(r.race.caps).toBe(1);
+    expect(r.perfScores[0].feeds).toEqual(['SPD']);
+    expect(r.race.basis?.perfIds.every((id) => r.perfScores.find((p) => p.perfId === id)?.date === '2026-10-10')).toBe(true);
   });
 });
