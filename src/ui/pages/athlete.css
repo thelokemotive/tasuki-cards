@@ -55,3 +55,30 @@
 .focus-refresh .focus-tag { background: var(--moss-soft); color: var(--moss); }
 .focus-ideas { display: block; color: var(--ink-2); font-size: 0.82rem; margin-top: 2px; }
 .student-top { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; break-inside: avoid; margin-bottom: 8px; }
+
+/* Next 5K */
+.nf-top { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.nf-stat { display: flex; flex-direction: column; padding: 10px 12px; border-radius: 12px; background: var(--surface-2); }
+.nf-l { font-size: 0.72rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
+.nf-v { font-size: 1.9rem; font-weight: 800; line-height: 1.1; color: var(--ai); }
+.nf-s { font-size: 0.8rem; color: var(--ink-2); }
+.nf-target { background: var(--moss-soft); }
+.nf-target .nf-v { color: var(--moss); }
+.nf-stretchbox { background: var(--shu-soft); }
+.nf-stretchbox .nf-v { color: var(--shu); }
+.nf-range { position: relative; height: 54px; margin: 18px 6px 4px; }
+.nf-range::before { content: ''; position: absolute; left: 0; right: 0; top: 22px; height: 4px; border-radius: 2px; background: var(--line); }
+.nf-band { position: absolute; top: 16px; height: 16px; border-radius: 8px; background: color-mix(in srgb, var(--ai) 22%, transparent); }
+.nf-mark { position: absolute; top: 14px; width: 20px; height: 20px; margin-left: -10px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 1px 4px rgb(0 0 0 / 30%); }
+.nf-pred { background: var(--ai); }
+.nf-pb { background: var(--gold); width: 14px; height: 14px; margin-left: -7px; top: 17px; }
+.nf-flag { position: absolute; top: -8px; transform: translateX(-50%); font-size: 0.7rem; font-weight: 800; white-space: nowrap; }
+.nf-flag::after { content: ''; display: block; width: 2px; height: 28px; margin: 0 auto; }
+.nf-real { color: var(--moss); }
+.nf-real::after { background: var(--moss); }
+.nf-stretch { color: var(--shu); }
+.nf-stretch::after { background: var(--shu); }
+.nf-axis { position: absolute; left: 0; right: 0; bottom: 0; display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--ink-3); }
+.nf-why { margin-top: 10px; }
+.nf-why summary { cursor: pointer; font-weight: 700; color: var(--ai-2); }
+.nf-why p { font-size: 0.9rem; margin: 8px 0; }

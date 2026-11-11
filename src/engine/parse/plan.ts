@@ -11,6 +11,7 @@ import { makePerformance } from '../corrections';
 import { looksLikeLineFormat, parseLineFormat } from './lineFormat';
 import { detectLayout, parseTable } from './table';
 import { normaliseSeparators } from './split';
+import { bookletToTable, ekidenToLineFormat } from './booklet';
 import type { ParseFormat, RawParse, RawRow, RawSection, SectionDefaults } from './types';
 import { athleteFromDraft, draftProblem, inferSex, isOurSchool, proposeNewAthlete, type NewAthleteDraft } from './newAthletes';
 import { parseSex } from './roster';
@@ -137,8 +138,28 @@ function resolveSection(s: RawSection, ctx: PlanContext): PlanSection {
   };
 }
 
-export function parseText(text: string, ctx: PlanContext): RawParse {
+export function parseText(textIn: string, ctx: PlanContext): RawParse {
   const opts = { today: ctx.today, config: ctx.config, source: ctx.source, defaults: ctx.defaults };
+  // Results booklets and ekiden write-ups are rewritten into formats the parsers below already read.
+  const notes: string[] = [];
+  let text = textIn;
+  const booklet = !ctx.format || ctx.format === 'auto' ? bookletToTable(text) : undefined;
+  if (booklet) {
+    text = booklet.text;
+    notes.push(`Read as a results booklet: ${booklet.rows} runners in ${booklet.categories.length} categor${booklet.categories.length === 1 ? 'y' : 'ies'} (${booklet.categories.join(', ')}). Each category becomes its own event.`);
+  } else if (!ctx.format || ctx.format === 'auto') {
+    const ek = ekidenToLineFormat(text, { name: ctx.defaults?.name, date: ctx.defaults?.date, distanceKm: ctx.defaults?.distanceKm });
+    if (ek) {
+      text = ek.text;
+      notes.push(`Read as an ekiden write-up: ${ek.legs} legs from ${ek.teams} team${ek.teams === 1 ? '' : 's'}.`);
+    }
+  }
+  const parsed = parseTextInner(text, ctx, opts);
+  parsed.warnings.unshift(...notes);
+  return parsed;
+}
+
+function parseTextInner(text: string, ctx: PlanContext, opts: { today: string; config: Config; source?: 'paste' | 'voice'; defaults?: SectionDefaults & { eventId?: string } }): RawParse {
   const fmt = ctx.format && ctx.format !== 'auto' ? ctx.format : looksLikeLineFormat(text) ? 'line' : 'table';
   if (fmt === 'line') return parseLineFormat(text, opts);
   // Headerless lines of "Name time" are best read as line format with the chosen event.
@@ -170,7 +191,9 @@ export function evaluateRow(row: PlanRow, athleteId: string | undefined, plan: P
     );
     if (dup) return { warnings: ['duplicate of an existing result'], duplicateOfPerfId: dup.id };
   }
-  const earlier = plan.rows.find((r) => r !== row && r.sectionKey === row.sectionKey && r.athleteId === athleteId && plan.rows.indexOf(r) < plan.rows.indexOf(row) && r.status !== 'skip' && r.status !== 'outsider');
+  // A runner on two legs of a relay (different leg numbers) is normal, not a duplicate.
+  const twoLegs = (r: PlanRow) => row.kind === 'relay_leg' && row.raw.legNumber != null && r.raw.legNumber != null && r.raw.legNumber !== row.raw.legNumber;
+  const earlier = plan.rows.find((r) => r !== row && r.sectionKey === row.sectionKey && r.athleteId === athleteId && plan.rows.indexOf(r) < plan.rows.indexOf(row) && r.status !== 'skip' && r.status !== 'outsider' && !twoLegs(r));
   if (earlier) {
     const sameResult = earlier.raw.timeSec === row.raw.timeSec && earlier.raw.laps === row.raw.laps;
     warnings.push(sameResult ? 'duplicate row' : `same athlete as line ${earlier.raw.line}`);

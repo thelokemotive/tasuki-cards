@@ -5,7 +5,7 @@ import type { Config } from './config';
 import type { Badge, BadgeKind, CourseRecord, StreakResult, SurgeResult } from './types';
 import { ARM_DOMAINS, armLevelsFromTest, type ArmDomain } from './arm';
 import { weekMonday } from './dates';
-import { byDate, counts, isRaceCap, resolveContext, TIMED_KINDS, type Lookup } from './perf';
+import { byDate, counts, raceCapPerfs, resolveContext, TIMED_KINDS, type Lookup } from './perf';
 
 /** Order badges are listed in (the spec's order); the card row re-sorts by prestige. */
 const KIND_ORDER: BadgeKind[] = ['caps', 'parkrun', 'distance', 'mountain', 'streak', 'arm', 'surge', 'record', 'expedition', 'custom'];
@@ -56,7 +56,7 @@ export function computeBadges(input: {
   const mine = input.perfs.filter((p) => p.athleteId === athlete.id && counts(p) && p.date <= asOf).sort(byDate);
   const badges: Badge[] = [];
 
-  const caps = mine.filter(isRaceCap);
+  const caps = raceCapPerfs(mine, lookup);
   if (caps.length) {
     const last = caps[caps.length - 1];
     badges.push({ key: 'caps', kind: 'caps', label: plural(caps.length, 'race cap', 'race caps'), icon: '★', count: caps.length, date: last.date, perfId: last.id });

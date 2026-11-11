@@ -1,5 +1,6 @@
 // View model for a trading card, built from derived data. The card component only renders this.
 // DOB and coach-only notes are never part of a card.
+import { formatTime } from '../../engine/format';
 import type { Avatar, YearGroup } from '../../types';
 import type { AthleteDerived } from '../../engine/derive';
 import type { AvatarUnlocks } from '../../engine/avatarUnlocks';
@@ -38,6 +39,8 @@ export interface CardData {
   avatar: Avatar;
   unlocks: AvatarUnlocks;
   provisionalAny: boolean;
+  /** The realistic next-5K target, e.g. '22:20' (printed in the footer). */
+  fiveKTarget?: string;
 }
 
 const LABEL: Record<StatKey, string> = { SPD: 'SPD', END: 'END', CLB: 'CLB', DSC: 'DSC', NAV: 'NAV', ARM: 'ARM' };
@@ -56,6 +59,7 @@ export function buildCardData(d: AthleteDerived): CardData {
   const firstInForm = d.inForm[0];
   const rawPb = d.inForm.find((x) => x.type === 'raw');
   return {
+    fiveKTarget: d.prediction ? formatTime(d.prediction.realisticSec) : undefined,
     athleteId: d.athlete.id,
     name: displayName(d.athlete),
     yearGroup: d.athlete.yearGroup,

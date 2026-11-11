@@ -66,7 +66,7 @@ function defaultLock(key: RatingKey, config: Config): Lock {
   switch (key) {
     case 'SPD':
       return config.spd.allowRaces
-        ? { hint: `Circuit or ${kmLabel(config.spd.raceMaxKmEff)}K`, help: `Run the Circuit, or a verified race, relay leg or parkrun of up to ${kmLabel(config.spd.raceMaxKmEff)} km effort, to unlock SPD.` }
+        ? { hint: 'Circuit or race', help: `Run the Circuit, or a verified race, relay leg or parkrun of up to ${kmLabel(config.spd.raceMaxKmEff)} km effort, to unlock SPD.` }
         : { hint: 'Run the Circuit', help: 'Run the Circuit (verified) to unlock SPD.' };
     case 'END':
       return config.end.allowLongRuns
@@ -276,7 +276,7 @@ function raceLine(e: Entry): string {
 function raceStat(entries: Entry[], own: Performance[], input: StatsInput): RaceStat {
   const { config, asOf } = input;
   // Caps are lifetime, but only for results with a real date on or before the as-of date.
-  const caps = raceCaps(own.filter((p) => isISODate(p.date) && p.date <= asOf));
+  const caps = raceCaps(own.filter((p) => isISODate(p.date) && p.date <= asOf), input.lookup);
   const pool = entries.filter((e) => e.ps.feeds.includes('RACE') && e.ps.fresh != null).sort(byFreshDesc);
   const top = pool.slice(0, 3);
   if (top.length === 0) return { ...lockedStat('RACE', lockFor('RACE', entries, config, asOf), config), caps };

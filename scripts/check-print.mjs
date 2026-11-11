@@ -84,7 +84,8 @@ try {
         });
         // Locked stats must not show numbers.
         card.querySelectorAll('.tc-stat.is-locked').forEach((el) => {
-          if (/\d/.test(el.querySelector('.tc-stat-locked')?.textContent ?? '')) issues.push(`card ${who}: locked stat shows a number`);
+          // A rating is 40–99; hints may name distances ("Bleep or 5K+"), so look for a rating-shaped number.
+          if (/(^|[^\d.])(4\d|[5-9]\d)(?![\d.])/.test(el.querySelector('.tc-stat-locked')?.textContent ?? '')) issues.push(`card ${who}: locked stat shows a number`);
         });
         // Provisional markers never print.
         card.querySelectorAll('.prov').forEach((el) => {

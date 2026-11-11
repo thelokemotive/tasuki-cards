@@ -11,6 +11,7 @@ import { formatLongDate, formatShortDate } from '../../engine/dates';
 import { displayName } from '../../engine/display';
 import { STAT_NAMES } from '../cards/cardData';
 import { DevelopmentFocus, StatRadar, SummitLadder } from './Mountain';
+import { NextFiveK } from './NextFiveK';
 
 const STATUS_PILL: Record<ConsideredStatus, string> = {
   used: 'pill-ok',
@@ -144,6 +145,10 @@ export function StudentSheet({ d }: { d: AthleteDerived }) {
           <h2 style={{ marginTop: 0 }}>Your climb</h2>
           <SummitLadder d={d} config={derived.config} />
         </div>
+      </section>
+      <section className="student-stat">
+        <h2>Your next 5K</h2>
+        <NextFiveK d={d} config={derived.config} student />
       </section>
       <section className="student-stat">
         <h2>What to work on</h2>

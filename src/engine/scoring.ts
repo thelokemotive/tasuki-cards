@@ -226,7 +226,9 @@ export function perfFeeds(ctx: PerfContext, config: Config): RatingKey[] {
     case 'race':
     case 'relay_leg':
     case 'parkrun':
-      out.push('RACE');
+      // An unofficial event (a training relay, a stopwatch time trial) is not a race: it still feeds SPD,
+      // END and CLB, but not RACE.
+      if (ctx.event?.official !== false) out.push('RACE');
       if (isShortRace(ctx, config)) out.push('SPD');
       if (longEnough) out.push('END');
       if (isHillRun(ctx, config)) out.push('CLB');

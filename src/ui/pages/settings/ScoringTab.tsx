@@ -21,6 +21,7 @@ const SECTION_LABELS: Record<string, string> = {
   race: 'RACE weights (3.9)',
   spd: 'SPD: short races',
   clb: 'CLB: hill races',
+  predict: 'Next 5K prediction',
   end: 'END: bleep test and long runs (3.9)',
   nav: 'NAV (3.9)',
   arm: 'ARM thresholds (3.9)',

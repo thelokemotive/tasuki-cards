@@ -11,6 +11,7 @@ import { computeSurges } from './surge';
 import { computeCourseRecords, computeInForm, computePersonalBests } from './pbs';
 import { badgeRow, computeBadges } from './badges';
 import { computeAvatarUnlocks, type AvatarUnlocks } from './avatarUnlocks';
+import { predictFiveK, type Prediction } from './predict';
 
 /** Badges shown on the card's badge row (spec 5: "badge row (up to 5 icons)"). */
 export const CARD_BADGE_ROW = 5;
@@ -33,6 +34,8 @@ export interface AthleteDerived {
   /** This athlete's relay legs (with or without a baseline), oldest first. */
   surges: SurgeResult[];
   avatarUnlocks: AvatarUnlocks;
+  /** Next-5K prediction and targets; undefined with no usable timed result. */
+  prediction?: Prediction;
 }
 
 export interface Derived {
@@ -112,6 +115,7 @@ export function deriveAll(snapshot: DataSnapshot, asOf: ISODate, configOverride?
       badgeRow: badgeRow(badges, CARD_BADGE_ROW),
       surges: mySurges,
       avatarUnlocks: computeAvatarUnlocks(ratings, streak, mySurges, config),
+      prediction: predictFiveK(athlete, own, lookup, config, asOf),
     });
   }
 
