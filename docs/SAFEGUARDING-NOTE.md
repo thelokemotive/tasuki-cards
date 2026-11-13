@@ -24,10 +24,10 @@ No contact details, addresses, photos, location tracking or messaging.
 
 ## Where it is held
 
-Google Firebase (Firestore), in Google's Tokyo region, under the Firebase project I created with my school account. I export a full backup weekly. A leaver's record can be deleted on request, and the whole database can be wiped from Settings.
+Google Firebase (Firestore), in Google's Tokyo region, under a Firebase project I created with my personal Google account (the school uses Microsoft, so there is no school Google account to hold it). I export a full backup weekly. A leaver's record can be deleted on request, and the whole database can be wiped from Settings.
 
 ## Decisions I would like from you
 
-1. Are you content for pupil names, dates of birth and results to be held in Google Firebase on these terms, or should the project be moved under the school's Google Workspace administration first?
+1. Are you content for pupil names, dates of birth and results to be held in Google Firebase on these terms, given that the project sits under my personal Google account and not a school-administered one?
 2. Who else should be on the coach list (it currently holds only me)?
 3. **Not built, and will not be switched on without your sign-off:** a pupil view, where a runner could sign in and see their own card and the boards. If you are open to it, it would exclude dates of birth and coach notes, and I would bring you the design first.
