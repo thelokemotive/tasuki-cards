@@ -79,3 +79,25 @@ describe('handicapStartSheet (spec 3.14)', () => {
     ]);
   });
 });
+
+describe('handicap from 5K predictions (any course)', () => {
+  it('slowest predicted runner goes first; the gap is the difference in predicted course times', async () => {
+    const { handicapFromPredictions } = await import('./handicap');
+    const { DEFAULT_CONFIG } = await import('./config');
+    const rows = handicapFromPredictions({
+      athletes: [
+        { id: 'fast', age: 15.5, predicted5kSec: 1200 },
+        { id: 'slow', age: 15.5, predicted5kSec: 1800 },
+        { id: 'none', age: 15.5 },
+      ],
+      distanceKm: 3.5,
+      climbM: 500,
+      config: DEFAULT_CONFIG,
+    });
+    // D_eff = 3.5 + 5 = 8.5 km; both scale by the same factor, so the gap is 600 × (8.5/5)^b
+    expect(rows.map((r) => r.athleteId)).toEqual(['none', 'slow', 'fast']);
+    const b = 1.08; // age 15
+    expect(rows[2].offsetSec).toBe(Math.round((600 * Math.pow(8.5 / 5, b)) / 5) * 5);
+    expect(rows[1].offsetSec).toBe(0);
+  });
+});
