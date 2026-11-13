@@ -70,6 +70,7 @@ export function DataProvider({ children, storeOverride }: { children: ReactNode;
 
   useEffect(() => {
     let cancelled = false;
+    let unsubscribe: (() => void) | undefined;
     (async () => {
       let s: Store = storeOverride ?? store;
       if (!storeOverride) {
@@ -82,8 +83,20 @@ export function DataProvider({ children, storeOverride }: { children: ReactNode;
       }
       const loaded = await s.loadAll();
       const { snapshot: seeded, changes } = withSeed(loaded);
-      if (!isEmptyChanges(changes)) await persistChanges(s, changes);
+      // A shared store acknowledges writes only once online, so the first-run seed is not awaited there.
+      if (!isEmptyChanges(changes)) {
+        const seeding = persistChanges(s, changes);
+        if (s.subscribe) seeding.catch(() => undefined);
+        else await seeding;
+      }
       if (cancelled) return;
+      if (s.subscribe) {
+        unsubscribe = s.subscribe((remote) => {
+          const next = withSeed(remote).snapshot;
+          snapRef.current = next;
+          setSnapshot(next);
+        });
+      }
       storeRef.current = s;
       setStore(s);
       snapRef.current = seeded;
@@ -96,6 +109,7 @@ export function DataProvider({ children, storeOverride }: { children: ReactNode;
     });
     return () => {
       cancelled = true;
+      unsubscribe?.();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

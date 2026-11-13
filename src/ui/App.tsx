@@ -1,6 +1,8 @@
 // App shell: navigation, saved indicator, storage/backup banners and routes.
 import './styles/app.css';
-import type { ReactNode } from 'react';
+import { lazy, Suspense, type ReactNode } from 'react';
+import { useAccount } from './cloud/account';
+import { AccountMenu } from './cloud/AccountMenu';
 import { DataProvider, useData } from './data/DataContext';
 import { ToastProvider, useToast } from './components/Toast';
 import { Link, useRoute, type Route } from './router';
@@ -100,14 +102,19 @@ function renderPage(route: Route): ReactNode {
   }
 }
 
+// The website build only: sign-in and the shared database. `__WEB__` is false in the single file, so
+// the bundler drops this import and the file stays free of network code.
+const CloudGate = __WEB__ ? lazy(() => import('./cloud/CloudGate')) : null;
+
 function SaveIndicator() {
   const { save, persistent } = useData();
+  const shared = useAccount() != null;
   if (!persistent) return <span className="save-ind error"><span className="dot" />Not saving (memory only)</span>;
   if (save.error) return <span className="save-ind error" title={save.error}><span className="dot" />Save failed</span>;
   if (save.pending > 0) return <span className="save-ind saving"><span className="dot" />Saving…</span>;
   const at = save.lastSavedAt ? new Date(save.lastSavedAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : null;
   return (
-    <span className="save-ind" title="Everything is saved in this browser (IndexedDB)">
+    <span className="save-ind" title={shared ? 'Saved to the shared squad database (changes made offline sync when you are back online)' : 'Everything is saved in this browser (IndexedDB)'}>
       <span className="dot" />
       Saved{at ? ` ${at}` : ''}
     </span>
@@ -193,6 +200,7 @@ function Shell() {
             </span>
           )}
           <SaveIndicator />
+          <AccountMenu />
         </header>
         <Banners />
         <main className="content">{data.ready ? renderPage(route) : <p className="muted">Loading…</p>}</main>
@@ -204,9 +212,17 @@ function Shell() {
 export function App() {
   return (
     <ToastProvider>
-      <DataProvider>
-        <Shell />
-      </DataProvider>
+      {CloudGate ? (
+        <Suspense fallback={null}>
+          <CloudGate>
+            <Shell />
+          </CloudGate>
+        </Suspense>
+      ) : (
+        <DataProvider>
+          <Shell />
+        </DataProvider>
+      )}
     </ToastProvider>
   );
 }

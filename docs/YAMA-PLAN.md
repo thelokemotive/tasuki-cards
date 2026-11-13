@@ -26,4 +26,4 @@ Fabian's brief (5 Nov 2026), after go-live: make it the best it can be for him a
 - **Seasonal quests**: a short list of team challenges per half-term (everyone unlocks ARM; 10 runners on a 4-week streak) that fill a shared progress bar on the projector.
 - **Card backs and foil**: a printable back for the cards, and a foil effect for Icon cards on screen.
 - **Stage 2 hooks** from the brief: NAV butterfly course generator, termly report drafts (the explanations and focus are most of the text already), ekiden line-up advisor.
-- **Stage 3**: a shared database and a student view; the student sheet is the start of it.
+- **Stage 3**: the shared database and staff-only website are built (13 Nov 2026, `docs/WEBSITE-SETUP.md`). The student view is not, and waits for the safeguarding lead (`docs/SAFEGUARDING-NOTE.md`).

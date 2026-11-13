@@ -22,6 +22,8 @@ export default defineConfig(({ mode }) => {
     base: './',
     plugins: [react(), ...(single ? [viteSingleFile(), renameSingleFile()] : [])],
     define: {
+      // The website build (`vite build`) signs in with Firebase; the single file and dev stay offline.
+      __WEB__: JSON.stringify(mode === 'production'),
       __BUILD_DATE__: JSON.stringify(new Date().toISOString().slice(0, 10)),
     },
     build: {
