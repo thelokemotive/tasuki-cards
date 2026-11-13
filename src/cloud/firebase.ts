@@ -21,7 +21,7 @@ import type { AppMeta, Calendar, DataSnapshot } from '../types';
 import { emptySnapshot, type Store, type TableMap, type TableName } from '../store/Store';
 import type { Changes } from '../store/changes';
 import { changesToPatches, docsToSnapshot, META_DOC, snapshotToDocs } from './codec';
-import { SCHOOL_DOMAIN } from '../ui/cloud/account';
+import { SCHOOL_TENANT } from '../ui/cloud/account';
 
 const SQUAD = 'squad';
 
@@ -98,7 +98,7 @@ export async function connect(): Promise<Cloud> {
   const db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
   // School accounts are Microsoft 365 accounts. `tenant` sends people straight to the school's sign-in page.
   const provider = new OAuthProvider('microsoft.com');
-  provider.setCustomParameters({ tenant: SCHOOL_DOMAIN, prompt: 'select_account' });
+  provider.setCustomParameters({ tenant: SCHOOL_TENANT, prompt: 'select_account' });
   const access = doc(db, 'access', 'main');
   return {
     onUser: (cb) => onAuthStateChanged(auth, (u: User | null) => cb(u?.email ? { email: u.email.toLowerCase() } : null)),
