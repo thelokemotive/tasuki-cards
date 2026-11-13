@@ -158,6 +158,11 @@ Plan and summary: `docs/YAMA-PLAN.md`.
 - **Handicap for any course**: distance and climb (or a saved course); each runner's predicted course time is their 5K prediction × (effective distance ÷ 5)^b with the youth exponent; head start = slowest − own, rounded to 5 s.
 - **The Silly Lab** (`src/ui/avatar/extras.tsx`): eight stackable slots (hat, face, mouth, held, running buddy, feet, back, trail) with original drawings; over ten million combinations. Most items are free; a few are earned from the data (crown: Gold; summit flag: Icon; halo: 8-week streak; rocket boots: SPD 80+; giant compass: NAV 75+; kamoshika: CLB 70+; trophy: a course record or a gold Surge; expedition pack: an expedition badge; shooting stars: In-Form; pace robot: a 5K prediction). **Surprise me** picks a random outfit from what the runner can wear. Appearance never affects a rating. The avatar's drawing area grew upwards (viewBox 0 −12 100 142) so tall hats fit.
 
+## Compared with Japan (13 Nov 2026)
+
+- Source: スポーツ庁 令和7年度 体力・運動能力調査, table 1-2, 持久走 (boys 1,500 m, girls 1,000 m), mean and SD in seconds by age 12–19 (n ≈ 150–370 per age and sex), in `src/engine/peer.ts`. These replace the research report's parameterised table, which was not used.
+- The runner's 5K prediction is converted to the survey distance with the same youth Riegel exponent, then compared as a speed (distance ÷ time) against the national mean and SD (delta method), giving "faster than X% of N-year-old boys/girls in Japan". The national survey covers every pupil tested, not just runners, so most academy runners sit well above the middle; below the middle, the panel adds how many more they would overtake at their realistic target.
+
 ## Open questions for the coach
 
 1. Surge sanity gate: minimum of 3 legs with a baseline per event and distance (see above). Is that right?

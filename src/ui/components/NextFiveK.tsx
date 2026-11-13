@@ -6,6 +6,8 @@ import { explainPrediction, DEFAULT_PREDICT, type PredictConfig } from '../../en
 import { formatTime } from '../../engine/format';
 import { formatShortDate } from '../../engine/dates';
 import { displayName } from '../../engine/display';
+import { peerComparison, PEER_SOURCE } from '../../engine/peer';
+import { ageOnDate } from '../../engine/age';
 
 /** A horizontal scale: the interval as a band, the prediction as a dot, the targets as flags. */
 function Range({ low, high, pred, realistic, stretch, best }: { low: number; high: number; pred: number; realistic: number; stretch: number; best?: number }) {
@@ -65,6 +67,26 @@ export function NextFiveK({ d, config, student = false }: { d: AthleteDerived; c
           </div>
         )}
       </div>
+      {(() => {
+        const age = ageOnDate(d.athlete, p.asOf, config, p.asOf).age;
+        const peer = peerComparison(p.predictedSec, age, d.athlete.sex, cfg);
+        if (!peer) return null;
+        const who = `${peer.age}-year-old ${d.athlete.sex === 'F' ? 'girls' : 'boys'} in Japan`;
+        return (
+          <div className="nf-peer" title={PEER_SOURCE}>
+            <span className="nf-peer-pct num">{peer.fasterThanPct >= 99.5 ? '99.5+' : Math.round(peer.fasterThanPct)}%</span>
+            <span>
+              Faster than <strong>{peer.fasterThanPct >= 99.5 ? '99.5' : Math.round(peer.fasterThanPct)}% of {who}</strong>. Your 5K prediction is worth {formatTime(peer.equivalentSec)} for {peer.km === 1 ? '1,000' : '1,500'} m; the national average at your age is {formatTime(peer.nationalMeanSec)}.
+              {peer.fasterThanPct < 50 &&
+                (() => {
+                  const next = peerComparison(p.realisticSec, age, d.athlete.sex, cfg);
+                  return next && next.fasterThanPct > peer.fasterThanPct ? <> Hit your realistic target and you overtake another {Math.round(next.fasterThanPct - peer.fasterThanPct)}% of Japan.</> : null;
+                })()}
+              <span className="tiny muted"> Japan Sports Agency national fitness survey 2025 (令和7年度), {peer.sample} {d.athlete.sex === 'F' ? 'girls' : 'boys'} aged {peer.age}.</span>
+            </span>
+          </div>
+        );
+      })()}
       <Range low={p.lowSec} high={p.highSec} pred={p.predictedSec} realistic={p.realisticSec} stretch={p.stretchSec} best={p.best5kSec} />
       <details className="nf-why">
         <summary>Why these numbers?</summary>

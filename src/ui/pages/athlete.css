@@ -92,3 +92,6 @@
 .nf-stretch { top: 22px; }
 .nf-stretch::after { display: none; }
 .nf-stretch::before { content: ''; display: block; width: 2px; height: 14px; margin: 0 auto; background: var(--shu); }
+
+.nf-peer { display: flex; gap: 12px; align-items: center; margin-top: 10px; padding: 10px 12px; border-radius: 12px; background: linear-gradient(90deg, #fff4d6, #fffdf8); border: 1px solid #f0d995; font-size: 0.9rem; }
+.nf-peer-pct { font-size: 1.8rem; font-weight: 800; color: #9a6b00; min-width: 3.4em; text-align: center; }
