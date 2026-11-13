@@ -8,8 +8,14 @@ service cloud.firestore {
         && request.auth.token.firebase.sign_in_provider == 'microsoft.com'
         && request.auth.token.email.lower().matches('^[^@]+@harrowappi[.]jp$');
     }
+    // Stopgap: the head coach's own Google account (it already owns this Firebase project), by user ID.
+    function ownerGoogle() {
+      return request.auth != null
+        && request.auth.token.firebase.sign_in_provider == 'google.com'
+        && request.auth.uid == '__OWNER_GOOGLE_UID__';
+    }
     function owner() {
-      return school() && request.auth.token.email.lower() == 'floke@harrowappi.jp';
+      return ownerGoogle() || (school() && request.auth.token.email.lower() == 'floke@harrowappi.jp');
     }
     function coach() {
       return owner()

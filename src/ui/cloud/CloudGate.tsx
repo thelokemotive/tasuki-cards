@@ -5,7 +5,7 @@ import { connect, type Cloud } from '../../cloud/firebase';
 import { DataProvider } from '../data/DataContext';
 import { YamaScene } from '../art/YamaScene';
 import { BrandMark } from '../components/BrandMark';
-import { AccountContext, OWNER_EMAIL, SCHOOL_DOMAIN } from './account';
+import { AccountContext, OWNER_EMAIL, OWNER_GOOGLE_UID, SCHOOL_DOMAIN } from './account';
 import './cloud.css';
 
 type Phase =
@@ -13,7 +13,7 @@ type Phase =
   | { at: 'error'; message: string }
   | { at: 'signedOut' }
   | { at: 'denied'; email: string; why: 'domain' | 'list' }
-  | { at: 'in'; email: string; coaches: string[] };
+  | { at: 'in'; email: string; owner: boolean; coaches: string[] };
 
 function Door({ children }: { children: ReactNode }) {
   const hour = new Date().getHours();
@@ -49,11 +49,12 @@ export default function CloudGate({ children }: { children: ReactNode }) {
         setCloud(c);
         off = c.onUser(async (user) => {
           if (!user) return setPhase({ at: 'signedOut' });
-          if (!user.email.endsWith(`@${SCHOOL_DOMAIN}`)) return setPhase({ at: 'denied', email: user.email, why: 'domain' });
+          const owner = user.email === OWNER_EMAIL || user.uid === OWNER_GOOGLE_UID;
+          if (!owner && !user.email.endsWith(`@${SCHOOL_DOMAIN}`)) return setPhase({ at: 'denied', email: user.email, why: 'domain' });
           setPhase({ at: 'loading' });
           try {
             const coaches = await c.loadCoaches();
-            setPhase(coaches ? { at: 'in', email: user.email, coaches } : { at: 'denied', email: user.email, why: 'list' });
+            setPhase(coaches ? { at: 'in', email: user.email, owner, coaches } : { at: 'denied', email: user.email, why: 'list' });
           } catch (e) {
             setPhase({ at: 'error', message: e instanceof Error ? e.message : String(e) });
           }
@@ -67,16 +68,16 @@ export default function CloudGate({ children }: { children: ReactNode }) {
   }, []);
 
   if (phase.at === 'in' && cloud) {
-    const { email, coaches } = phase;
+    const { email, owner, coaches } = phase;
     return (
       <AccountContext.Provider
         value={{
           email,
-          isOwner: email === OWNER_EMAIL,
+          isOwner: owner,
           coaches,
           saveCoaches: async (emails) => {
             await cloud.saveCoaches(emails);
-            setPhase({ at: 'in', email, coaches: emails });
+            setPhase({ at: 'in', email, owner, coaches: emails });
           },
           signOut: cloud.signOut,
         }}
@@ -88,11 +89,11 @@ export default function CloudGate({ children }: { children: ReactNode }) {
     );
   }
 
-  const signIn = () => {
+  const signIn = (withGoogle = false) => {
     if (!cloud) return;
     setBusy(true);
     cloud
-      .signIn()
+      .signIn(withGoogle)
       .catch((e) => setPhase({ at: 'error', message: e instanceof Error ? e.message : String(e) }))
       .finally(() => setBusy(false));
   };
@@ -103,10 +104,13 @@ export default function CloudGate({ children }: { children: ReactNode }) {
       {phase.at === 'signedOut' && (
         <>
           <p>Sign in with your school Microsoft account to open the squad.</p>
-          <button className="btn btn-primary btn-lg door-btn" onClick={signIn} disabled={busy}>
+          <button className="btn btn-primary btn-lg door-btn" onClick={() => signIn()} disabled={busy}>
             Sign in with Microsoft
           </button>
           <p className="tiny muted">Only @{SCHOOL_DOMAIN} accounts on the coach list can see the data.</p>
+          <button className="btn btn-ghost btn-sm door-alt" onClick={() => signIn(true)} disabled={busy}>
+            Head coach: sign in with Google
+          </button>
         </>
       )}
       {phase.at === 'denied' && (

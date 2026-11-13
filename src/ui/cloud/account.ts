@@ -7,6 +7,12 @@ export const SCHOOL_TENANT = '41ec83bc-a7bf-44b7-ad13-22e010566373';
 /** The head coach: always allowed in, and the only account that can change the coach list. Mirrored in firestore.rules. */
 export const OWNER_EMAIL = 'floke@harrowappi.jp';
 
+/**
+ * Stopgap: the head coach's own Google account (the one that owns the Firebase project), by Firebase
+ * user ID, so he can get in while the school Microsoft sign-in is being set up. Mirrored in firestore.rules.
+ */
+export const OWNER_GOOGLE_UID = '__OWNER_GOOGLE_UID__';
+
 export interface Account {
   email: string;
   isOwner: boolean;

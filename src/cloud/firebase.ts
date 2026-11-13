@@ -1,7 +1,7 @@
 // The website's only network code: Microsoft sign-in for school accounts and the shared database.
 // Loaded only in the website build (see __WEB__); the offline single file never includes it.
 import { initializeApp, type FirebaseOptions } from 'firebase/app';
-import { getAuth, OAuthProvider, onAuthStateChanged, signInWithPopup, signInWithRedirect, signOut, type User } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, OAuthProvider, onAuthStateChanged, signInWithPopup, signInWithRedirect, signOut, type User } from 'firebase/auth';
 import {
   collection,
   deleteField,
@@ -26,8 +26,8 @@ import { SCHOOL_TENANT } from '../ui/cloud/account';
 const SQUAD = 'squad';
 
 export interface Cloud {
-  onUser(cb: (user: { email: string } | null) => void): () => void;
-  signIn(): Promise<void>;
+  onUser(cb: (user: { email: string; uid: string } | null) => void): () => void;
+  signIn(withGoogle?: boolean): Promise<void>;
   signOut(): Promise<void>;
   /** The coach list, or null when this account is not allowed in. */
   loadCoaches(): Promise<string[] | null>;
@@ -101,13 +101,14 @@ export async function connect(): Promise<Cloud> {
   provider.setCustomParameters({ tenant: SCHOOL_TENANT, prompt: 'select_account' });
   const access = doc(db, 'access', 'main');
   return {
-    onUser: (cb) => onAuthStateChanged(auth, (u: User | null) => cb(u?.email ? { email: u.email.toLowerCase() } : null)),
-    async signIn() {
+    onUser: (cb) => onAuthStateChanged(auth, (u: User | null) => cb(u?.email ? { email: u.email.toLowerCase(), uid: u.uid } : null)),
+    async signIn(withGoogle = false) {
+      const p = withGoogle ? new GoogleAuthProvider() : provider;
       try {
-        await signInWithPopup(auth, provider);
+        await signInWithPopup(auth, p);
       } catch (e) {
         const code = (e as { code?: string }).code ?? '';
-        if (code === 'auth/popup-blocked' || code === 'auth/operation-not-supported-in-this-environment') await signInWithRedirect(auth, provider);
+        if (code === 'auth/popup-blocked' || code === 'auth/operation-not-supported-in-this-environment') await signInWithRedirect(auth, p);
         else if (code !== 'auth/popup-closed-by-user' && code !== 'auth/cancelled-popup-request') throw e;
       }
     },
