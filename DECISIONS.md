@@ -149,6 +149,15 @@ Plan and summary: `docs/YAMA-PLAN.md`.
 - **Results booklets** (the ISTS layout used at Hachimantai XC) and **ekiden write-ups** ("Team (1st, general): 34:25" then "Name (9:18) → Name (8:26)") are recognised in Paste & Match and rewritten into the table and line formats (`src/engine/parse/booklet.ts`). Each booklet category becomes its own event, with distance, club (our school flagged) and category (sex).
 - **The card footer** shows the realistic next-5K target when there is one.
 
+## Placings, parkrun, handicap and the Silly Lab (13 Nov 2026)
+
+- **parkrun is not a race.** RACE (and race caps) are races and relay legs at official events. A parkrun still feeds SPD, END and the 5K prediction, and has its own parkrun badges. RACE measures how good the best races were (age-graded, top three weighted 50/30/20), not how many: racing more earns caps and badges, never RACE points, as in the original spec.
+- **Placings lists.** A pasted table with places and no times at all (a whole-school race such as the Green Long Ducker) keeps each matched runner's place, and the field size comes from the list. In a table that has times, a missing time is still an error. Non-academy runners are counted, never stored.
+- **Compared with the school** (athlete page): every placed result as a share of the field ("Top 5% · 4 of 86"), and the change since the last edition of the same race series (the event name without the year).
+- **Event pages**: a field strip (fastest on the left, last finisher on the right) with our runners on it, top % and the gap to the winner. Event names are links everywhere (athlete results, the stat basis, Home).
+- **Handicap for any course**: distance and climb (or a saved course); each runner's predicted course time is their 5K prediction × (effective distance ÷ 5)^b with the youth exponent; head start = slowest − own, rounded to 5 s.
+- **The Silly Lab** (`src/ui/avatar/extras.tsx`): eight stackable slots (hat, face, mouth, held, running buddy, feet, back, trail) with original drawings; over ten million combinations. Most items are free; a few are earned from the data (crown: Gold; summit flag: Icon; halo: 8-week streak; rocket boots: SPD 80+; giant compass: NAV 75+; kamoshika: CLB 70+; trophy: a course record or a gold Surge; expedition pack: an expedition badge; shooting stars: In-Form; pace robot: a 5K prediction). **Surprise me** picks a random outfit from what the runner can wear. Appearance never affects a rating. The avatar's drawing area grew upwards (viewBox 0 −12 100 142) so tall hats fit.
+
 ## Open questions for the coach
 
 1. Surge sanity gate: minimum of 3 legs with a baseline per event and distance (see above). Is that right?
