@@ -87,3 +87,8 @@
 .placing-bar { height: 8px; border-radius: 4px; background: var(--surface-2); overflow: hidden; }
 .placing-bar span { display: block; height: 100%; border-radius: 4px; background: linear-gradient(90deg, #c9b98a, var(--moss)); }
 .placing-text { font-size: 0.9rem; margin-top: 3px; }
+.student-stat.student-first { break-inside: auto; page-break-inside: auto; border-top: 0; }
+/* stretch label below the line so it never collides with the realistic label above */
+.nf-stretch { top: 22px; }
+.nf-stretch::after { display: none; }
+.nf-stretch::before { content: ''; display: block; width: 2px; height: 14px; margin: 0 auto; background: var(--shu); }
