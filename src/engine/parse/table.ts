@@ -245,6 +245,16 @@ export function parseTable(text: string, opts: { today: string; config: Config; 
     rows.push(row);
   });
 
+  // A placings list (a whole-school race with positions only, no times at all) is still useful: keep the
+  // places. In a table that has times, a missing time stays an error (the row is skipped).
+  if (rows.length && rows.every((r) => r.timeSec == null) && rows.some((r) => r.place != null)) {
+    for (const r of rows) {
+      if (r.place == null || !r.errors.includes('missing time')) continue;
+      r.errors = r.errors.filter((e) => e !== 'missing time');
+      r.warnings.push('place only (no time)');
+    }
+    warnings.push('A placings list: places only, no times. Places and field sizes are saved; times can be added later.');
+  }
   if (!rows.length) warnings.push('No results found. Check that the text has a name and a time on each line.');
   if (layout.headerRow == null && layout.delimiter !== 'none' && !layout.roles.includes('time')) warnings.push('Could not find a time column');
   return { format: layout.forms ? 'forms' : 'table', sections: [...sections.values()], rows, warnings };
