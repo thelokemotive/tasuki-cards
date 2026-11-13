@@ -1,6 +1,6 @@
 # The website: one-time setup (about ten minutes)
 
-The website is the same app as `TASUKI-CARDS-OPEN-ME.html`, plus Google sign-in and a shared database, so it works on a phone, an iPad and a laptop with the same data. It will live at **https://tasuki-cards.web.app**.
+The website is the same app as `TASUKI-CARDS-OPEN-ME.html`, plus school Microsoft sign-in and a shared database, so it works on a phone, an iPad and a laptop with the same data. It will live at **https://tasuki-cards.web.app**.
 
 These steps need your Google login, so they could not be done for you.
 
@@ -8,7 +8,7 @@ These steps need your Google login, so they could not be done for you.
 
 Open https://console.firebase.google.com/project/tasuki-cards
 
-1. **Build → Authentication → Get started → Sign-in method → Google → Enable → Save.**
+1. **Build → Authentication → Sign-in method → Microsoft → Enable**, with the Application ID and secret from an app registered in the school's Microsoft Entra tenant (single tenant; redirect URI `https://tasuki-cards.firebaseapp.com/__/auth/handler`). School IT may need to do the registration.
 2. **Build → Firestore Database → Create database.** Location: `asia-northeast1 (Tokyo)`. Start in **production mode**. (The location cannot be changed later.)
 3. **Project settings (cog) → General → Your apps → Web (`</>`).** Nickname `Tasuki Cards`, tick **Also set up Firebase Hosting**, Register. Ignore the code it shows you; the site picks its settings up automatically.
 

@@ -17,7 +17,7 @@ No contact details, addresses, photos, location tracking or messaging.
 
 ## Who can see it
 
-- **Staff only.** Signing in needs a verified `@harrowappi.jp` Google account, and the account must also be on a coach list that only I can edit. Both checks are enforced by the database itself, not just by the screen.
+- **Staff only.** Signing in uses the school's own Microsoft 365 login (`@harrowappi.jp`), and the account must also be on a coach list that only I can edit. Both checks are enforced by the database itself, not just by the screen.
 - **Pupils cannot see anything.** A pupil who signs in gets a "not on the coach list" message and no data is sent to their device.
 - The site is not listed in search engines, all traffic is encrypted, and nothing is shared with third parties. There are no adverts or analytics.
 - What pupils see is unchanged: printed cards and boards, and the projector in sessions. These already follow each runner's display setting (full name, first name, alias or hidden) and never show dates of birth.
