@@ -279,3 +279,11 @@ table.table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
   .content { padding: 0; max-width: none; }
   .prov { display: none !important; }
 }
+
+/* event page: the field strip (fastest left, last finisher right) */
+.field-strip { position: relative; height: 74px; margin: 6px 14px 0; }
+.field-track { position: absolute; left: 0; right: 0; top: 34px; height: 8px; border-radius: 4px; background: linear-gradient(90deg, var(--moss), #c9b98a, var(--line)); }
+.field-dot { position: absolute; top: 28px; width: 20px; height: 20px; margin-left: -10px; border-radius: 50%; background: var(--shu); border: 3px solid #fff; box-shadow: 0 1px 4px rgb(0 0 0 / 30%); text-decoration: none; }
+.field-dot span { position: absolute; bottom: 22px; left: 50%; transform: translateX(-50%) rotate(-30deg); transform-origin: bottom left; font-size: 0.7rem; font-weight: 700; color: var(--ink); white-space: nowrap; }
+.field-dot:nth-child(even) span { bottom: auto; top: 22px; transform: translateX(-50%); }
+.field-ends { position: absolute; left: 0; right: 0; bottom: -4px; display: flex; justify-content: space-between; }

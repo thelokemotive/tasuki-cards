@@ -83,7 +83,7 @@ function defaultLock(key: RatingKey, config: Config): Lock {
     case 'ARM':
       return { hint: 'Test all three', help: `Test ankle, calf and balance to unlock ARM (tests from the last ${config.arm.windowMonths} months count).` };
     case 'RACE':
-      return { hint: 'Race to unlock', help: 'Run a verified race, relay leg or parkrun (with a time and distance) to unlock RACE.' };
+      return { hint: 'Race to unlock', help: 'Run a verified race or relay leg at an official event (with a time and distance) to unlock RACE. parkruns count for SPD and END, and have their own badges.' };
   }
 }
 

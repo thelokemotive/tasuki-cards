@@ -201,7 +201,16 @@ export function AthletePage() {
                         {!s.locked && s.provisional && <Prov />}
                         {s.shielded && <span className="pill pill-ai" title={`Growth Shield: best in 12 months was ${s.peak12m}`} style={{ marginLeft: 4 }}>shield</span>}
                       </td>
-                      <td className="small">{s.locked ? <span className="muted">{s.unlockHelp}</span> : s.basis?.label}</td>
+                      <td className="small" onClick={(e) => e.stopPropagation()}>
+                        {s.locked ? (
+                          <span className="muted">{s.unlockHelp}</span>
+                        ) : (
+                          (() => {
+                            const ev = s.basis?.perfIds.map((id) => d.perfs.find((x) => x.id === id)?.eventId).find(Boolean);
+                            return ev ? <Link to={`/event/${ev}`}>{s.basis?.label}</Link> : s.basis?.label;
+                          })()
+                        )}
+                      </td>
                       <td>
                         <Sparkline points={points} />
                       </td>
@@ -370,7 +379,7 @@ export function AthletePage() {
                       <td className="nowrap">{formatLongDate(p.date)}</td>
                       <td>{KIND_LABEL[p.kind]}</td>
                       <td className="small">
-                        {eventName(p)}
+                        {p.eventId ? <Link to={`/event/${p.eventId}`}>{eventName(p)}</Link> : eventName(p)}
                         {ctx.distanceKm ? <span className="muted"> · {formatKm(ctx.distanceKm)}{ctx.climbM ? ` +${ctx.climbM} m` : ''}</span> : null}
                       </td>
                       <td className="num nowrap">{resultText(p)}</td>

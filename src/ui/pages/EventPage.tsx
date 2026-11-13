@@ -105,7 +105,7 @@ export function EventPage() {
     );
   }
   const course = snapshot.courses.find((c) => c.id === event.courseId);
-  const perfs = snapshot.performances.filter((p) => p.eventId === event.id && !p.deleted).sort((a, b) => (a.legNumber ?? 0) - (b.legNumber ?? 0) || (a.timeSec ?? Infinity) - (b.timeSec ?? Infinity) || (a.bleepLaps ?? 0) - (b.bleepLaps ?? 0));
+  const perfs = snapshot.performances.filter((p) => p.eventId === event.id && !p.deleted).sort((a, b) => (a.place ?? Infinity) - (b.place ?? Infinity) || (a.legNumber ?? 0) - (b.legNumber ?? 0) || (a.timeSec ?? Infinity) - (b.timeSec ?? Infinity) || (a.bleepLaps ?? 0) - (b.bleepLaps ?? 0));
   const surges = new Map(derived.surges.filter((s) => s.eventId === event.id).map((s) => [s.perfId, s]));
   return (
     <div className="stack">
@@ -123,6 +123,35 @@ export function EventPage() {
           </>
         }
       />
+      {(() => {
+        // Where our runners sit in the whole field: fastest on the left, last finisher on the right.
+        const field = Math.max(event.fieldSize ?? 0, ...perfs.map((p) => p.fieldSize ?? 0), ...perfs.map((p) => p.place ?? 0));
+        const placed = perfs.filter((p) => p.place);
+        if (!field || placed.length === 0) return null;
+        return (
+          <Panel title="Where we finished in the field">
+            <div className="field-strip" aria-label={`${placed.length} academy runners in a field of ${field}`}>
+              <div className="field-track" />
+              {placed.map((p) => {
+                const a = snapshot.athletes.find((x) => x.id === p.athleteId);
+                const x = field > 1 ? ((p.place! - 1) / (field - 1)) * 100 : 0;
+                return (
+                  <Link key={p.id} to={`/athlete/${p.athleteId}`} className="field-dot" style={{ left: `${x}%` }} title={`${a ? fullName(a) : ''}: ${p.place}/${field}`}>
+                    <span>{a ? (a.preferredName || a.givenName).slice(0, 8) : '?'}</span>
+                  </Link>
+                );
+              })}
+              <div className="field-ends small muted">
+                <span>1st</span>
+                <span>{field}th</span>
+              </div>
+            </div>
+            <p className="small muted">
+              {placed.length} of ours in a field of {field}. Median academy place: {placed.map((p) => p.place!).sort((a, b) => a - b)[Math.floor((placed.length - 1) / 2)]} (top {Math.round((placed.map((p) => p.place!).sort((a, b) => a - b)[Math.floor((placed.length - 1) / 2)] / field) * 100)}%).
+            </p>
+          </Panel>
+        );
+      })()}
       <Panel title={`Academy results (${perfs.length})`}>
         {perfs.length === 0 ? (
           <p className="muted">No academy results in this event.</p>
@@ -136,6 +165,8 @@ export function EventPage() {
                   <th>Kind</th>
                   <th className="num">Result</th>
                   <th className="num">Place</th>
+                  <th className="num" title="Share of the field finishing at or ahead of this runner">Top %</th>
+                  <th className="num" title="Behind the fastest time in the field or category (when known)">Behind winner</th>
                   <th className="num">Score</th>
                   {event.kind === 'relay' && <th className="num">Tasuki Surge</th>}
                   <th />
@@ -156,6 +187,13 @@ export function EventPage() {
                       <td>{KIND_LABEL[p.kind]}</td>
                       <td className="num">{p.timeSec != null ? formatTime(p.timeSec) : p.bleepLaps != null ? `${p.bleepLaps} laps` : '—'}</td>
                       <td className="num">{p.place ? `${p.place}${p.fieldSize ? `/${p.fieldSize}` : ''}` : '—'}</td>
+                      <td className="num">{p.place && (p.fieldSize ?? event.fieldSize) ? `${Math.max(1, Math.round((p.place / (p.fieldSize ?? event.fieldSize)!) * 100))}%` : '—'}</td>
+                      <td className="num small">
+                        {(() => {
+                          const w = event.categoryWinners?.find((c) => c.category === (p.category || 'Overall')) ?? event.categoryWinners?.[0];
+                          return w && p.timeSec != null ? (p.timeSec - w.timeSec <= 0 ? 'winner' : `+${formatTime(p.timeSec - w.timeSec)}`) : '—';
+                        })()}
+                      </td>
                       <td className="num">
                         {s?.fresh ?? s?.score ?? '—'}
                         {s?.provisional && <Prov />}
