@@ -139,16 +139,16 @@ export function StudentSheet({ d }: { d: AthleteDerived }) {
       <p className="muted small">
         As of {formatLongDate(derived.asOf)}. Every number comes from your verified results; ages are in whole years. Results that did not count are listed with the reason.
       </p>
+      <section className="student-stat student-first">
+        <h2>Your next 5K</h2>
+        <NextFiveK d={d} config={derived.config} student />
+      </section>
       <section className="student-top">
         <StatRadar d={d} size={200} />
         <div style={{ flex: 1, minWidth: 240 }}>
           <h2 style={{ marginTop: 0 }}>Your climb</h2>
           <SummitLadder d={d} config={derived.config} />
         </div>
-      </section>
-      <section className="student-stat">
-        <h2>Your next 5K</h2>
-        <NextFiveK d={d} config={derived.config} student />
       </section>
       <section className="student-stat">
         <h2>What to work on</h2>
