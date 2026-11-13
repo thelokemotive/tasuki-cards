@@ -1,4 +1,4 @@
-// The website's front door: sign in with a school Google account, check the coach list, then open
+// The website's front door: sign in with a school Microsoft account, check the coach list, then open
 // the app on the shared database.
 import { useEffect, useState, type ReactNode } from 'react';
 import { connect, type Cloud } from '../../cloud/firebase';
@@ -102,9 +102,9 @@ export default function CloudGate({ children }: { children: ReactNode }) {
       {phase.at === 'loading' && <p className="muted">Opening the trailhead…</p>}
       {phase.at === 'signedOut' && (
         <>
-          <p>Sign in with your school Google account to open the squad.</p>
+          <p>Sign in with your school Microsoft account to open the squad.</p>
           <button className="btn btn-primary btn-lg door-btn" onClick={signIn} disabled={busy}>
-            Sign in with Google
+            Sign in with Microsoft
           </button>
           <p className="tiny muted">Only @{SCHOOL_DOMAIN} accounts on the coach list can see the data.</p>
         </>

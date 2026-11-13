@@ -1,7 +1,7 @@
-// The website's only network code: Google sign-in for school accounts and the shared database.
+// The website's only network code: Microsoft sign-in for school accounts and the shared database.
 // Loaded only in the website build (see __WEB__); the offline single file never includes it.
 import { initializeApp, type FirebaseOptions } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signInWithRedirect, signOut, type User } from 'firebase/auth';
+import { getAuth, OAuthProvider, onAuthStateChanged, signInWithPopup, signInWithRedirect, signOut, type User } from 'firebase/auth';
 import {
   collection,
   deleteField,
@@ -96,8 +96,9 @@ export async function connect(): Promise<Cloud> {
   const auth = getAuth(app);
   // The local cache keeps the app usable with no signal on the hill; changes sync when back online.
   const db = initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) });
-  const provider = new GoogleAuthProvider();
-  provider.setCustomParameters({ hd: SCHOOL_DOMAIN, prompt: 'select_account' });
+  // School accounts are Microsoft 365 accounts. `tenant` sends people straight to the school's sign-in page.
+  const provider = new OAuthProvider('microsoft.com');
+  provider.setCustomParameters({ tenant: SCHOOL_DOMAIN, prompt: 'select_account' });
   const access = doc(db, 'access', 'main');
   return {
     onUser: (cb) => onAuthStateChanged(auth, (u: User | null) => cb(u?.email ? { email: u.email.toLowerCase() } : null)),

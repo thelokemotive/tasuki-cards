@@ -1,19 +1,19 @@
 rules_version = '2';
-// Tasuki Cards: staff only. A verified @harrowappi.jp Google account is necessary but not enough:
+// Tasuki Cards: staff only. A @harrowappi.jp Microsoft sign-in (through the school's own Microsoft tenant) is necessary but not enough:
 // the account must also be the head coach or on the coach list the head coach keeps.
 service cloud.firestore {
   match /databases/{database}/documents {
     function school() {
       return request.auth != null
-        && request.auth.token.email_verified == true
-        && request.auth.token.email.matches('^[^@]+@harrowappi[.]jp$');
+        && request.auth.token.firebase.sign_in_provider == 'microsoft.com'
+        && request.auth.token.email.lower().matches('^[^@]+@harrowappi[.]jp$');
     }
     function owner() {
-      return school() && request.auth.token.email == 'floke@harrowappi.jp';
+      return school() && request.auth.token.email.lower() == 'floke@harrowappi.jp';
     }
     function coach() {
       return owner()
-        || (school() && request.auth.token.email in get(/databases/$(database)/documents/access/main).data.coaches);
+        || (school() && request.auth.token.email.lower() in get(/databases/$(database)/documents/access/main).data.coaches);
     }
     match /access/main {
       allow read: if coach();
