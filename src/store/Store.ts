@@ -42,6 +42,10 @@ export interface Store {
   replaceAll(snapshot: DataSnapshot): Promise<void>;
   /** Wipe everything. */
   clearAll(): Promise<void>;
+  /** Optional: write a whole change set atomically (a shared database does this in one batch). */
+  persist?(changes: import('./changes').Changes): Promise<void>;
+  /** Optional: be told when the data changes elsewhere (another coach, another device). Returns unsubscribe. */
+  subscribe?(onChange: (snapshot: DataSnapshot) => void): () => void;
 }
 
 export function emptyCalendar(): Calendar {

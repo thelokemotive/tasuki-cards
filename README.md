@@ -5,6 +5,7 @@ _Like FIFA cards, but for my trail runners._
 Trading cards and leaderboards for Harrow International School Appi Japan Trail Running. Stage 1: coach-operated on one laptop. No accounts, no backend, no network calls at runtime.
 
 - **Use it**: double-click `TASUKI-CARDS-OPEN-ME.html` (a copy of `dist-single/tasuki-cards.html`). See `HOW-TO-USE.md`.
+- **The website** (phone, iPad, laptop; staff sign-in; shared database): `docs/WEBSITE-SETUP.md`. Safeguarding summary: `docs/SAFEGUARDING-NOTE.md`.
 - **Decisions and open questions**: `DECISIONS.md`. **What was built and tested**: `BUILD-REPORT.md`.
 
 ## Structure
@@ -40,4 +41,4 @@ npm run check:print    # print acceptance check (after build:single; set CHROME=
 npm run convert-tables # rebuild the age-grade JSON from ../tasuki-cards-data
 ```
 
-Stage 2 hooks (not built): NAV butterfly course generator, termly report drafts, ekiden line-up advisor. Stage 3 (not built): shared database, student logins, student view and avatar customisation. The data model already carries stable ids, aliases, display modes and per-record provenance for these.
+Stage 2 hooks (not built): NAV butterfly course generator, termly report drafts, ekiden line-up advisor. Stage 3: the shared database and staff sign-in are built (`src/cloud/`); the student view and student logins are not, pending safeguarding sign-off. The data model already carries stable ids, aliases, display modes and per-record provenance for these.

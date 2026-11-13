@@ -39,6 +39,7 @@ export function applyChanges(s: DataSnapshot, ch: Changes): DataSnapshot {
 }
 
 export async function persistChanges(store: Store, ch: Changes): Promise<void> {
+  if (store.persist) return store.persist(ch);
   for (const t of TABLES) {
     const removes = ch.remove?.[t];
     if (removes?.length) await store.remove(t, removes);

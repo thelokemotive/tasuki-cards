@@ -1,0 +1,15 @@
+.door { min-height: 100vh; min-height: 100dvh; display: grid; place-items: center; padding: 20px; position: relative; overflow: hidden; background: #1d2c5e; }
+.door-scene { position: absolute; inset: 0; width: 100%; height: 100%; }
+.door-card { position: relative; width: min(400px, 100%); background: rgb(255 253 248 / 94%); border-radius: 16px; padding: 26px 24px; box-shadow: 0 20px 60px rgb(10 16 40 / 40%); backdrop-filter: blur(6px); }
+.door-brand { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; color: var(--ai); }
+.door-brand svg { width: 40px; height: 40px; flex: none; }
+.door-brand strong { display: block; font-size: 1.3rem; line-height: 1.1; }
+.door-brand small { font-size: 0.72rem; letter-spacing: 0.05em; opacity: 0.75; }
+.door-btn { width: 100%; justify-content: center; margin: 4px 0 12px; min-height: 46px; }
+.acct { position: relative; }
+.acct-chip { border-radius: 99px; max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.acct-panel { position: absolute; right: 0; top: calc(100% + 8px); width: min(320px, calc(100vw - 24px)); background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; box-shadow: 0 12px 40px rgb(10 16 40 / 22%); display: grid; gap: 8px; z-index: 40; }
+.acct-email { font-weight: 700; overflow-wrap: anywhere; }
+.acct-label { font-size: 0.85rem; font-weight: 600; margin-top: 4px; }
+.acct-warn { color: var(--err); }
+.acct-panel p { margin: 0; }

@@ -9,6 +9,7 @@
     "build": "tsc --noEmit && vite build",
     "build:single": "tsc --noEmit && vite build --mode single",
     "preview": "vite preview",
+    "deploy": "npm run build && npx --yes firebase-tools deploy --project tasuki-cards",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
@@ -17,6 +18,7 @@
   },
   "dependencies": {
     "dexie": "4.4.6",
+    "firebase": "13.3.0",
     "react": "19.3.0",
     "react-dom": "19.3.0"
   },

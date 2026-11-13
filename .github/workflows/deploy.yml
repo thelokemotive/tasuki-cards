@@ -1,0 +1,28 @@
+# Publishes the website to Firebase Hosting whenever main changes.
+# Needs one repository secret, FIREBASE_SERVICE_ACCOUNT_TASUKI_CARDS (see docs/WEBSITE-SETUP.md).
+# Until that secret exists the job tests and builds, then skips the deploy.
+name: Deploy website
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - name: Deploy
+        env:
+          SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_TASUKI_CARDS }}
+        run: |
+          if [ -z "$SA" ]; then echo "No deploy secret yet: skipping."; exit 0; fi
+          echo "$SA" > "$RUNNER_TEMP/sa.json"
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/sa.json"
+          npx --yes firebase-tools@latest deploy --only hosting,firestore:rules --project tasuki-cards --non-interactive

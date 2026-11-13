@@ -1,0 +1,31 @@
+rules_version = '2';
+// Tasuki Cards: staff only. A verified @harrowappi.jp Google account is necessary but not enough:
+// the account must also be the head coach or on the coach list the head coach keeps.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function school() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email.matches('^[^@]+@harrowappi[.]jp$');
+    }
+    function owner() {
+      return school() && request.auth.token.email == 'floke@harrowappi.jp';
+    }
+    function coach() {
+      return owner()
+        || (school() && request.auth.token.email in get(/databases/$(database)/documents/access/main).data.coaches);
+    }
+    match /access/main {
+      allow read: if coach();
+      allow write: if owner()
+        && request.resource.data.keys().hasOnly(['coaches'])
+        && request.resource.data.coaches is list;
+    }
+    match /squad/{doc} {
+      allow read, write: if coach();
+    }
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
