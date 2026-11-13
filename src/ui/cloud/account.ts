@@ -2,6 +2,8 @@
 import { createContext, useContext } from 'react';
 
 export const SCHOOL_DOMAIN = 'harrowappi.jp';
+/** The school's Microsoft Entra directory (tenant) ID: sign-in goes only to this directory. */
+export const SCHOOL_TENANT = '41ec83bc-a7bf-44b7-ad13-22e010566373';
 /** The head coach: always allowed in, and the only account that can change the coach list. Mirrored in firestore.rules. */
 export const OWNER_EMAIL = 'floke@harrowappi.jp';
 
