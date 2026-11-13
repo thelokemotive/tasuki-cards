@@ -297,3 +297,15 @@ describe('orienteering results only → NAV (go-live plan 6)', () => {
     expect(r.stats.NAV.basis?.label).toBe('from Butterfly O, 12 Nov');
   });
 });
+
+describe('placings lists (positions only)', () => {
+  it('a table with places but no times keeps the places and the field size', () => {
+    const text = 'Position\tName\tYear\n1\tOutside Runner\t11\n2\tAiko Testfield\t9\n3\tSomeone Else\t10\n4\tBen Sampleton\t10';
+    const plan = buildImportPlan(text, { snapshot: snapshot(), config: cfg, today: TODAY, defaults: { name: 'GLD 2026 senior', date: '2026-06-01', perfKind: 'race', distanceKm: 3.54, climbM: 526 } });
+    const ours = plan.rows.filter((r) => r.status === 'ready');
+    expect(ours.map((r) => [r.raw.name, r.raw.place])).toEqual([['Aiko Testfield', 2], ['Ben Sampleton', 4]]);
+    expect(plan.warnings.join(' ')).toMatch(/placings list/);
+    const { changes } = planToChanges(plan, {}, snapshot(), { now: '2026-06-01T00:00:00Z', by: 'C', newId: ids() });
+    expect(changes.put!.performances!.map((p) => [p.place, p.fieldSize, p.timeSec])).toEqual([[2, 4, undefined], [4, 4, undefined]]);
+  });
+});

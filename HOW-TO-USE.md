@@ -25,20 +25,27 @@ Open **`TASUKI-CARDS-OPEN-ME.html`** (in this folder) by double-clicking it. It 
 
 Every athlete page has **Next 5K**: a predicted time today with a 90% range, a **realistic** and a **stretch** target for about a term ahead, and **Why these numbers?** (each result, how it was converted, how much it counts). The realistic target is printed on the card. The Squad page lists everyone's prediction and target. Mark training relays and stopwatch time trials as `unofficial` in the line format, so they help the prediction but do not count as races. A results booklet PDF (select all, copy, paste) and an ekiden write-up (`Name (9:18) → Name (8:26)`) can be pasted straight into Paste & Match.
 
-## 4. The fun bits (Yama)
+## 4. Whole-school races (Green Long Ducker)
+
+Paste each category's placings list (Position and Name columns; no times needed) into Paste & Match, with the event name, date and course above. Our runners are matched and their place and the field size are saved; everyone else is counted, not stored. Each athlete page then shows **Compared with the school** (top % and the change since last year), and the event page shows where our runners finished in the field.
+
+## 5. The fun bits (Yama)
+
+- **The Silly Lab**: athlete page → Edit avatar. Hats, faces, mouths, things to hold, running buddies, feet, backs and trails, or **🎲 Surprise me**. Some items are earned (the crown for Gold, the halo for an 8-week streak, rocket boots for SPD 80+).
+- **Handicap Start → Any course**: enter the distance and climb (or pick a course); head starts come from each runner's 5K prediction.
 
 - **Friday reveal**: Home → **Reveal this week on the projector**. Each runner who levelled up in the last 7 days gets a card flip and their upgrades one by one (→ or space for the next, C to run it on its own). The biggest moments come last.
 - **Boards for everyone**: **Biggest climbers** (most improved this half-term) and the **House cup** (needs houses on the athlete pages: points per runner for turning up, PBs, caps and Surge medals).
 - **Squad**: every runner's ratings as a heatmap, with what each should work on next. Good for planning groups.
 - **Athlete page**: the shape of the runner, what the next camp needs, and what to work on, with session ideas. The **Student version** has the same for the student.
 
-## 5. Printing
+## 6. Printing
 
 - **Cards**: **Cards & Print** → choose *Everyone*, *In-Form this week*, a year group, or hand-pick → **Print**. In Chrome's print dialog: paper **A4**, **Portrait**, scale **100%** (Default), **Background graphics** ticked. Nine cards per sheet; cut along the crop marks.
 - **Boards**: **Boards** → pick a board → choose A4 or A3 → **Print**. For the projector, click **Projector mode** (← → change board, C cycles every 20 s, F full screen, Esc to leave).
 - **Circuit handicap start**: **Handicap Start** → tick the runners → **Print start list**.
 
-## 6. Backups (weekly)
+## 7. Backups (weekly)
 
 **Settings → Data → Export everything** saves one `.json` file with everything (roster, aliases, results and their history, settings). A yellow banner reminds you after 7 days. Keep the file private: it contains dates of birth. To restore, use **Import a backup…** (*Replace everything*, or *Merge*).
 

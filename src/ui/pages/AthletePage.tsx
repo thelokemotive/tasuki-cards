@@ -23,6 +23,7 @@ import type { PerfScore, RatingKey } from '../../engine/types';
 import { ExplainModal, StudentSheet } from '../components/StatExplain';
 import { DevelopmentFocus, StatRadar, SummitLadder } from '../components/Mountain';
 import { NextFiveK } from '../components/NextFiveK';
+import { Placings } from '../components/Placings';
 import { paceOf } from '../../engine/explain';
 import { formatPace } from '../../engine/format';
 
@@ -201,7 +202,16 @@ export function AthletePage() {
                         {!s.locked && s.provisional && <Prov />}
                         {s.shielded && <span className="pill pill-ai" title={`Growth Shield: best in 12 months was ${s.peak12m}`} style={{ marginLeft: 4 }}>shield</span>}
                       </td>
-                      <td className="small">{s.locked ? <span className="muted">{s.unlockHelp}</span> : s.basis?.label}</td>
+                      <td className="small" onClick={(e) => e.stopPropagation()}>
+                        {s.locked ? (
+                          <span className="muted">{s.unlockHelp}</span>
+                        ) : (
+                          (() => {
+                            const ev = s.basis?.perfIds.map((id) => d.perfs.find((x) => x.id === id)?.eventId).find(Boolean);
+                            return ev ? <Link to={`/event/${ev}`}>{s.basis?.label}</Link> : s.basis?.label;
+                          })()
+                        )}
+                      </td>
                       <td>
                         <Sparkline points={points} />
                       </td>
@@ -238,9 +248,14 @@ export function AthletePage() {
         </Panel>
       </div>
 
-      <Panel title="Next 5K">
-        <NextFiveK d={d} config={derived.config} />
-      </Panel>
+      <div className="grid-2">
+        <Panel title="Next 5K">
+          <NextFiveK d={d} config={derived.config} />
+        </Panel>
+        <Panel title="Compared with the school">
+          <Placings d={d} lookup={derived.lookup} />
+        </Panel>
+      </div>
 
       <div className="athlete-mountain">
         <Panel title="The shape of a runner">
@@ -370,7 +385,7 @@ export function AthletePage() {
                       <td className="nowrap">{formatLongDate(p.date)}</td>
                       <td>{KIND_LABEL[p.kind]}</td>
                       <td className="small">
-                        {eventName(p)}
+                        {p.eventId ? <Link to={`/event/${p.eventId}`}>{eventName(p)}</Link> : eventName(p)}
                         {ctx.distanceKm ? <span className="muted"> · {formatKm(ctx.distanceKm)}{ctx.climbM ? ` +${ctx.climbM} m` : ''}</span> : null}
                       </td>
                       <td className="num nowrap">{resultText(p)}</td>

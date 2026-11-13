@@ -8,6 +8,7 @@ import { useToast } from '../components/Toast';
 import { AvatarSvg } from './AvatarSvg';
 import { defaultAvatar, HAIR_COLOURS, HAIR_STYLES, KIT_COLOURS, SKIN_TONES } from '../../engine/avatarDefaults';
 import type { AvatarUnlocks } from '../../engine/avatarUnlocks';
+import { canWear, EXTRA_SLOTS, EXTRAS_BY_SLOT, sillyLabCombinations, SLOT_VIEWBOX, surpriseMe, type ExtraSlot } from './extras';
 
 function Picker({ count, value, onChange, label }: { count: number; value: number; onChange: (n: number) => void; label: string }) {
   return (
@@ -22,7 +23,8 @@ function Picker({ count, value, onChange, label }: { count: number; value: numbe
 }
 
 export function AvatarEditor({ athlete, unlocks, onClose }: { athlete: Athlete; unlocks: AvatarUnlocks; onClose: () => void }) {
-  const { commit } = useData();
+  const { commit, derived } = useData();
+  const d = derived.athletes.get(athlete.id);
   const toast = useToast();
   const [av, setAv] = useState<Avatar>(athlete.avatar);
   const set = <K extends keyof Avatar>(k: K, v: Avatar[K]) => setAv((x) => ({ ...x, [k]: v }));
@@ -35,6 +37,9 @@ export function AvatarEditor({ athlete, unlocks, onClose }: { athlete: Athlete; 
         <>
           <button className="btn" onClick={() => setAv(defaultAvatar(athlete.id))}>
             Reset to default
+          </button>
+          <button className="btn btn-accent" onClick={() => setAv((x) => ({ ...x, extras: surpriseMe(d) }))} data-testid="surprise">
+            🎲 Surprise me
           </button>
           <span className="spacer" />
           <button className="btn" onClick={onClose}>
@@ -54,7 +59,7 @@ export function AvatarEditor({ athlete, unlocks, onClose }: { athlete: Athlete; 
       }
     >
       <div className="row" style={{ alignItems: 'flex-start', gap: 24 }}>
-        <div style={{ width: 180, background: 'var(--surface-2)', borderRadius: 12, padding: 10 }}>
+        <div style={{ width: 200, background: 'var(--surface-2)', borderRadius: 12, padding: 10, position: 'sticky', top: 0 }}>
           <AvatarSvg avatar={av} unlocks={unlocks} />
         </div>
         <div className="stack" style={{ flex: 1, minWidth: 260 }}>
@@ -85,6 +90,40 @@ export function AvatarEditor({ athlete, unlocks, onClose }: { athlete: Athlete; 
               ))}
             </select>
           </Field>
+          <div className="silly-lab">
+            <div className="row-between">
+              <strong>The Silly Lab</strong>
+              <span className="tiny muted">{sillyLabCombinations().toLocaleString('en-GB')} combinations</span>
+            </div>
+            {EXTRA_SLOTS.map(({ slot, label }) => (
+              <div key={slot} className="silly-slot">
+                <span className="silly-slot-label">{label}</span>
+                <div className="silly-items">
+                  <button type="button" className={`silly-item ${!av.extras?.[slot] ? 'on' : ''}`} onClick={() => setAv((x) => ({ ...x, extras: { ...x.extras, [slot]: undefined } }))}>
+                    none
+                  </button>
+                  {EXTRAS_BY_SLOT[slot as ExtraSlot].map((it) => {
+                    const ok = canWear(it, d);
+                    return (
+                      <button
+                        key={it.key}
+                        type="button"
+                        className={`silly-item ${av.extras?.[slot] === it.key ? 'on' : ''} ${ok ? '' : 'locked'}`}
+                        disabled={!ok}
+                        title={ok ? it.label : `${it.label}: earned by ${it.earn?.how}`}
+                        onClick={() => setAv((x) => ({ ...x, extras: { ...x.extras, [slot]: it.key } }))}
+                      >
+                        <svg viewBox={SLOT_VIEWBOX[slot as ExtraSlot]} className="silly-thumb" aria-hidden="true">
+                          {it.draw()}
+                        </svg>
+                        <span>{ok ? it.label : `🔒 ${it.label}`}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
           <p className="small muted">Extras such as the compass, ankle guards, motion lines, wings, sash and headband are earned from the data and appear automatically. Appearance never affects any rating.</p>
         </div>
       </div>

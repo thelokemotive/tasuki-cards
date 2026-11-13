@@ -297,10 +297,10 @@ describe('which performances are scored', () => {
     expect(score(perf({ kind: 'race', timeSec: 1190 })).unscoredReason).toBe(UNSCORED.noDistance);
   });
 
-  it('races feed RACE, and END too when D_eff ≥ 5 km', () => {
+  it('races feed RACE, and END too when D_eff ≥ 5 km; a parkrun is not a race', () => {
     const ctx = (p: Performance) => resolveContext(p, lookup);
     expect(perfFeeds(ctx(perf({ kind: 'race', distanceKm: 4 })), cfg)).toEqual(['RACE']);
-    expect(perfFeeds(ctx(perf({ kind: 'parkrun', distanceKm: 5 })), cfg)).toEqual(['RACE', 'END']);
+    expect(perfFeeds(ctx(perf({ kind: 'parkrun', distanceKm: 5 })), cfg)).toEqual(['END']);
     // 4 km + 100 m climb: D_eff = 4 + 100/100 = 5.0 km
     expect(perfFeeds(ctx(perf({ kind: 'relay_leg', distanceKm: 4, climbM: 100 })), cfg)).toEqual(['RACE', 'END']);
     expect(perfFeeds(ctx(perf({ kind: 'long_run', distanceKm: 4 })), cfg)).toEqual([]);
@@ -641,7 +641,7 @@ describe('every scoring constant comes from config', () => {
     const c = cloneConfig(cfg);
     c.end.longRunMinKmEff = 10;
     const ctx = (p: Performance) => resolveContext(p, lookup);
-    expect(perfFeeds(ctx(perf({ kind: 'parkrun', distanceKm: 5 })), c)).toEqual(['RACE']);
+    expect(perfFeeds(ctx(perf({ kind: 'parkrun', distanceKm: 5 })), c)).toEqual([]);
     expect(perfFeeds(ctx(perf({ kind: 'race', distanceKm: 10 })), c)).toEqual(['RACE', 'END']);
   });
 
@@ -663,7 +663,7 @@ describe('RunScore and freshness: more worked examples', () => {
     expect(ps.age).toBe(15.5);
     expect(ps.standardSec).toBeCloseTo(std, 9);
     expect(ps.score).toBe(Math.round((99 * std) / 1320 / 0.8));
-    expect(ps.feeds).toEqual(['RACE', 'END']);
+    expect(ps.feeds).toEqual(['END']);
   });
 
   it('RunScore floor and ceiling: AG 0.3232 → 39.99 → 40; AG 0.80 → 99; AG 0.7959 → 98.49 → 98', () => {

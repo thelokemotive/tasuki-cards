@@ -4,6 +4,7 @@ import type { Config } from './config';
 import type { HandicapRow } from './types';
 import type { Lookup } from './perf';
 import { courseTimeOf } from './pbs';
+import { exponentFor } from './predict';
 
 /**
  * Start sheet for a run on `courseId`, in start order.
@@ -42,4 +43,31 @@ export function handicapStartSheet(input: { athleteIds: string[]; perfs: Perform
     return a.i - b.i;
   });
   return rows.map((r) => r.row);
+}
+
+/**
+ * Handicap for any course (distance + climb), from each runner's 5 km prediction: the predicted course time is
+ * T5 × (D_eff ÷ 5)^b with the youth-adjusted exponent for their age (src/engine/predict.ts), and the head start
+ * is slowest − own, rounded as above. Runners with no prediction start in the first wave.
+ */
+export function handicapFromPredictions(input: {
+  athletes: { id: string; age: number; predicted5kSec?: number }[];
+  distanceKm: number;
+  climbM: number;
+  config: Config;
+}): HandicapRow[] {
+  const cfg = input.config.predict;
+  const dEff = input.distanceKm + Math.max(0, input.climbM) / 100;
+  const step = input.config.handicap.roundSec;
+  const round = (s: number) => (step > 0 ? Math.round(s / step) * step : s);
+  const times = input.athletes.map((a) => {
+    if (a.predicted5kSec == null || !(dEff > 0)) return { a, t: undefined as number | undefined };
+    const b = exponentFor(a.age, Math.min(dEff, cfg.targetKm), cfg);
+    return { a, t: a.predicted5kSec * Math.pow(dEff / cfg.targetKm, b) };
+  });
+  const slowest = Math.max(0, ...times.map((x) => x.t ?? 0));
+  return times
+    .map(({ a, t }, i) => ({ row: t != null ? { athleteId: a.id, pbSec: t, offsetSec: round(slowest - t) } : { athleteId: a.id, offsetSec: 0 }, i }))
+    .sort((x, y) => x.row.offsetSec - y.row.offsetSec || (y.row.pbSec ?? Infinity) - (x.row.pbSec ?? Infinity) || x.i - y.i)
+    .map((r) => r.row as HandicapRow);
 }

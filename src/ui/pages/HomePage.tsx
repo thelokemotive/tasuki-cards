@@ -252,7 +252,7 @@ export function HomePage() {
                     <td className="nowrap">{formatLongDate(p.date)}</td>
                     <td>{a ? <Link to={`/athlete/${a.id}`}>{fullName(a)}</Link> : '—'}</td>
                     <td>{KIND_LABEL[p.kind]}</td>
-                    <td className="small">{ev?.name ?? ''}</td>
+                    <td className="small">{ev ? <Link to={`/event/${ev.id}`}>{ev.name}</Link> : ''}</td>
                     <td className="num">{p.timeSec != null ? formatTime(p.timeSec) : p.bleepLaps != null ? `${p.bleepLaps} laps` : ''}</td>
                   </tr>
                 );

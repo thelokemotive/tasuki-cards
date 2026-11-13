@@ -7,6 +7,7 @@ import type { Avatar } from '../../types';
 import type { AvatarUnlocks } from '../../engine/avatarUnlocks';
 import { NO_UNLOCKS } from '../../engine/avatarUnlocks';
 import { KIT_COLOURS } from '../../engine/avatarDefaults';
+import { ExtrasLayer } from './extras';
 
 export const SKIN = ['#f8dcc5', '#efc39f', '#d9a275', '#b98058', '#8e5a3a', '#5f3b26'];
 export const HAIR = ['#1d1c24', '#4a2f22', '#7b4a2b', '#c99a50', '#a8452a', '#6d7380'];
@@ -78,7 +79,7 @@ export function AvatarSvg({ avatar, unlocks = NO_UNLOCKS, className }: { avatar:
   const sashMain = '#d4442a';
   const sashEdge = u.sash === 'gold' ? '#e9c75a' : '#ffffff';
   return (
-    <svg viewBox="0 0 100 130" className={className} role="img" aria-label="Runner avatar">
+    <svg viewBox="0 -12 100 142" className={className} role="img" aria-label="Runner avatar">
       <defs>
         <radialGradient id={`glow${uid}`} cx="50%" cy="55%" r="50%">
           <stop offset="0%" stopColor="#7fd8ff" stopOpacity="0.75" />
@@ -107,6 +108,8 @@ export function AvatarSvg({ avatar, unlocks = NO_UNLOCKS, className }: { avatar:
         </g>
       )}
       {u.lightningTrail && <path d="M90 40 L80 62 L88 62 L76 92 L94 58 L85 58 L95 40 Z" fill="#ffd23f" stroke="#c98f00" strokeWidth="0.8" strokeLinejoin="round" />}
+
+      <ExtrasLayer extras={avatar.extras} layer="behind" />
 
       {/* ---- back arm and back leg ---- */}
       <path d="M62 54 L71 64 L67 75" fill="none" stroke={skinD} strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
@@ -160,7 +163,9 @@ export function AvatarSvg({ avatar, unlocks = NO_UNLOCKS, className }: { avatar:
       <ellipse cx="40" cy="37.5" rx="2.6" ry="1.4" fill="#f08a7a" opacity="0.35" />
       <ellipse cx="60" cy="37.5" rx="2.6" ry="1.4" fill="#f08a7a" opacity="0.35" />
       <path d="M47 39.5 Q50 42 53 39.5" fill="none" stroke="#6b3a2e" strokeWidth="1.2" strokeLinecap="round" />
+      <ExtrasLayer extras={avatar.extras} layer="face" />
       <HairFront style={style} c={hair} />
+      <ExtrasLayer extras={avatar.extras} layer="head" />
 
       {/* ---- accessories ---- */}
       {avatar.accessory === 'glasses' && (
@@ -193,6 +198,8 @@ export function AvatarSvg({ avatar, unlocks = NO_UNLOCKS, className }: { avatar:
           <path d="M37 72.6 L38.2 76 L37 79.4 L35.8 76 Z" fill="#d4442a" />
         </g>
       )}
+      <ExtrasLayer extras={avatar.extras} layer="held" />
+      <ExtrasLayer extras={avatar.extras} layer="front" />
       {u.compass === 'float' && (
         <g>
           <circle cx="28" cy="58" r="8" fill="#fff6c9" opacity="0.6" />

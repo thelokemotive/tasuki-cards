@@ -27,6 +27,8 @@ export interface Avatar {
   /** key into the kit palette (src/ui/avatar/palette.ts), e.g. 'academy-navy' */
   kitColour: string;
   accessory: Accessory;
+  /** The Silly Lab: optional extras by slot (hat, face, mouth, held, buddy, feet, back, trail), by item key. */
+  extras?: Partial<Record<'hat' | 'face' | 'mouth' | 'held' | 'buddy' | 'feet' | 'back' | 'trail', string>>;
 }
 
 export interface Athlete {

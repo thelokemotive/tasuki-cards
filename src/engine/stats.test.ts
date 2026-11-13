@@ -291,7 +291,7 @@ describe('RACE', () => {
   //   1190 s → 79.97 → 80;  1286 s → 74.00 → 74;  1360 s → 69.97 → 70;  1586 s → 60.00 → 60
   const r80 = perf({ id: 'r80', kind: 'race', eventId: 'e-xc', timeSec: 1190, date: '2026-09-20' });
   const r74 = perf({ id: 'r74', kind: 'race', distanceKm: 5, timeSec: 1286, date: '2026-08-30' });
-  const r70 = perf({ id: 'r70', kind: 'parkrun', distanceKm: 5, timeSec: 1360, date: '2026-07-04' });
+  const r70 = perf({ id: 'r70', kind: 'race', distanceKm: 5, timeSec: 1360, date: '2026-07-04' });
   const r60 = perf({ id: 'r60', kind: 'relay_leg', distanceKm: 5, timeSec: 1586, date: '2026-06-01' });
 
   it('one race: 1.00 × 80 = 80', () => {
@@ -307,13 +307,13 @@ describe('RACE', () => {
     const r = rate(coach, [r70, r74, r80]);
     expect(r.race.value).toBe(76);
     expect(r.race.basis?.perfIds).toEqual(['r80', 'r74', 'r70']);
-    expect(r.race.caps).toBe(2); // parkrun is not a cap
+    expect(r.race.caps).toBe(3);
   });
 
   it('four races: only the top three count; relay legs are caps', () => {
     const r = rate(coach, [r60, r70, r74, r80]);
     expect(r.race.value).toBe(76);
-    expect(r.race.caps).toBe(3);
+    expect(r.race.caps).toBe(4);
   });
 
   it('no race → locked, and RACE is not part of OVR', () => {
@@ -830,7 +830,7 @@ describe('every rating constant comes from config', () => {
     c.race.weights3 = [0.34, 0.33, 0.33];
     const r80 = perf({ kind: 'race', distanceKm: 5, timeSec: 1190, date: '2026-09-20' });
     const r74 = perf({ kind: 'race', distanceKm: 5, timeSec: 1286, date: '2026-08-30' });
-    const r70 = perf({ kind: 'parkrun', distanceKm: 5, timeSec: 1360, date: '2026-07-04' });
+    const r70 = perf({ kind: 'race', distanceKm: 5, timeSec: 1360, date: '2026-07-04' });
     expect(rate(coach, [r80, r74], { config: c }).race.value).toBe(77);
     expect(rate(coach, [r80, r74, r70], { config: c }).race.value).toBe(75);
   });
@@ -1175,5 +1175,13 @@ describe('unofficial events and race caps', () => {
     expect(r.race.caps).toBe(1);
     expect(r.perfScores[0].feeds).toEqual(['SPD']);
     expect(r.race.basis?.perfIds.every((id) => r.perfScores.find((p) => p.perfId === id)?.date === '2026-10-10')).toBe(true);
+  });
+});
+
+describe('parkrun is not a race', () => {
+  it('a parkrun feeds END and SPD-type pathways but never RACE or caps', () => {
+    const r = rate(coach, [perf({ kind: 'parkrun', distanceKm: 5, timeSec: 1300 })]);
+    expect(r.race).toMatchObject({ locked: true, caps: 0 });
+    expect(r.stats.END.locked).toBe(false);
   });
 });

@@ -226,9 +226,10 @@ export function perfFeeds(ctx: PerfContext, config: Config): RatingKey[] {
     case 'race':
     case 'relay_leg':
     case 'parkrun':
-      // An unofficial event (a training relay, a stopwatch time trial) is not a race: it still feeds SPD,
-      // END and CLB, but not RACE.
-      if (ctx.event?.official !== false) out.push('RACE');
+      // RACE is races and relay legs at official events. A parkrun is a run, not a race (it has its own
+      // count and badges), and an unofficial event (a training relay, a stopwatch time trial) is not a race
+      // either: both still feed SPD, END, CLB and the 5K prediction.
+      if (ctx.perf.kind !== 'parkrun' && ctx.event?.official !== false) out.push('RACE');
       if (isShortRace(ctx, config)) out.push('SPD');
       if (longEnough) out.push('END');
       if (isHillRun(ctx, config)) out.push('CLB');
