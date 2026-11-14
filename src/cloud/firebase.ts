@@ -123,7 +123,12 @@ export async function connect(): Promise<Cloud> {
   provider.setCustomParameters({ tenant: SCHOOL_TENANT, prompt: 'select_account' });
   const access = doc(db, 'access', 'main');
   return {
-    onUser: (cb) => onAuthStateChanged(auth, (u: User | null) => cb(u?.email ? { email: u.email.toLowerCase() } : null)),
+    onUser: (cb) => onAuthStateChanged(auth, (u: User | null) => {
+        if (!u) return cb(null);
+        // Some school accounts (often pupils') carry no email on the sign-in itself, only on the Microsoft profile.
+        const email = u.email ?? u.providerData.find((p) => p.email)?.email ?? '';
+        cb({ email: email.toLowerCase() || u.displayName || 'school account' });
+      }),
     async signIn() {
       try {
         await signInWithPopup(auth, provider);

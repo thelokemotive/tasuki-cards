@@ -8,12 +8,19 @@ service cloud.firestore {
         && request.auth.token.firebase.sign_in_provider == 'microsoft.com'
         && request.auth.token.email.lower().matches('^[^@]+@harrowappi[.]jp$');
     }
+    // Anyone signed in through Microsoft. The Microsoft app is registered for the school's directory only
+    // ("My organization only"), so Microsoft itself refuses accounts from anywhere else. This does not depend
+    // on the email claim, which pupils' accounts may not carry.
+    function member() {
+      return request.auth != null && request.auth.token.firebase.sign_in_provider == 'microsoft.com';
+    }
     function owner() {
       return school() && request.auth.token.email.lower() == 'floke@harrowappi.jp';
     }
     function coach() {
       return owner()
-        || (school() && request.auth.token.email.lower() in get(/databases/$(database)/documents/access/main).data.coaches);
+        || (school() && exists(/databases/$(database)/documents/access/main)
+            && request.auth.token.email.lower() in get(/databases/$(database)/documents/access/main).data.coaches);
     }
     match /access/main {
       allow read: if coach();
@@ -28,10 +35,11 @@ service cloud.firestore {
     // only coaches can write it.
     // The head coach can close the pupil view at any time (access/main.pupilView = false).
     function pupilViewOpen() {
-      return get(/databases/$(database)/documents/access/main).data.get('pupilView', true) == true;
+      return !exists(/databases/$(database)/documents/access/main)
+        || get(/databases/$(database)/documents/access/main).data.get('pupilView', true) == true;
     }
     match /public/{doc} {
-      allow read: if coach() || (school() && pupilViewOpen());
+      allow read: if member() && (pupilViewOpen() || coach());
       allow write: if coach();
     }
     match /{document=**} {
