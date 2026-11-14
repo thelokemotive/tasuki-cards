@@ -58,3 +58,21 @@ describe('squad and whole school', () => {
     expect(p.timeSec).toBeLessThan(20 * 60 * (8.8 / 5) * 1.15);
   });
 });
+
+import { placeClimbScore, scorePerformance } from './scoring';
+describe('climb from a Long Ducker place', () => {
+  const ev = { id: 'e1', name: 'Green Long Ducker 2026 senior boys', date: '2026-10-01', official: true } as never;
+  const a = ath('sq', { yearGroup: 'Y10', sex: 'M' } as Partial<Athlete>);
+  const p = (place: number, fieldSize: number, extra = {}) => ({ ...perf('p', 'sq', 'e1'), place, fieldSize, ...extra }) as Performance;
+
+  it('scores 80 for first in the school, 60 mid-field, 40 for last, and feeds only CLB', () => {
+    expect([placeClimbScore(1, 87), placeClimbScore(44, 87), placeClimbScore(87, 87)]).toEqual([80, 60, 40]);
+    const s = scorePerformance({ perf: p(9, 87), event: ev } as never, a, DEFAULT_CONFIG, '2026-11-14');
+    expect([s.feeds, s.score, s.placeScore]).toEqual([['CLB'], 76, { place: 9, fieldSize: 87 }]);
+  });
+
+  it('only for whole-school hill races with a real field', () => {
+    expect(scorePerformance({ perf: p(1, 3), event: ev } as never, a, DEFAULT_CONFIG, '2026-11-14').unscoredReason).toBe('no time');
+    expect(scorePerformance({ perf: p(1, 50), event: { ...(ev as object), name: 'Hachimantai XC' } } as never, a, DEFAULT_CONFIG, '2026-11-14').unscoredReason).toBe('no time');
+  });
+});

@@ -34,6 +34,8 @@ export interface PerfScore {
   age: number;
   ageEstimated: boolean;
   provisional: boolean;
+  /** Scored from a place in a whole-school hill race (no time): place and field size. */
+  placeScore?: { place: number; fieldSize: number };
   /** Why the performance does not count, e.g. 'unverified', 'not a clean run', 'set this course's benchmark in Settings'. */
   unscoredReason?: string;
   configVersion: number;

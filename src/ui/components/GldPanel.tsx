@@ -50,7 +50,7 @@ export function GldPanel({ d }: { d: AthleteDerived }) {
         </ul>
       )}
       <p className="tiny muted" style={{ marginTop: 6 }}>
-        The prediction scales the Next 5K to the course's distance plus climb (each 100 m of climb counts as 1 km). Places come from the whole-school results.
+        The prediction scales the Next 5K to the course's distance plus climb (each 100 m of climb counts as 1 km). Places come from the whole-school results; a place also counts for the climb rating (80 for first in the school down to 40 for last).
       </p>
     </Panel>
   );

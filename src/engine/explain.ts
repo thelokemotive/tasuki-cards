@@ -152,6 +152,10 @@ function scoreWorking(ctx: PerfContext, ps: PerfScore, d: AthleteDerived, w: Who
     const e0 = config.nav.effAtMin;
     return `Reference pace ${refText}. Predicted time = ${km(route)} × ${formatPace(ref.secPerKm)} × ${config.nav.allowance} allowance = ${formatTime(predicted)}. ${w.name} took ${formatTime(p.timeSec)}${errors ? ` + ${errors} error${errors === 1 ? '' : 's'} × ${config.nav.penaltySecPerError} s = ${formatTime(charged)}` : ' with no errors'}. Efficiency = ${formatTime(predicted)} ÷ ${formatTime(charged)} = ${pct(eff)}. NAV = ${config.runScore.min} + ${config.runScore.max - config.runScore.min} × (${num1(eff * 100) + '%'} − ${e0 * 100}%) ÷ ${100 - e0 * 100}% → ${ps.score}.`;
   }
+  if (ps.placeScore) {
+    const { place, fieldSize } = ps.placeScore;
+    return `${w.name} finished ${place} of ${fieldSize} in a whole-school hill race (no time recorded), so the climb score comes from the place: 80 for first in the school down to 40 for last. ${place} of ${fieldSize} → ${ps.score}. A timed climb counts instead when it scores higher.`;
+  }
   if (p.timeSec == null) return '';
   const mode = ctx.course?.benchmarkMode ?? (p.kind === 'descent' ? 'fixed' : 'age_grade');
   if (mode === 'fixed' && ctx.course) {

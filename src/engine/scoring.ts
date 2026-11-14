@@ -257,6 +257,19 @@ export function perfFeeds(ctx: PerfContext, config: Config): RatingKey[] {
 }
 
 /**
+ * Whole-school hill race (the Green Long Ducker) with a place and no time: a climb (CLB) score from where the
+ * runner finished in their race, 80 for first in the school down to 40 for last (60 mid-field). Capped below
+ * Icon level so a good timed climb always counts for more; a timed result on the same day replaces it.
+ */
+export const PLACE_CLB = { top: 80, bottom: 40, minField: 5 };
+const WHOLE_SCHOOL_HILL = /green\s*long\s*ducker|\bgld\b/i;
+
+export function placeClimbScore(place: number, fieldSize: number): number {
+  const q = Math.min(1, Math.max(0, (place - 1) / Math.max(1, fieldSize - 1)));
+  return Math.round(PLACE_CLB.top - (PLACE_CLB.top - PLACE_CLB.bottom) * q);
+}
+
+/**
  * Score one performance. Every performance (including deleted and unverified ones) gets a PerfScore so
  * the Career Vault can list it; only live, verified results dated on or before asOf are scored.
  * - Timed runs: RunScore from AG% = Std(age, sex, D_eff) / timeSec, or the fixed benchmark when the
@@ -335,7 +348,15 @@ export function scorePerformance(ctx: PerfContext, athlete: Athlete, config: Con
     case 'climb':
     case 'descent': {
       if (p.kind === 'descent' && p.cleanRun === false) return unscored(UNSCORED.notClean);
-      if (!positive(p.timeSec)) return unscored(UNSCORED.noTime);
+      if (!positive(p.timeSec)) {
+        const hill = WHOLE_SCHOOL_HILL.test(ctx.event?.name ?? '') || WHOLE_SCHOOL_HILL.test(ctx.course?.name ?? '');
+        if (hill && p.kind === 'race' && p.place != null && p.fieldSize != null && p.fieldSize >= PLACE_CLB.minField && p.place >= 1 && p.place <= p.fieldSize) {
+          const score = placeClimbScore(p.place, p.fieldSize);
+          const f = freshness(score, p.date, asOf, config);
+          return { ...base, feeds: ['CLB'], score, fresh: f.fresh, penalty: f.penalty, expired: f.expired, provisional: false, placeScore: { place: p.place, fieldSize: p.fieldSize } };
+        }
+        return unscored(UNSCORED.noTime);
+      }
       const agProvisional = isAgeGradeProvisional(config);
       const mode = ctx.course?.benchmarkMode ?? (p.kind === 'descent' ? 'fixed' : 'age_grade');
       if (mode === 'fixed') {
