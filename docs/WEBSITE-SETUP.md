@@ -33,9 +33,14 @@ That publishes the site and the security rules. Open https://tasuki-cards.web.ap
 
 From then on the website is the master copy. Keep exporting a weekly backup (the banner reminds you).
 
+## Who sees what
+
+- **Coaches** (you, plus the coach list): everything, and they can edit.
+- **Everyone else with a school account** (pupils and other staff): a view-only copy with the cards, the boards and each runner's sheet. Coaches' devices update that copy automatically a few seconds after any change, so open the app after entering results. It never contains dates of birth, notes or names behind an alias.
+
 ## Adding coaches
 
-Tap your name (top right) → type their school emails → **Save coach list**. Coaches see and edit everything. Anyone else with a school account, pupils included, is turned away and receives no data. See `docs/SAFEGUARDING-NOTE.md`.
+Tap your name (top right) → type their school emails → **Save coach list**. Coaches see and edit everything. Anyone else with a school account gets the view-only copy. See `docs/SAFEGUARDING-NOTE.md`.
 
 ## On a phone or iPad
 

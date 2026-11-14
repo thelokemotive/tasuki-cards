@@ -48,3 +48,10 @@ export class MemoryStore implements Store {
     this.data = emptySnapshot();
   }
 }
+
+/** The website's view-only copy in memory: changes are never written anywhere. */
+export class ViewOnlyStore extends MemoryStore {
+  async persist(): Promise<void> {
+    // view only
+  }
+}

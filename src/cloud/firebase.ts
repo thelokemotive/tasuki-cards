@@ -16,6 +16,7 @@ import {
   writeBatch,
   type Firestore,
   type QuerySnapshot,
+  Bytes,
 } from 'firebase/firestore';
 import type { AppMeta, Calendar, DataSnapshot } from '../types';
 import { emptySnapshot, type Store, type TableMap, type TableName } from '../store/Store';
@@ -24,6 +25,16 @@ import { changesToPatches, docsToSnapshot, META_DOC, snapshotToDocs } from './co
 import { SCHOOL_TENANT } from '../ui/cloud/account';
 
 const SQUAD = 'squad';
+const PUBLIC = 'public';
+/** Firestore documents hold at most 1 MiB; the compressed copy is split into parts below that. */
+const PART_BYTES = 900_000;
+
+async function gzip(s: string): Promise<Uint8Array> {
+  return new Uint8Array(await new Response(new Blob([s]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer());
+}
+async function gunzip(b: Uint8Array): Promise<string> {
+  return new Response(new Blob([b as BlobPart]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
+}
 
 export interface Cloud {
   onUser(cb: (user: { email: string } | null) => void): () => void;
@@ -32,6 +43,10 @@ export interface Cloud {
   /** The coach list, or null when this account is not allowed in. */
   loadCoaches(): Promise<string[] | null>;
   saveCoaches(emails: string[]): Promise<void>;
+  /** Coaches: publish the view-only copy (JSON from makePublicPack). */
+  publishPublic(json: string): Promise<void>;
+  /** Everyone at school: the view-only copy, or null if none has been published yet. */
+  loadPublic(): Promise<string | null>;
   store: Store;
 }
 
@@ -122,6 +137,28 @@ export async function connect(): Promise<Cloud> {
       }
     },
     saveCoaches: (emails) => setDoc(access, { coaches: emails }),
+    async publishPublic(json) {
+      const data = await gzip(json);
+      const parts = Math.max(1, Math.ceil(data.length / PART_BYTES));
+      const batch = writeBatch(db);
+      for (let i = 0; i < parts; i++) batch.set(doc(db, PUBLIC, `pack-${i}`), { data: Bytes.fromUint8Array(data.subarray(i * PART_BYTES, (i + 1) * PART_BYTES)) });
+      batch.set(doc(db, PUBLIC, 'pack'), { parts, bytes: data.length, at: new Date().toISOString() });
+      await batch.commit();
+    },
+    async loadPublic() {
+      const head = await getDoc(doc(db, PUBLIC, 'pack'));
+      const parts = head.data()?.parts as number | undefined;
+      if (!parts) return null;
+      const chunks = await Promise.all(Array.from({ length: parts }, (_, i) => getDoc(doc(db, PUBLIC, `pack-${i}`))));
+      const bytes = chunks.map((c) => (c.data()?.data as Bytes).toUint8Array());
+      const all = new Uint8Array(bytes.reduce((n, b) => n + b.length, 0));
+      let at = 0;
+      for (const b of bytes) {
+        all.set(b, at);
+        at += b.length;
+      }
+      return gunzip(all);
+    },
     store: new FirestoreStore(db),
   };
 }

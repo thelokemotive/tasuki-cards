@@ -13,3 +13,7 @@
 .acct-label { font-size: 0.85rem; font-weight: 600; margin-top: 4px; }
 .acct-warn { color: var(--err); }
 .acct-panel p { margin: 0; }
+.viewer-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(250px, 100%), 1fr)); gap: 16px; justify-items: center; }
+.viewer-card { display: block; text-decoration: none; color: inherit; transition: transform 0.15s; }
+.viewer-card:hover { transform: translateY(-3px); }
+.view-chip { font-size: 0.8rem; background: var(--ai-soft); color: var(--ai); padding: 3px 9px; border-radius: 99px; white-space: nowrap; }

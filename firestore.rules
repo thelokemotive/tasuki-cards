@@ -1,6 +1,6 @@
 rules_version = '2';
-// Tasuki Cards: staff only. A @harrowappi.jp Microsoft sign-in (through the school's own Microsoft tenant) is necessary but not enough:
-// the account must also be the head coach or on the coach list the head coach keeps.
+// Tasuki Cards. Everyone with a @harrowappi.jp Microsoft sign-in (the school's own tenant) can read the
+// view-only copy. The full data needs that sign-in AND the head coach's account or a place on his coach list.
 service cloud.firestore {
   match /databases/{database}/documents {
     function school() {
@@ -23,6 +23,12 @@ service cloud.firestore {
     }
     match /squad/{doc} {
       allow read, write: if coach();
+    }
+    // The view-only copy (no dates of birth, notes or hidden names): everyone at school can read it,
+    // only coaches can write it.
+    match /public/{doc} {
+      allow read: if school();
+      allow write: if coach();
     }
     match /{document=**} {
       allow read, write: if false;

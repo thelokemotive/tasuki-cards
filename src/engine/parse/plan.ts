@@ -10,6 +10,7 @@ import { paceWarning } from '../time';
 import { makePerformance } from '../corrections';
 import { looksLikeLineFormat, parseLineFormat } from './lineFormat';
 import { detectLayout, parseTable } from './table';
+import { parkrunToTable } from './parkrun';
 import { normaliseSeparators } from './split';
 import { bookletToTable, ekidenToLineFormat } from './booklet';
 import type { ParseFormat, RawParse, RawRow, RawSection, SectionDefaults } from './types';
@@ -143,8 +144,13 @@ export function parseText(textIn: string, ctx: PlanContext): RawParse {
   // Results booklets and ekiden write-ups are rewritten into formats the parsers below already read.
   const notes: string[] = [];
   let text = textIn;
-  const booklet = !ctx.format || ctx.format === 'auto' ? bookletToTable(text) : undefined;
-  if (booklet) {
+  const auto = !ctx.format || ctx.format === 'auto';
+  const parkrun = auto ? parkrunToTable(text, ctx.today) : undefined;
+  const booklet = auto && !parkrun ? bookletToTable(text) : undefined;
+  if (parkrun) {
+    text = parkrun.text;
+    notes.push(`Read as a parkrun results page: ${parkrun.event}${parkrun.date ? `, ${parkrun.date}` : ' (date not found: set it below)'}, ${parkrun.finishers} finishers. Our runners are matched; everyone else only counts towards the field.`);
+  } else if (booklet) {
     text = booklet.text;
     notes.push(`Read as a results booklet: ${booklet.rows} runners in ${booklet.categories.length} categor${booklet.categories.length === 1 ? 'y' : 'ies'} (${booklet.categories.join(', ')}). Each category becomes its own event.`);
   } else if (!ctx.format || ctx.format === 'auto') {
