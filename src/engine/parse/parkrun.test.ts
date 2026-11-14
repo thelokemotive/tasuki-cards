@@ -90,5 +90,10 @@ describe('parkrun results pages', () => {
     expect(plan.sections[0].date).toBe('2026-11-14');
     const mine = plan.rows.filter((r) => r.athleteId === 'a1');
     expect(mine.map((r) => [r.raw.timeSec, r.raw.place])).toEqual([[1232, 2]]);
+    // Juniors not on the roster wait for the coach (a pupil in kanji); adults are outsiders.
+    expect(plan.rows.filter((r) => r.status === 'review').map((r) => r.raw.name)).toEqual(['Ben SAMPLETON']);
+    expect(plan.rows.filter((r) => r.status === 'outsider').map((r) => r.raw.name)).toEqual(['延寿 試験', '見本 花子']);
+    // With the Table switch on, the page is still read as parkrun.
+    expect(buildImportPlan(PAGE, { snapshot: snap, config: DEFAULT_CONFIG, today: '2026-11-14', format: 'table' }).sections[0].perfKind).toBe('parkrun');
   });
 });

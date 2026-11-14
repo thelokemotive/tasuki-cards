@@ -14,6 +14,9 @@ export interface Account {
   viewer: boolean;
   coaches: string[];
   saveCoaches: (emails: string[]) => Promise<void>;
+  /** Head coach: whether everyone at school can open the view-only copy. */
+  pupilView: boolean;
+  setPupilView: (on: boolean) => Promise<void>;
   signOut: () => Promise<void>;
 }
 

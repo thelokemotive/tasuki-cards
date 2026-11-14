@@ -28,6 +28,19 @@ export function AccountMenu() {
           <div className="acct-email">{account.email}</div>
           {account.isOwner ? (
             <>
+              <label className="acct-label acct-toggle">
+                <input
+                  type="checkbox"
+                  checked={account.pupilView}
+                  onChange={(e) =>
+                    account.setPupilView(e.target.checked).then(
+                      () => toast(e.target.checked ? 'Pupil view open' : 'Pupil view closed', 'ok'),
+                      (err) => toast(`Could not change: ${err instanceof Error ? err.message : err}`, 'err'),
+                    )
+                  }
+                />
+                Pupil view open (everyone at school can see cards and boards)
+              </label>
               <label className="acct-label" htmlFor="coach-list">
                 Other coaches (one school email per line)
               </label>

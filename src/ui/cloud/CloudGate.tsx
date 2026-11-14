@@ -1,7 +1,7 @@
 // The website's front door: sign in with a school Microsoft account, check the coach list, then open
 // the app on the shared database.
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { connect, type Cloud } from '../../cloud/firebase';
+import { connect, type Access, type Cloud } from '../../cloud/firebase';
 import { DataProvider, useData } from '../data/DataContext';
 import { ViewOnlyStore } from '../../store/memoryStore';
 import { makePublicPack, readPublicPack, type PublicData } from '../../cloud/publicPack';
@@ -15,8 +15,8 @@ type Phase =
   | { at: 'error'; message: string }
   | { at: 'signedOut' }
   | { at: 'denied'; email: string; why: 'domain' | 'list' }
-  | { at: 'in'; email: string; coaches: string[] }
-  | { at: 'viewer'; email: string; data: PublicData | null };
+  | { at: 'in'; email: string; access: Access }
+  | { at: 'viewer'; email: string; data: PublicData | null; closed?: boolean };
 
 function Door({ children }: { children: ReactNode }) {
   const hour = new Date().getHours();
@@ -55,10 +55,10 @@ export default function CloudGate({ children }: { children: ReactNode }) {
           if (!user.email.endsWith(`@${SCHOOL_DOMAIN}`)) return setPhase({ at: 'denied', email: user.email, why: 'domain' });
           setPhase({ at: 'loading' });
           try {
-            const coaches = await c.loadCoaches();
-            if (coaches) return setPhase({ at: 'in', email: user.email, coaches });
+            const access = await c.loadAccess();
+            if (access) return setPhase({ at: 'in', email: user.email, access });
             const json = await c.loadPublic();
-            setPhase({ at: 'viewer', email: user.email, data: json ? readPublicPack(json) : null });
+            setPhase({ at: 'viewer', email: user.email, data: json && json !== 'closed' ? readPublicPack(json) : null, closed: json === 'closed' });
           } catch (e) {
             setPhase({ at: 'error', message: e instanceof Error ? e.message : String(e) });
           }
@@ -74,7 +74,7 @@ export default function CloudGate({ children }: { children: ReactNode }) {
   if (phase.at === 'viewer' && cloud && phase.data) {
     const { email, data } = phase;
     return (
-      <AccountContext.Provider value={{ email, isOwner: false, viewer: true, coaches: [], saveCoaches: async () => undefined, signOut: cloud.signOut }}>
+      <AccountContext.Provider value={{ email, isOwner: false, viewer: true, coaches: [], saveCoaches: async () => undefined, pupilView: true, setPupilView: async () => undefined, signOut: cloud.signOut }}>
         <DataProvider key={email} storeOverride={new ViewOnlyStore(data.snapshot)} derivedOverride={data.derived}>
           {children}
         </DataProvider>
@@ -83,18 +83,21 @@ export default function CloudGate({ children }: { children: ReactNode }) {
   }
 
   if (phase.at === 'in' && cloud) {
-    const { email, coaches } = phase;
+    const { email, access } = phase;
+    const save = async (next: Access) => {
+      await cloud.saveAccess(next);
+      setPhase({ at: 'in', email, access: next });
+    };
     return (
       <AccountContext.Provider
         value={{
           email,
           isOwner: email === OWNER_EMAIL,
           viewer: false,
-          coaches,
-          saveCoaches: async (emails) => {
-            await cloud.saveCoaches(emails);
-            setPhase({ at: 'in', email, coaches: emails });
-          },
+          coaches: access.coaches,
+          saveCoaches: (emails) => save({ ...access, coaches: emails }),
+          pupilView: access.pupilView,
+          setPupilView: (on) => save({ ...access, pupilView: on }),
           signOut: cloud.signOut,
         }}
       >
@@ -141,9 +144,9 @@ export default function CloudGate({ children }: { children: ReactNode }) {
       {phase.at === 'viewer' && (
         <>
           <p>
-            Hello <strong>{phase.email.split('@')[0]}</strong>. The squad's cards and boards have not been published yet.
+            Hello <strong>{phase.email.split('@')[0]}</strong>. {phase.closed ? 'The pupil view of Tasuki Cards is not open yet.' : "The squad's cards and boards have not been published yet."}
           </p>
-          <p className="muted">They appear here once a coach has opened Tasuki Cards. Try again later.</p>
+          <p className="muted">{phase.closed ? 'Your coach will let you know when it opens.' : 'They appear here once a coach has opened Tasuki Cards. Try again later.'}</p>
           <button className="btn door-btn" onClick={() => cloud?.signOut()}>
             Sign out
           </button>

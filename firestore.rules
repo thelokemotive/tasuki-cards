@@ -18,7 +18,7 @@ service cloud.firestore {
     match /access/main {
       allow read: if coach();
       allow write: if owner()
-        && request.resource.data.keys().hasOnly(['coaches'])
+        && request.resource.data.keys().hasOnly(['coaches', 'pupilView'])
         && request.resource.data.coaches is list;
     }
     match /squad/{doc} {
@@ -26,8 +26,12 @@ service cloud.firestore {
     }
     // The view-only copy (no dates of birth, notes or hidden names): everyone at school can read it,
     // only coaches can write it.
+    // The head coach can close the pupil view at any time (access/main.pupilView = false).
+    function pupilViewOpen() {
+      return get(/databases/$(database)/documents/access/main).data.get('pupilView', true) == true;
+    }
     match /public/{doc} {
-      allow read: if school();
+      allow read: if coach() || (school() && pupilViewOpen());
       allow write: if coach();
     }
     match /{document=**} {

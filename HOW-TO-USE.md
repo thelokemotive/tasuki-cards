@@ -27,7 +27,7 @@ Every athlete page has **Next 5K**: a predicted time today with a 90% range, a *
 
 ## 4a. parkrun
 
-parkrun has no download. Open the results page for the week, press **Ctrl+A** then **Ctrl+C**, and paste into **Paste & Match**. The event name, date and every finisher are read (it also works on a translated page and on a phone: select all, copy). Our runners are matched by name; everyone else only counts towards the field size. Check the date shown at the top of the review before saving.
+parkrun has no download. Open the results page for the week, press **Ctrl+A** then **Ctrl+C**, and paste into **Paste & Match**. The event name, date and every finisher are read (it also works on a translated page and on a phone: select all, copy). Our runners are matched by name; everyone else only counts towards the field size. Check the date shown at the top of the review before saving. Juniors who are not on the roster are flagged "one of ours?": a pupil whose parkrun name is in kanji appears like this the first time. Choose them in the Athlete column and that spelling is remembered from then on (or add the kanji name under **Edit details → Aliases** beforehand).
 
 ## 4. Whole-school races (Green Long Ducker)
 
