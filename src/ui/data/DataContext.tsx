@@ -56,7 +56,7 @@ export function withSeed(s: DataSnapshot, now: string = new Date().toISOString()
   return { snapshot: applyChanges(s, changes), changes };
 }
 
-export function DataProvider({ children, storeOverride }: { children: ReactNode; storeOverride?: Store }) {
+export function DataProvider({ children, storeOverride, derivedOverride }: { children: ReactNode; storeOverride?: Store; derivedOverride?: Derived }) {
   const [store, setStore] = useState<Store>(() => storeOverride ?? new MemoryStore());
   const [ready, setReady] = useState(false);
   const [persistent, setPersistent] = useState(true);
@@ -152,9 +152,10 @@ export function DataProvider({ children, storeOverride }: { children: ReactNode;
     }
   }, []);
 
-  const asOf = asOfOverride ?? today;
-  const config = useMemo(() => currentConfig(snapshot.configs), [snapshot.configs]);
-  const derived = useMemo(() => deriveAll(snapshot, asOf, config), [snapshot, asOf, config]);
+  // The view-only website copy arrives with its ratings already worked out by a coach.
+  const asOf = derivedOverride?.asOf ?? asOfOverride ?? today;
+  const config = useMemo(() => derivedOverride?.config ?? currentConfig(snapshot.configs), [snapshot.configs, derivedOverride]);
+  const derived = useMemo(() => derivedOverride ?? deriveAll(snapshot, asOf, config), [snapshot, asOf, config, derivedOverride]);
 
   const api: DataApi = {
     ready,

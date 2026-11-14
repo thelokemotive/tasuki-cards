@@ -1,11 +1,12 @@
 // App shell: navigation, saved indicator, storage/backup banners and routes.
 import './styles/app.css';
-import { lazy, Suspense, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, type ReactNode } from 'react';
 import { useAccount } from './cloud/account';
 import { AccountMenu } from './cloud/AccountMenu';
 import { DataProvider, useData } from './data/DataContext';
 import { ToastProvider, useToast } from './components/Toast';
-import { Link, useRoute, type Route } from './router';
+import { Link, navigate, useRoute, type Route } from './router';
+import { ViewerHome } from './cloud/ViewerHome';
 import { backupOverdueDays, exportEverything } from './data/backup';
 import { formatLongDate } from '../engine/dates';
 import { BrandMark } from './components/BrandMark';
@@ -67,6 +68,23 @@ const TITLES: Record<string, string> = {
   help: 'Help',
 };
 
+// Everyone at school who is not a coach: view only (their card and sheet, the boards, the projector).
+const VIEWER_NAV: NavItem[] = [
+  { page: 'home', to: '/', label: 'Cards', icon: '▣' },
+  { page: 'boards', to: '/boards', label: 'Boards', icon: '≡' },
+];
+
+function ToShare({ id }: { id: string }) {
+  useEffect(() => navigate(`/athlete/${id}/share`), [id]);
+  return null;
+}
+
+function renderViewerPage(route: Route): ReactNode {
+  if (route.page === 'boards') return <BoardsPage />;
+  if (route.page === 'athlete' && route.params[0]) return route.params[1] === 'share' ? <AthletePage /> : <ToShare id={route.params[0]} />;
+  return <ViewerHome />;
+}
+
 function renderPage(route: Route): ReactNode {
   switch (route.page) {
     case 'home':
@@ -123,6 +141,7 @@ function SaveIndicator() {
 
 function Banners() {
   const data = useData();
+  if (useAccount()?.viewer) return null;
   const toast = useToast();
   const { snapshot, today, config, persistent, storageError, commit } = data;
   const overdue = backupOverdueDays(snapshot, today, config.backup.reminderDays);
@@ -161,7 +180,9 @@ function Banners() {
 function Shell() {
   const route = useRoute();
   const data = useData();
+  const viewer = useAccount()?.viewer ?? false;
   if (route.page === 'projector') return <ProjectorPage />;
+  const nav = viewer ? VIEWER_NAV : NAV;
   const activePage = route.page === 'athlete' ? 'roster' : route.page === 'event' ? 'events' : route.page;
   return (
     <div className="shell">
@@ -173,7 +194,7 @@ function Shell() {
             <small>HARROW APPI TRAIL RUNNING</small>
           </span>
         </Link>
-        {NAV.map((n, i) =>
+        {nav.map((n, i) =>
           n === 'sep' ? (
             <div key={i} className="nav-sep" />
           ) : (
@@ -199,11 +220,11 @@ function Shell() {
               As of {formatLongDate(data.asOf)}
             </span>
           )}
-          <SaveIndicator />
+          {viewer ? <span className="view-chip">View only</span> : <SaveIndicator />}
           <AccountMenu />
         </header>
         <Banners />
-        <main className="content">{data.ready ? renderPage(route) : <p className="muted">Loading…</p>}</main>
+        <main className="content">{data.ready ? (viewer ? renderViewerPage(route) : renderPage(route)) : <p className="muted">Loading…</p>}</main>
       </div>
     </div>
   );

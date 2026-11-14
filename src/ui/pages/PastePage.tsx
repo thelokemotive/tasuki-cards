@@ -54,7 +54,7 @@ export function PastePage() {
     const kind = droppedKind(f.name);
     try {
       if (kind === 'pdf') {
-        toast('PDFs cannot be read directly: open the PDF, select the results table, copy it and paste it here.', 'err');
+        toast('PDFs cannot be read directly: open the PDF, select the results, copy and paste here. For parkrun, copy the results web page itself (Ctrl+A, Ctrl+C).', 'err');
         return;
       }
       if (kind === 'xls') {
@@ -268,7 +268,7 @@ export function PastePage() {
             setText(e.target.value);
             if (!e.target.value.trim()) setSource('paste');
           }}
-          placeholder={'# event: Campus Circuit | 2026-11-04 | circuit\nAiko Testfield 4:52\nBen Sampleton 5:10\n\n…or paste a results table copied from a website, PDF or Excel'}
+          placeholder={'Paste results here. Any of these works:\n\n• parkrun: open the results page, press Ctrl+A then Ctrl+C, paste.\n• Green Long Ducker or any placings list: Position and Name columns (no times needed).\n• A results table from a website, PDF or Excel, or a results booklet.\n• Quick lines:\n# event: Campus Circuit | 2026-11-04 | circuit\nAiko Testfield 4:52'}
           spellCheck={false}
           data-testid="paste-box"
         />

@@ -46,6 +46,8 @@ export function AccountMenu() {
                 Save coach list
               </button>
             </>
+          ) : account.viewer ? (
+            <p className="tiny muted">View only: cards, boards and your own sheet. Coaches enter the results.</p>
           ) : (
             <p className="tiny muted">Coaches: {[OWNER_EMAIL, ...account.coaches].join(', ')}</p>
           )}

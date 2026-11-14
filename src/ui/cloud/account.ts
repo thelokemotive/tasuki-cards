@@ -10,6 +10,8 @@ export const OWNER_EMAIL = 'floke@harrowappi.jp';
 export interface Account {
   email: string;
   isOwner: boolean;
+  /** Everyone at school who is not a coach: the view-only copy (cards, boards, their own sheet). */
+  viewer: boolean;
   coaches: string[];
   saveCoaches: (emails: string[]) => Promise<void>;
   signOut: () => Promise<void>;

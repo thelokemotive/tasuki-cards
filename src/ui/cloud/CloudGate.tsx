@@ -1,8 +1,10 @@
 // The website's front door: sign in with a school Microsoft account, check the coach list, then open
 // the app on the shared database.
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { connect, type Cloud } from '../../cloud/firebase';
-import { DataProvider } from '../data/DataContext';
+import { DataProvider, useData } from '../data/DataContext';
+import { ViewOnlyStore } from '../../store/memoryStore';
+import { makePublicPack, readPublicPack, type PublicData } from '../../cloud/publicPack';
 import { YamaScene } from '../art/YamaScene';
 import { BrandMark } from '../components/BrandMark';
 import { AccountContext, OWNER_EMAIL, SCHOOL_DOMAIN } from './account';
@@ -13,7 +15,8 @@ type Phase =
   | { at: 'error'; message: string }
   | { at: 'signedOut' }
   | { at: 'denied'; email: string; why: 'domain' | 'list' }
-  | { at: 'in'; email: string; coaches: string[] };
+  | { at: 'in'; email: string; coaches: string[] }
+  | { at: 'viewer'; email: string; data: PublicData | null };
 
 function Door({ children }: { children: ReactNode }) {
   const hour = new Date().getHours();
@@ -53,7 +56,9 @@ export default function CloudGate({ children }: { children: ReactNode }) {
           setPhase({ at: 'loading' });
           try {
             const coaches = await c.loadCoaches();
-            setPhase(coaches ? { at: 'in', email: user.email, coaches } : { at: 'denied', email: user.email, why: 'list' });
+            if (coaches) return setPhase({ at: 'in', email: user.email, coaches });
+            const json = await c.loadPublic();
+            setPhase({ at: 'viewer', email: user.email, data: json ? readPublicPack(json) : null });
           } catch (e) {
             setPhase({ at: 'error', message: e instanceof Error ? e.message : String(e) });
           }
@@ -66,6 +71,17 @@ export default function CloudGate({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  if (phase.at === 'viewer' && cloud && phase.data) {
+    const { email, data } = phase;
+    return (
+      <AccountContext.Provider value={{ email, isOwner: false, viewer: true, coaches: [], saveCoaches: async () => undefined, signOut: cloud.signOut }}>
+        <DataProvider key={email} storeOverride={new ViewOnlyStore(data.snapshot)} derivedOverride={data.derived}>
+          {children}
+        </DataProvider>
+      </AccountContext.Provider>
+    );
+  }
+
   if (phase.at === 'in' && cloud) {
     const { email, coaches } = phase;
     return (
@@ -73,6 +89,7 @@ export default function CloudGate({ children }: { children: ReactNode }) {
         value={{
           email,
           isOwner: email === OWNER_EMAIL,
+          viewer: false,
           coaches,
           saveCoaches: async (emails) => {
             await cloud.saveCoaches(emails);
@@ -82,6 +99,7 @@ export default function CloudGate({ children }: { children: ReactNode }) {
         }}
       >
         <DataProvider key={email} storeOverride={cloud.store}>
+          <Publisher cloud={cloud} />
           {children}
         </DataProvider>
       </AccountContext.Provider>
@@ -120,6 +138,17 @@ export default function CloudGate({ children }: { children: ReactNode }) {
           </button>
         </>
       )}
+      {phase.at === 'viewer' && (
+        <>
+          <p>
+            Hello <strong>{phase.email.split('@')[0]}</strong>. The squad's cards and boards have not been published yet.
+          </p>
+          <p className="muted">They appear here once a coach has opened Tasuki Cards. Try again later.</p>
+          <button className="btn door-btn" onClick={() => cloud?.signOut()}>
+            Sign out
+          </button>
+        </>
+      )}
       {phase.at === 'error' && (
         <>
           <p>
@@ -133,4 +162,28 @@ export default function CloudGate({ children }: { children: ReactNode }) {
       )}
     </Door>
   );
+}
+
+/**
+ * On a coach's device: keep the view-only copy for the rest of the school up to date. Rebuilt a few
+ * seconds after the data changes, published only when it differs from what this device last sent.
+ */
+function Publisher({ cloud }: { cloud: Cloud }) {
+  const { ready, snapshot, derived, asOf, today } = useData();
+  const last = useRef<string>('');
+  useEffect(() => {
+    if (!ready || asOf !== today || snapshot.athletes.length === 0) return;
+    const t = setTimeout(() => {
+      const json = makePublicPack(snapshot, derived);
+      if (json === last.current) return;
+      cloud.publishPublic(json).then(
+        () => {
+          last.current = json;
+        },
+        () => undefined,
+      );
+    }, 6000);
+    return () => clearTimeout(t);
+  }, [ready, snapshot, derived, asOf, today, cloud]);
+  return null;
 }

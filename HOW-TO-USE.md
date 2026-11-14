@@ -25,6 +25,10 @@ Open **`TASUKI-CARDS-OPEN-ME.html`** (in this folder) by double-clicking it. It 
 
 Every athlete page has **Next 5K**: a predicted time today with a 90% range, a **realistic** and a **stretch** target for about a term ahead, and **Why these numbers?** (each result, how it was converted, how much it counts). The realistic target is printed on the card. The Squad page lists everyone's prediction and target. Mark training relays and stopwatch time trials as `unofficial` in the line format, so they help the prediction but do not count as races. A results booklet PDF (select all, copy, paste) and an ekiden write-up (`Name (9:18) → Name (8:26)`) can be pasted straight into Paste & Match.
 
+## 4a. parkrun
+
+parkrun has no download. Open the results page for the week, press **Ctrl+A** then **Ctrl+C**, and paste into **Paste & Match**. The event name, date and every finisher are read (it also works on a translated page and on a phone: select all, copy). Our runners are matched by name; everyone else only counts towards the field size. Check the date shown at the top of the review before saving.
+
 ## 4. Whole-school races (Green Long Ducker)
 
 Paste each category's placings list (Position and Name columns; no times needed) into Paste & Match, with the event name, date and course above. Our runners are matched and their place and the field size are saved; everyone else is counted, not stored. Each athlete page then shows **Compared with the school** (top % and the change since last year), and the event page shows where our runners finished in the field.
