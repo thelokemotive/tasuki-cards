@@ -17,8 +17,8 @@ No contact details, addresses, photos, location tracking or messaging.
 
 ## Who can see it
 
-- **Staff only.** Signing in uses the school's own Microsoft 365 login (`@harrowappi.jp`), and the account must also be on a coach list that only I can edit. Both checks are enforced by the database itself, not just by the screen.
-- **Pupils and other staff see a view-only copy** (switched on 14 Nov 2026): the cards, the leaderboards and each runner's "how your ratings are worked out" sheet, which is what is already printed and shown on the projector. It is a separate copy that never contains dates of birth, coach notes, real names behind an alias (names appear only as each runner's display setting allows), pasted source text or correction history, and ages appear only in whole years. The database refuses pupils' devices access to the full data, and they cannot change anything.
+- **Coaches.** Signing in uses the school's own Microsoft 365 login (`@harrowappi.jp`), and the account must also be on a coach list that only I can edit. Both checks are enforced by the database itself, not just by the screen.
+- **Pupils and other staff see a view-only copy** (built 14 Nov 2026; paused with a one-tap switch until the safeguarding lead approves): the cards, the leaderboards and each runner's "how your ratings are worked out" sheet, which is what is already printed and shown on the projector. It is a separate copy that never contains dates of birth, coach notes, real names behind an alias (names appear only as each runner's display setting allows), pasted source text or correction history, and ages appear only in whole years. The database refuses pupils' devices access to the full data, and they cannot change anything.
 - The site is not listed in search engines, all traffic is encrypted, and nothing is shared with third parties. There are no adverts or analytics.
 - What pupils see is unchanged: printed cards and boards, and the projector in sessions. These already follow each runner's display setting (full name, first name, alias or hidden) and never show dates of birth.
 
@@ -30,4 +30,4 @@ Google Firebase (Firestore), in Google's Tokyo region, under a Firebase project 
 
 1. Are you content for pupil names, dates of birth and results to be held in Google Firebase on these terms, given that the project sits under my personal Google account and not a school-administered one?
 2. Who else should be on the coach list (it currently holds only me)?
-3. Are you content with the pupil view as described above? Any runner whose name should not appear can be set to an alias, or opted out of the ability boards, on their athlete page; it can also be switched off entirely.
+3. Are you content with the pupil view as described above? Any runner whose name should not appear can be set to an alias, or opted out of the ability boards, on their athlete page; it can also be closed at any time with one switch. The email that goes with this note is `docs/SAFEGUARDING-EMAIL.md`.

@@ -67,6 +67,7 @@ export interface PlanContext {
   ourSchool?: string[];
 }
 
+export const JUNIOR_WARNING = 'junior: one of ours? Choose them once and this spelling is remembered';
 export const ACADEMY_WARNING = 'our school, not on the roster: add as a new athlete?';
 
 export const MATCH_LABEL: Record<NameMatch['type'], string> = {
@@ -145,7 +146,8 @@ export function parseText(textIn: string, ctx: PlanContext): RawParse {
   const notes: string[] = [];
   let text = textIn;
   const auto = !ctx.format || ctx.format === 'auto';
-  const parkrun = auto ? parkrunToTable(text, ctx.today) : undefined;
+  // parkrun pages are recognised under "Table" too: the copied page is never a usable plain table.
+  const parkrun = auto || ctx.format === 'table' ? parkrunToTable(text, ctx.today) : undefined;
   const booklet = auto && !parkrun ? bookletToTable(text) : undefined;
   if (parkrun) {
     text = parkrun.text;
@@ -250,6 +252,10 @@ export function buildImportPlan(text: string, ctx: PlanContext): ImportPlan {
         row.academy = true;
         row.status = 'review';
         row.warnings.push(ACADEMY_WARNING);
+      } else if (row.status === 'outsider' && kind === 'parkrun' && /^J[MW]/.test(raw.category ?? '')) {
+        // A junior at parkrun is often one of ours under another spelling (kanji, katakana, a nickname).
+        row.status = 'review';
+        row.warnings.push(JUNIOR_WARNING);
       }
     }
     plan.rows.push(row);

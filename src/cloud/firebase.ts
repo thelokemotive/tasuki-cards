@@ -36,17 +36,24 @@ async function gunzip(b: Uint8Array): Promise<string> {
   return new Response(new Blob([b as BlobPart]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
 }
 
+export interface Access {
+  coaches: string[];
+  /** Everyone at school can open the view-only copy (default on). */
+  pupilView: boolean;
+}
+
 export interface Cloud {
   onUser(cb: (user: { email: string } | null) => void): () => void;
   signIn(): Promise<void>;
   signOut(): Promise<void>;
   /** The coach list, or null when this account is not allowed in. */
-  loadCoaches(): Promise<string[] | null>;
-  saveCoaches(emails: string[]): Promise<void>;
+  /** The coach list and whether the pupil view is open, or null when this account is not a coach. */
+  loadAccess(): Promise<Access | null>;
+  saveAccess(access: Access): Promise<void>;
   /** Coaches: publish the view-only copy (JSON from makePublicPack). */
   publishPublic(json: string): Promise<void>;
   /** Everyone at school: the view-only copy, or null if none has been published yet. */
-  loadPublic(): Promise<string | null>;
+  loadPublic(): Promise<string | null | 'closed'>;
   store: Store;
 }
 
@@ -127,16 +134,16 @@ export async function connect(): Promise<Cloud> {
       }
     },
     signOut: () => signOut(auth),
-    async loadCoaches() {
+    async loadAccess() {
       try {
-        const snap = await getDoc(access);
-        return ((snap.data()?.coaches as string[] | undefined) ?? []).slice().sort();
+        const d = (await getDoc(access)).data();
+        return { coaches: ((d?.coaches as string[] | undefined) ?? []).slice().sort(), pupilView: d?.pupilView !== false };
       } catch (e) {
         if ((e as { code?: string }).code === 'permission-denied') return null;
         throw e;
       }
     },
-    saveCoaches: (emails) => setDoc(access, { coaches: emails }),
+    saveAccess: (a) => setDoc(access, { coaches: a.coaches, pupilView: a.pupilView }),
     async publishPublic(json) {
       const data = await gzip(json);
       const parts = Math.max(1, Math.ceil(data.length / PART_BYTES));
@@ -146,7 +153,13 @@ export async function connect(): Promise<Cloud> {
       await batch.commit();
     },
     async loadPublic() {
-      const head = await getDoc(doc(db, PUBLIC, 'pack'));
+      let head;
+      try {
+        head = await getDoc(doc(db, PUBLIC, 'pack'));
+      } catch (e) {
+        if ((e as { code?: string }).code === 'permission-denied') return 'closed';
+        throw e;
+      }
       const parts = head.data()?.parts as number | undefined;
       if (!parts) return null;
       const chunks = await Promise.all(Array.from({ length: parts }, (_, i) => getDoc(doc(db, PUBLIC, `pack-${i}`))));
