@@ -32,7 +32,7 @@ function resultCell(r: PlanRow): string {
 }
 
 export function PastePage() {
-  const { snapshot, config, today, commit } = useData();
+  const { fullSnapshot: snapshot, config, today, commit } = useData();
   const toast = useToast();
   const [text, setText] = useState('');
   const [format, setFormat] = useState<'auto' | ParseFormat>('auto');
@@ -40,6 +40,8 @@ export function PastePage() {
   const [ev, setEv] = useState({ name: '', date: today, kind: 'race' as PerfKind, distanceKm: '', climbM: '', courseName: '' });
   const [decisions, setDecisions] = useState<Record<string, RowDecision>>({});
   const [source, setSource] = useState<'paste' | 'voice'>('paste');
+  /** Keep every outsider as a whole-school athlete (on by default for a whole-school race workbook). */
+  const [keepSchool, setKeepSchool] = useState(false);
   /** Confirmed new athletes, by name key (created on approval). */
   const [newAthletes, setNewAthletes] = useState<Record<string, NewAthleteDraft>>({});
   const [editingDrafts, setEditingDrafts] = useState<NewAthleteDraft[] | null>(null);
@@ -70,6 +72,7 @@ export function PastePage() {
         const school = wholeSchoolToTable(sheets, `Green Long Ducker ${year}`.trim());
         if (school) {
           setText(school.text);
+          setKeepSchool(true);
           toast(
             `Read ${f.name} as a whole-school race: ${school.finishers} finishers in ${school.groups.length} races (${school.groups.map((g) => `${g.label} ${g.finishers}`).join(', ')})${school.skipped ? `; ${school.skipped} not racing or without a place` : ''}. Set the race date above, then check the matches.`,
             'ok',
@@ -164,10 +167,11 @@ export function PastePage() {
       newId,
       newAthletes: Object.values(newAthletes),
       yearGroupYear: academicYearOf(today, config.age.academicYearStartMonth, config.age.academicYearStartDay),
+      wholeSchoolAthletes: keepSchool,
     });
     await commit(changes);
     toast(
-      `Saved ${summary.performances} results${summary.newAthletes ? ` for ${summary.newAthletes} new athlete${summary.newAthletes > 1 ? 's' : ''} and the roster` : ''}${summary.participation ? ` and ${summary.participation} attendances` : ''}${summary.newEvents ? `, ${summary.newEvents} new event${summary.newEvents > 1 ? 's' : ''}` : ''}${summary.aliasesLearned ? `, learned ${summary.aliasesLearned} alias${summary.aliasesLearned > 1 ? 'es' : ''}` : ''}${summary.outsiders ? ` (${summary.outsiders} outsiders counted for field size, not stored)` : ''}.`,
+      `Saved ${summary.performances} results${summary.newAthletes ? ` for ${summary.newAthletes} new athlete${summary.newAthletes > 1 ? 's' : ''} and the roster` : ''}${summary.participation ? ` and ${summary.participation} attendances` : ''}${summary.newEvents ? `, ${summary.newEvents} new event${summary.newEvents > 1 ? 's' : ''}` : ''}${summary.aliasesLearned ? `, learned ${summary.aliasesLearned} alias${summary.aliasesLearned > 1 ? 'es' : ''}` : ''}${summary.outsiders ? ` (${summary.outsiders} outsiders counted for field size, not stored)` : ''}${keepSchool && summary.newAthletes ? ' Runners not in the squad were kept as whole-school runners: they join the squad once they race a second event.' : ''}`,
       'ok',
     );
     setText('');
@@ -320,6 +324,11 @@ export function PastePage() {
                 <button className="btn btn-sm btn-primary" style={{ marginRight: 8 }} onClick={() => openDrafts(academyDrafts)} data-testid="add-academy">
                   Add all {academyDrafts.length} academy runner{academyDrafts.length === 1 ? '' : 's'}
                 </button>
+              )}
+              {plan.format === 'table' && counts.outsider > 0 && (
+                <label className="check" style={{ display: 'inline-flex', marginRight: 8 }} title="Every runner not on the roster is kept as a whole-school runner with this result (not in the squad: no card or boards until they race a second event)">
+                  <input type="checkbox" checked={keepSchool} onChange={(e) => setKeepSchool(e.target.checked)} /> Keep everyone else as whole-school runners
+                </label>
               )}
               <span className="pill pill-ok">{counts.ready} to import</span> <span className="pill pill-warn">{counts.review} to check</span> <span className="pill">{counts.skip} skipped</span> <span className="pill">{counts.outsider} outsiders</span>
             </span>

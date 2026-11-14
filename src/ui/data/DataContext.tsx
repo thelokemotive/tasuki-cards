@@ -6,6 +6,8 @@ import { currentConfig, DEFAULT_CONFIG, goLiveMigration, type Config } from '../
 import { todayTokyo } from '../../engine/dates';
 import { deriveAll, type Derived } from '../../engine/derive';
 import { seedCourses } from '../../demo/demoData';
+import { gldMigration } from '../../engine/gld';
+import { squadView } from '../../engine/squad';
 import type { Store } from '../../store/Store';
 import { emptySnapshot } from '../../store/Store';
 import { openStore } from '../../store/dexieStore';
@@ -24,7 +26,10 @@ export interface DataApi {
   persistent: boolean;
   storageError?: string;
   store: Store;
+  /** The squad: whole-school runners who are not (yet) squad members are left out. What every page shows. */
   snapshot: DataSnapshot;
+  /** Everything stored, whole-school runners included: for matching imports and saving. */
+  fullSnapshot: DataSnapshot;
   derived: Derived;
   config: Config;
   /** Real today (Asia/Tokyo). */
@@ -53,6 +58,10 @@ export function withSeed(s: DataSnapshot, now: string = new Date().toISOString()
     if (goLive) changes.put!.configs = [goLive];
   }
   if (s.courses.length === 0) changes.put!.courses = seedCourses();
+  // The Green Long Ducker courses, and every Long Ducker race linked to its course (also for later imports).
+  const gld = gldMigration(applyChanges(s, changes));
+  if (gld.courses.length) changes.put!.courses = [...(changes.put!.courses ?? []), ...gld.courses];
+  if (gld.events.length) changes.put!.events = gld.events;
   return { snapshot: applyChanges(s, changes), changes };
 }
 
@@ -155,14 +164,16 @@ export function DataProvider({ children, storeOverride, derivedOverride }: { chi
   // The view-only website copy arrives with its ratings already worked out by a coach.
   const asOf = derivedOverride?.asOf ?? asOfOverride ?? today;
   const config = useMemo(() => derivedOverride?.config ?? currentConfig(snapshot.configs), [snapshot.configs, derivedOverride]);
-  const derived = useMemo(() => derivedOverride ?? deriveAll(snapshot, asOf, config), [snapshot, asOf, config, derivedOverride]);
+  const view = useMemo(() => squadView(snapshot), [snapshot]);
+  const derived = useMemo(() => derivedOverride ?? deriveAll(view, asOf, config), [view, asOf, config, derivedOverride]);
 
   const api: DataApi = {
     ready,
     persistent,
     storageError,
     store,
-    snapshot,
+    snapshot: view,
+    fullSnapshot: snapshot,
     derived,
     config,
     today,

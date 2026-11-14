@@ -42,6 +42,8 @@ export interface RawRow {
   category?: string;
   /** Club / team / school column (所属), used to spot our own runners among outsiders. */
   club?: string;
+  /** Year group column as written (Y10, 10, 学年). */
+  yearText?: string;
   /** Sex column as written (性別 / Sex / M/F). */
   sexText?: string;
   legNumber?: number;

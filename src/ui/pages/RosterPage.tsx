@@ -11,7 +11,8 @@ import { Link } from '../router';
 import { displayName, fullName } from '../../engine/display';
 
 export function RosterPage() {
-  const { snapshot, derived } = useData();
+  const { snapshot, fullSnapshot, derived } = useData();
+  const schoolOnly = fullSnapshot.athletes.length - snapshot.athletes.length;
   const make = useNewAthlete();
   const [q, setQ] = useState('');
   const [year, setYear] = useState<YearGroup | ''>('');
@@ -32,7 +33,7 @@ export function RosterPage() {
     <div className="stack">
       <PageHeader
         title="Roster"
-        subtitle={`${snapshot.athletes.filter((a) => a.active).length} active athletes${snapshot.athletes.some((a) => !a.active) ? `, ${snapshot.athletes.filter((a) => !a.active).length} inactive` : ''}`}
+        subtitle={`${snapshot.athletes.filter((a) => a.active).length} active athletes${snapshot.athletes.some((a) => !a.active) ? `, ${snapshot.athletes.filter((a) => !a.active).length} inactive` : ''}${schoolOnly > 0 ? ` · ${schoolOnly} whole-school runners kept from whole-school races (they join the squad after racing a second event)` : ''}`}
         actions={
           <>
             <button className="btn btn-primary" onClick={() => setImporting(true)} data-testid="import-roster">

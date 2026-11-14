@@ -12,7 +12,7 @@ import { splitLine } from '../../engine/parse/split';
 const FIELDS = Object.keys(ROSTER_FIELD_LABELS) as RosterField[];
 
 export function RosterImport({ onClose }: { onClose: () => void }) {
-  const { snapshot, today, config, commit } = useData();
+  const { fullSnapshot: snapshot, today, config, commit } = useData();
   const toast = useToast();
   const [text, setText] = useState('');
   const [override, setOverride] = useState<RosterLayout | null>(null);
@@ -21,7 +21,11 @@ export function RosterImport({ onClose }: { onClose: () => void }) {
   const layout = override && detected && override.delimiter === detected.delimiter ? override : detected;
   const rows = useMemo(() => (layout ? parseRoster(text, layout, { roster: snapshot.athletes, asOf: today, config }) : []), [text, layout, snapshot.athletes, today, config]);
   const sample = layout ? text.split(/\r?\n/).filter((l) => l.trim()).slice(0, 1).map((l) => splitLine(l, layout.delimiter))[0] ?? [] : [];
-  const usable = rows.filter((r) => !r.errors.length && !(skipDup && r.duplicateOf));
+  // A roster pupil who is already a whole-school runner (e.g. from the Green Long Ducker) joins the squad,
+  // keeping their results, instead of being added twice.
+  const school = new Map(snapshot.athletes.filter((a) => a.squad === false).map((a) => [a.id, a]));
+  const promote = rows.filter((r) => !r.errors.length && r.duplicateOf && school.has(r.duplicateOf));
+  const usable = rows.filter((r) => !r.errors.length && !(r.duplicateOf && school.has(r.duplicateOf)) && !(skipDup && r.duplicateOf));
 
   const approve = async () => {
     const athletes: Athlete[] = usable.map((r) => {
@@ -40,8 +44,13 @@ export function RosterImport({ onClose }: { onClose: () => void }) {
       };
       return a;
     });
-    await commit({ put: { athletes } });
-    toast(`Imported ${athletes.length} athletes`, 'ok');
+    const promoted: Athlete[] = promote.map((r) => {
+      const a = school.get(r.duplicateOf!)!;
+      const ay = Number(today.slice(5, 7)) >= 9 ? Number(today.slice(0, 4)) : Number(today.slice(0, 4)) - 1;
+      return { ...a, squad: true, ...(r.yearGroup ? { yearGroup: r.yearGroup, yearGroupYear: ay } : {}), aliases: [...new Set([...a.aliases, ...r.aliases])], ...(r.dob ? { dob: r.dob } : {}), ...(r.house ? { house: r.house } : {}), ...(r.notes ? { notes: r.notes } : {}) };
+    });
+    await commit({ put: { athletes: [...athletes, ...promoted] } });
+    toast(`Imported ${athletes.length} athletes${promoted.length ? `; ${promoted.length} whole-school runners joined the squad` : ''}`, 'ok');
     onClose();
   };
 

@@ -26,7 +26,7 @@ export interface RaceGroup {
 }
 
 export interface WholeSchoolRead {
-  /** Tab-separated placings table (Event, Place, Name, Sex, Category, Club). */
+  /** Tab-separated placings table (Event, Place, Name, Sex, Year, Category, Club). */
   text: string;
   groups: RaceGroup[];
   finishers: number;
@@ -97,7 +97,7 @@ export function wholeSchoolToTable(sheets: SheetRead[], eventName: string): Whol
     const k = `${section(e.year)} ${sexWord(e.sex)}`;
     bySection.set(k, [...(bySection.get(k) ?? []), e]);
   }
-  const out = ['Event\tPlace\tName\tSex\tCategory\tClub'];
+  const out = ['Event\tPlace\tName\tSex\tYear\tCategory\tClub'];
   const groups: RaceGroup[] = [];
   for (const [label, list] of bySection) {
     // Places restarting per year group show up as many pupils sharing each place.
@@ -107,7 +107,7 @@ export function wholeSchoolToTable(sheets: SheetRead[], eventName: string): Whol
     const races = byYear ? [...years].sort((a, b) => a - b).map((y) => [`Y${y} ${sexWord(list[0].sex)}`, list.filter((e) => e.year === y)] as const) : [[label, list] as const];
     for (const [l, es] of races) {
       groups.push({ label: l, finishers: es.length, byYear });
-      for (const e of [...es].sort((a, b) => a.place - b.place)) out.push([`${eventName} ${l}`, String(e.place), e.name, e.sex, l, e.house].join('\t'));
+      for (const e of [...es].sort((a, b) => a.place - b.place)) out.push([`${eventName} ${l}`, String(e.place), e.name, e.sex, `Y${e.year}`, l, e.house].join('\t'));
     }
   }
   return { text: out.join('\n'), groups, finishers: all.length, skipped };

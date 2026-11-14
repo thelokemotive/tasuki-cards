@@ -28,7 +28,7 @@ describe('whole-school race workbooks (Green Long Ducker)', () => {
       ['junior girls', 2],
       ['sixth form girls', 1],
     ]);
-    expect(r.text.split('\n')[1].split('\t')).toEqual(['Green Long Ducker 2026 Y7 boys', '1', 'Aki Testfield', 'M', 'Y7 boys', 'Churchill']);
+    expect(r.text.split('\n')[1].split('\t')).toEqual(['Green Long Ducker 2026 Y7 boys', '1', 'Aki Testfield', 'M', 'Y7', 'Y7 boys', 'Churchill']);
   });
 
   it('reads first/last name sheets, and Y12 runs with the seniors when there is no Sixth Form sheet', () => {

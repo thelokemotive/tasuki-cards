@@ -15,7 +15,7 @@ import { normaliseSeparators } from './split';
 import { bookletToTable, ekidenToLineFormat } from './booklet';
 import type { ParseFormat, RawParse, RawRow, RawSection, SectionDefaults } from './types';
 import { athleteFromDraft, draftProblem, inferSex, isOurSchool, proposeNewAthlete, type NewAthleteDraft } from './newAthletes';
-import { parseSex } from './roster';
+import { parseSex, parseYearGroup } from './roster';
 
 export type RowStatus = 'ready' | 'review' | 'skip' | 'outsider';
 
@@ -304,6 +304,11 @@ export interface CommitContext {
   newId: (prefix: string) => string;
   /** Confirmed new athletes (by key), created on approval when a committed row uses them. */
   newAthletes?: NewAthleteDraft[];
+  /**
+   * Whole-school race: every runner not on the roster (an outsider with a name, sex and year group) is kept as a
+   * whole-school athlete (squad: false) with their result, instead of only counting towards the field.
+   */
+  wholeSchoolAthletes?: boolean;
   /** Academic year new athletes' year groups refer to (default: the year of `now`, from 1 September). */
   yearGroupYear?: number;
 }
@@ -342,9 +347,28 @@ export function planToChanges(plan: ImportPlan, decisions: Record<string, RowDec
     return { status: 'ready', athleteId: a.id };
   };
 
+  /** An outsider kept as a whole-school athlete (one per name; year groups refer to the race's academic year). */
+  const schoolByKey = new Map<string, Athlete>();
+  const wholeSchool = (r: PlanRow, sec: PlanSection): RowDecision | undefined => {
+    const year = r.raw.yearText ? parseYearGroup(r.raw.yearText) : undefined;
+    const draft = r.newAthlete ? { ...r.newAthlete, yearGroup: year ?? r.newAthlete.yearGroup } : undefined;
+    if (!draft || draftProblem(draft)) return undefined;
+    const key = `${draft.key}|${draft.sex}`;
+    let a = schoolByKey.get(key);
+    if (!a) {
+      const d = sec.date ?? ctx.now.slice(0, 10);
+      const ay = Number(d.slice(5, 7)) >= 9 ? Number(d.slice(0, 4)) : Number(d.slice(0, 4)) - 1;
+      a = { ...athleteFromDraft(draft, ctx.newId('ath'), ctx.now, ay), squad: false };
+      schoolByKey.set(key, a);
+      created.set(`school:${key}`, a);
+      athletes.set(a.id, a);
+    }
+    return { status: 'ready', athleteId: a.id };
+  };
+
   for (const sec of plan.sections) {
     const rows = plan.rows.filter((r) => r.sectionKey === sec.key);
-    const ds = rows.map((r) => ({ r, d: resolve(decisionFor(r, decisions)) }));
+    const ds = rows.map((r) => ({ r, d: resolve(decisionFor(r, decisions)) })).map((x) => (ctx.wholeSchoolAthletes && x.d.status === 'outsider' ? { ...x, d: wholeSchool(x.r, sec) ?? x.d } : x));
     const committed = ds.filter((x) => x.d.status === 'ready' && x.d.athleteId);
     summary.outsiders += ds.filter((x) => x.d.status === 'outsider').length;
     summary.notCommitted += ds.filter((x) => !(x.d.status === 'ready' && x.d.athleteId) && x.d.status !== 'outsider').length;
