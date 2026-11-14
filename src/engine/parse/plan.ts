@@ -211,7 +211,9 @@ export function evaluateRow(row: PlanRow, athleteId: string | undefined, plan: P
 
 export function buildImportPlan(text: string, ctx: PlanContext): ImportPlan {
   const parsed = parseText(text, ctx);
-  const sections = parsed.sections.map((s) => resolveSection(s, ctx));
+  const placingsOnly = parsed.format === 'table' && parsed.rows.length > 0 && parsed.rows.every((r) => r.timeSec == null) && parsed.rows.some((r) => r.place != null);
+  // A placings list is not scored from times, so it needs no distance.
+  const sections = parsed.sections.map((s) => resolveSection(s, ctx)).map((s) => (placingsOnly ? { ...s, warnings: s.warnings.filter((w) => !w.startsWith('No distance')) } : s));
   const byKey = new Map(sections.map((s) => [s.key, s]));
   const roster = ctx.snapshot.athletes;
   const outsiders = parsed.format === 'table';
