@@ -22,6 +22,13 @@ describe('the view-only copy for pupils', () => {
     expect(json).not.toMatch(/"age":\d+\.\d/);
   });
 
+  it('a runner hidden online appears only as "Hidden runner"', () => {
+    const s2 = { ...snap, athletes: snap.athletes.map((a, i) => (i === 1 ? { ...a, hiddenOnline: true } : a)) };
+    const j = makePublicPack(s2, deriveAll(s2, '2026-11-13', DEFAULT_CONFIG));
+    expect(j).not.toContain(`"${snap.athletes[1].givenName}"`);
+    expect(readPublicPack(j).snapshot.athletes[1].preferredName).toBe('Hidden runner');
+  });
+
   it('keeps the ratings exactly as the coach sees them', () => {
     for (const [id, d] of derived.athletes) {
       const p = pub.derived.athletes.get(id)!;

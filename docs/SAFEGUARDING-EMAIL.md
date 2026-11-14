@@ -1,36 +1,46 @@
 # Email to the Designated Safeguarding Lead
 
-Send to Nicola Bartram. Before sending, close the pupil view: tap your name (top right of Tasuki Cards) and untick **Pupil view open**. The email says it is paused, so it must be.
+To Nicola Bartram, from Fabian Loke. The pupil view is open; the email says so, and that it can be paused the same day if she asks.
 
 ---
 
-**Subject:** Trail Running results app: your view before pupils use it
+**Subject:** Tasuki Cards: the Trail Running squad's results app, and how it keeps pupils safe
 
 Dear Nicola,
 
-I've built a small app for the Trail Running squad, Tasuki Cards. It turns their race and training results into trading cards and leaderboards that reward effort and improvement, not just speed. Before pupils use the online version, I would value your view, and I've paused pupil access until you're comfortable.
+I'd like to tell you about Tasuki Cards, the app at the heart of the Trail Running academy, and how it protects pupils. I'd welcome your eye on it.
 
-**What it holds about pupils**
-- Name, year group, sex, house, and date of birth (needed to adjust ratings for age).
-- Running results and attendance at sessions.
-- A cartoon avatar they design. No photos, contact details, location or messaging.
-- An optional coach note, which I keep free of medical, pastoral and SEN information; that stays in the school's systems.
+**Why it matters**
 
-**Who can see what**
-- **Coaches:** everything. Sign-in is through the school's Microsoft accounts, and only staff I add to the coach list get in. The database enforces this itself, not just the screens.
-- **Pupils (currently paused):** view only. They see the cards and leaderboards that are already printed and shown on the projector in sessions, plus each runner's sheet explaining their ratings. Pupils' devices never receive dates of birth, notes, or the real name of a runner who uses an alias. Names show as first name and initial unless I choose otherwise. I can close pupil access instantly with one switch.
+Tasuki Cards is how the squad sees its own progress. Every race, parkrun and training session becomes a rating, a trading card and a place on the leaderboards. Pupils check it after every session, compare notes, set targets and chase each other's times. It is the most powerful motivator we have, and it is the core of how the academy coaches and develops runners. The leaderboards deliberately reward turning up and improving (attendance streaks, the biggest climbers, a house cup), not just raw speed. Every pupil who works hard has a way to shine.
 
-**Where it is held:** Google Firebase in Google's Tokyo data centre, encrypted, not visible to search engines, no adverts or tracking. One thing you should know: the Firebase project sits under my personal Google account, because the school doesn't use Google. I'm happy to move it to a school-controlled account if you or IT would prefer.
+**The results are already public**
 
-**If you'd like changes, these are all straightforward for me to make:**
-1. Pupils see only their own card and sheet, with leaderboards showing first names only.
-2. Store month and year of birth instead of the full date.
-3. Keep it staff-only for now.
-4. Move the project to a school-controlled account, or add you or IT as a co-owner.
-5. A short note to parents of squad members before pupil access opens.
-6. Anything else you'd want, such as a quick removal process for a pupil who asks.
+The events we enter publish full results online with every runner's name and time: Hachimantai XC, parkrun, the Green Long Ducker. The MTB academy posts every student's times the same way. Tasuki Cards uses those same results, adds our own training sessions, and shows them only to our school community.
 
-Could you let me know whether you're happy for the pupil view to open as described, or which of the changes above you'd like first? I'm happy to show you the app in five minutes at any point. A one-page summary is below if helpful.
+**How pupils are protected**
+
+- **School accounts only.** Sign-in is through the school's Microsoft accounts. Nobody outside Harrow Appi can see anything, and the site is hidden from search engines.
+- **Pupils can view, not change.** Only coaches I name can enter or edit results. The database enforces this, not just the screens.
+- **Less on show than on a public results page.** Pupils see the cards, the leaderboards and each runner's own rating sheet. They never receive dates of birth, coach notes, or the real name of anyone using a nickname. Names show as first name and initial by default.
+- **Nobody is shown last.** The ability leaderboards show the top 10 only, and any runner can opt out of them.
+- **Opt-out for any family.** One tick hides a runner from the pupil view entirely; they appear only as "Hidden runner", with no card. Any pupil or parent can ask me, and I'll do it the same day.
+- **No photos, contact details, location or messaging.** Avatars are cartoons the pupils design themselves.
+- **Coach notes stay clean.** I keep medical, pastoral and SEN information out of the app; it stays in the school's systems.
+- **I can pause it instantly.** One switch closes the pupil view for everyone.
+
+**Where the data lives**
+
+Google Firebase, in Google's Tokyo data centre, encrypted, with no adverts or tracking. The project currently sits under my personal Google account, because the school doesn't use Google. I'd be glad to move it to a school-controlled account or add IT as a co-owner.
+
+**Small changes I can make if you'd like them**
+
+- Store only month and year of birth instead of the full date (the ratings barely change).
+- A short note to squad parents explaining the app and the opt-out.
+- Move the project to a school-controlled account, or add you or IT as co-owners.
+- Make it opt-in rather than opt-out for families.
+
+Could you let me know if you're happy with this, or which of these you'd like? I'd love to show you in five minutes; it's much easier to see than to describe.
 
 Many thanks,
 Fabian
@@ -41,10 +51,11 @@ Fabian
 
 | | |
 |---|---|
-| Purpose | Motivation and coaching feedback for the Trail Running squad. Boards reward attendance and improvement as well as ability. |
-| Data held | Name, year group, sex, house, date of birth, results, attendance, a cartoon avatar, an optional coach note (no medical, pastoral or SEN information). |
-| Not held | Photos, contact details, addresses, location, messages. |
-| Coaches | School Microsoft sign-in plus a coach list kept by Fabian. Enforced by the database. |
-| Pupils | View only, paused until approved. Cards, boards and their rating sheets. Never receive dates of birth, notes or names behind an alias. Can be closed instantly. |
-| Storage | Google Firebase, Tokyo region, encrypted. Project owned by Fabian's personal Google account (can be moved to a school account). Weekly backup. A record can be deleted on request. |
-| Already in use | Printed cards and leaderboards in sessions, following each runner's name setting. |
+| Purpose | The Trail Running academy's results, ratings and leaderboards: motivation, targets and coaching feedback. Boards reward attendance and improvement as well as speed. |
+| Source of results | Public race results (Hachimantai XC, parkrun, Green Long Ducker) plus our own training sessions. |
+| Who can see it | School Microsoft accounts only. Coaches enter and edit; pupils view. |
+| What pupils see | Cards, leaderboards (top 10 on ability boards), each runner's rating sheet. Names as first name and initial, or a nickname. |
+| Never shown to pupils | Dates of birth, coach notes, real names behind a nickname, anyone who opted out. |
+| Opt-out | One tick per runner, on request, same day. The pupil view can also be closed for everyone with one switch. |
+| Not held at all | Photos, contact details, addresses, location, messages. |
+| Storage | Google Firebase, Tokyo region, encrypted. Owned by Fabian's personal Google account (can move to a school account). Weekly backup; records deleted on request. |

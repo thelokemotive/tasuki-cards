@@ -128,6 +128,10 @@ export function AthleteEditor({ athlete, onClose, onSaved }: { athlete: Athlete;
               <input type="checkbox" checked={a.absoluteBoardOptOut} onChange={(e) => set('absoluteBoardOptOut', e.target.checked)} />
               Opt out of absolute boards
             </label>
+            <label className="check">
+              <input type="checkbox" checked={!!a.hiddenOnline} onChange={(e) => set('hiddenOnline', e.target.checked)} />
+              Hide from the pupil view online (shown only as “Hidden runner”, no card)
+            </label>
           </Field>
           <Field label="Status">
             <label className="check">

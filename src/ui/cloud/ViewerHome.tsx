@@ -14,7 +14,7 @@ export function ViewerHome() {
   const [q, setQ] = useState('');
   const [band, setBand] = useState<YearBand | 'all'>('all');
   const all = useMemo(
-    () => [...derived.athletes.values()].filter((d) => d.athlete.active).sort((a, b) => displayName(a.athlete).localeCompare(displayName(b.athlete))),
+    () => [...derived.athletes.values()].filter((d) => d.athlete.active && !d.athlete.hiddenOnline).sort((a, b) => displayName(a.athlete).localeCompare(displayName(b.athlete))),
     [derived],
   );
   const needle = q.trim().toLowerCase();

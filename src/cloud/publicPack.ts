@@ -1,6 +1,7 @@
 // The view-only copy of the squad that every @harrowappi.jp account can read (pupils and staff who are
 // not coaches). Coaches' devices build it from the full data and publish it; it holds only what is already
 // public on cards, boards and the projector:
+// - nothing identifying for runners whose family opted out ("Hidden runner", no card)
 // - names as each runner's display setting shows them (full, first name + initial, or alias); no aliases
 // - no dates of birth, no coach notes, no raw pasted text, no correction history
 // - ratings computed by the coach from the full data (so they match the printed cards), with every age
@@ -14,8 +15,10 @@ export interface PublicData {
   derived: Derived;
 }
 
+export const HIDDEN_NAME = 'Hidden runner';
+
 function publicAthlete(a: Athlete): Athlete {
-  const name = displayName(a);
+  const name = a.hiddenOnline ? HIDDEN_NAME : displayName(a);
   return { ...a, givenName: name, familyName: '', preferredName: name, displayMode: 'full', publicAlias: undefined, aliases: [], dob: undefined, notes: undefined };
 }
 
