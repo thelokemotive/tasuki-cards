@@ -8,7 +8,7 @@ import { findTimeInText, findTimeProblemInText, parseTime } from '../time';
 import { detectDelimiter, joinQuotedLines, normaliseSeparators, splitLine, type Delimiter } from './split';
 import type { RawParse, RawRow, RawSection, SectionDefaults } from './types';
 
-export type ColumnRole = 'place' | 'name' | 'given' | 'family' | 'time' | 'category' | 'club' | 'bib' | 'sex' | 'event' | 'date' | 'distance' | 'kind' | 'ignore';
+export type ColumnRole = 'place' | 'name' | 'given' | 'family' | 'time' | 'category' | 'club' | 'bib' | 'sex' | 'event' | 'date' | 'distance' | 'kind' | 'year' | 'ignore';
 
 const HEADER_WORDS: [ColumnRole, RegExp][] = [
   ['place', /^(順位|着順|総合順位|place|pos(ition)?|rank|overall|#|no\.?)$/i],
@@ -24,6 +24,7 @@ const HEADER_WORDS: [ColumnRole, RegExp][] = [
   ['date', /^(日付|開催日|date(\s*of\s*(run|race|event))?|race\s*date|event\s*date|when)$/i],
   ['distance', /^(距離|distance(\s*\(km\))?|km)$/i],
   ['kind', /^(種類|type(\s*of\s*(run|event))?|kind)$/i],
+  ['year', /^(学年|year(\s*group)?|yr(\s*group)?)$/i],
 ];
 
 const FORMS_MARKERS = /^(timestamp|タイムスタンプ|start\s*time|completion\s*time|email(\s*address)?|id)$/i;
@@ -174,6 +175,7 @@ export function parseTable(text: string, opts: { today: string; config: Config; 
   const iTime = roleIdx('time');
   const iPlace = roleIdx('place');
   const iCat = roleIdx('category');
+  const iYear = roleIdx('year');
   const iEvent = roleIdx('event');
   const iDate = roleIdx('date');
   const iDist = roleIdx('distance');
@@ -223,6 +225,7 @@ export function parseTable(text: string, opts: { today: string; config: Config; 
     if (iCat >= 0 && get(iCat)) row.category = get(iCat);
     if (iClub >= 0 && get(iClub)) row.club = get(iClub);
     if (iSex >= 0 && get(iSex)) row.sexText = get(iSex);
+    if (iYear >= 0 && get(iYear)) row.yearText = get(iYear);
     let date: string | undefined;
     if (iDate >= 0 && get(iDate)) {
       date = parseDateCell(get(iDate));

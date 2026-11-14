@@ -12,7 +12,7 @@ import type { DataSnapshot } from '../../../types';
 import { ourSchoolNames } from '../../../engine/parse/newAthletes';
 
 export function DataTab() {
-  const { snapshot, commit, replaceAll, today, asOf, setAsOf, persistent } = useData();
+  const { fullSnapshot: snapshot, commit, replaceAll, today, asOf, setAsOf, persistent } = useData();
   const toast = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
   const [pending, setPending] = useState<{ snap: DataSnapshot; name: string } | null>(null);

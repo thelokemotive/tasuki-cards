@@ -23,6 +23,7 @@ import type { PerfScore, RatingKey } from '../../engine/types';
 import { ExplainModal, StudentSheet } from '../components/StatExplain';
 import { DevelopmentFocus, StatRadar, SummitLadder } from '../components/Mountain';
 import { NextFiveK } from '../components/NextFiveK';
+import { GldPanel } from '../components/GldPanel';
 import { Placings } from '../components/Placings';
 import { paceOf } from '../../engine/explain';
 import { formatPace } from '../../engine/format';
@@ -251,6 +252,7 @@ export function AthletePage() {
       <div className="grid-2">
         <Panel title="Next 5K">
           <NextFiveK d={d} config={derived.config} />
+          <GldPanel d={d} />
         </Panel>
         <Panel title="Compared with the school">
           <Placings d={d} lookup={derived.lookup} />

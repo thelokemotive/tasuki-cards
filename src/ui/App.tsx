@@ -161,7 +161,7 @@ function Banners() {
           <button
             className="btn btn-sm"
             onClick={() => {
-              commit(exportEverything(snapshot)).then(() => toast('Backup downloaded', 'ok'));
+              commit(exportEverything(data.fullSnapshot)).then(() => toast('Backup downloaded', 'ok'));
             }}
           >
             Export everything now

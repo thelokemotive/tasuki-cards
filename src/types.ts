@@ -51,6 +51,11 @@ export interface Athlete {
   publicAlias?: string;
   /** Excluded from absolute boards; still appears on In-Form, Streak and Surge boards. */
   absoluteBoardOptOut: boolean;
+  /**
+   * false: a whole-school runner (e.g. from the Green Long Ducker), kept for matching and the field, not shown
+   * as a squad member until they have raced in two different events. Absent or true: squad.
+   */
+  squad?: boolean;
   /** Family opted out of the website's pupil view: shown there only as "Hidden runner", with no card. */
   hiddenOnline?: boolean;
   house?: string;
