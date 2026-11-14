@@ -52,7 +52,7 @@ export default function CloudGate({ children }: { children: ReactNode }) {
         setCloud(c);
         off = c.onUser(async (user) => {
           if (!user) return setPhase({ at: 'signedOut' });
-          if (!user.email.endsWith(`@${SCHOOL_DOMAIN}`)) return setPhase({ at: 'denied', email: user.email, why: 'domain' });
+          if (user.email.includes('@') && !user.email.endsWith(`@${SCHOOL_DOMAIN}`)) return setPhase({ at: 'denied', email: user.email, why: 'domain' });
           setPhase({ at: 'loading' });
           try {
             const access = await c.loadAccess();
