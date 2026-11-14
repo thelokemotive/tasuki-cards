@@ -1,5 +1,6 @@
 // Boards (spec 6): screen, projector mode, A4/A3 print.
 import { useMemo, useState } from 'react';
+import { useAccount } from '../cloud/account';
 import { currentWindow } from '../../engine/coach';
 import { deriveAll } from '../../engine/derive';
 import { PageHeader, Panel } from '../components/common';
@@ -44,7 +45,11 @@ export function useBoardExtras(id: BoardId | 'reveal'): Pick<BoardOptions, 'wind
 export function BoardsPage() {
   const { derived, snapshot } = useData();
   const route = useRoute();
-  const { id, full, courseId, eventId } = boardQuery(route.query);
+  const q = boardQuery(route.query);
+  const { id, courseId, eventId } = q;
+  // Pupils see the top 10 of the ability boards only: nobody is shown at the bottom of a ranking.
+  const viewer = useAccount()?.viewer ?? false;
+  const full = q.full && !viewer;
   const [paper, setPaper] = useState<'a4' | 'a3'>('a4');
   const extras = useBoardExtras(id);
   const board = buildBoard(id, derived, { full, courseId, eventId, ...extras });
@@ -87,7 +92,7 @@ export function BoardsPage() {
                 </button>
               ))}
             </div>
-            {board.absolute && (
+            {board.absolute && !viewer && (
               <label className="check small">
                 <input type="checkbox" checked={full} onChange={(e) => set({ full: e.target.checked ? '1' : undefined })} /> Show everyone (not just the top 10)
               </label>
