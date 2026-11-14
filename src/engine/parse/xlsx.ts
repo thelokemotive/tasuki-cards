@@ -132,6 +132,11 @@ export interface SheetRead {
 
 /** Read the first sheet of an .xlsx workbook. */
 export async function readXlsxFirstSheet(buf: Uint8Array, inflate?: (d: Uint8Array) => Promise<Uint8Array>): Promise<SheetRead> {
+  return (await readXlsxSheets(buf, inflate, 1))[0];
+}
+
+/** Read every sheet of an .xlsx workbook (or the first `limit`), in workbook order. */
+export async function readXlsxSheets(buf: Uint8Array, inflate?: (d: Uint8Array) => Promise<Uint8Array>, limit = Infinity): Promise<SheetRead[]> {
   const files = await unzip(buf, inflate);
   const dec = new TextDecoder('utf-8');
   const text = (n: string) => {
@@ -140,19 +145,24 @@ export async function readXlsxFirstSheet(buf: Uint8Array, inflate?: (d: Uint8Arr
   };
   const wb = text('xl/workbook.xml');
   if (!wb) throw new Error('This file has no workbook inside: is it really an .xlsx (not an old .xls)?');
-  const first = /<sheet\b([^>]*)\/?>/.exec(wb);
-  if (!first) throw new Error('The workbook has no sheets.');
-  const sheetName = decodeXml(attr(first[1], 'name') ?? 'Sheet1');
-  const rid = attr(first[1], 'r:id');
+  const sheets = [...wb.matchAll(/<sheet\b([^>]*)\/?>/g)].slice(0, limit);
+  if (!sheets.length) throw new Error('The workbook has no sheets.');
   const rels = text('xl/_rels/workbook.xml.rels') ?? '';
-  let target: string | undefined;
-  for (const m of rels.matchAll(/<Relationship\b([^>]*)\/?>/g)) if (attr(m[1], 'Id') === rid) target = attr(m[1], 'Target');
-  const path = target ? (target.startsWith('/') ? target.slice(1) : `xl/${target.replace(/^\.\//, '')}`) : 'xl/worksheets/sheet1.xml';
-  const xml = text(path) ?? text('xl/worksheets/sheet1.xml');
-  if (!xml) throw new Error(`Could not find the sheet “${sheetName}” inside the file.`);
   const shared = [...(text('xl/sharedStrings.xml') ?? '').matchAll(/<si>([\s\S]*?)<\/si>/g)].map((m) => richText(m[1]));
   const { kinds, hours } = cellKinds(text('xl/styles.xml'));
+  return sheets.map((sm, i) => {
+    const sheetName = decodeXml(attr(sm[1], 'name') ?? `Sheet${i + 1}`);
+    const rid = attr(sm[1], 'r:id');
+    let target: string | undefined;
+    for (const m of rels.matchAll(/<Relationship\b([^>]*)\/?>/g)) if (attr(m[1], 'Id') === rid) target = attr(m[1], 'Target');
+    const path = target ? (target.startsWith('/') ? target.slice(1) : `xl/${target.replace(/^\.\//, '')}`) : `xl/worksheets/sheet${i + 1}.xml`;
+    const xml = text(path) ?? (i === 0 ? text('xl/worksheets/sheet1.xml') : undefined);
+    if (!xml) throw new Error(`Could not find the sheet “${sheetName}” inside the file.`);
+    return readSheetXml(sheetName, xml, shared, kinds, hours);
+  });
+}
 
+function readSheetXml(sheetName: string, xml: string, shared: string[], kinds: ReturnType<typeof cellKinds>['kinds'], hours: ReturnType<typeof cellKinds>['hours']): SheetRead {
   const rows: string[][] = [];
   let rowNo = 0;
   for (const rm of xml.matchAll(/<row\b([^>]*?)(?:\/>|>([\s\S]*?)<\/row>)/g)) {

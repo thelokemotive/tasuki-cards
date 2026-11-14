@@ -31,7 +31,7 @@ parkrun has no download. Open the results page for the week, press **Ctrl+A** th
 
 ## 4. Whole-school races (Green Long Ducker)
 
-Paste each category's placings list (Position and Name columns; no times needed) into Paste & Match, with the event name, date and course above. Our runners are matched and their place and the field size are saved; everyone else is counted, not stored. Each athlete page then shows **Compared with the school** (top % and the change since last year), and the event page shows where our runners finished in the field.
+Drag the Green Long Ducker workbook (one sheet per house: Year, names and Position, and Racing? if you use it) onto **Paste & Match**, then set the race date above. Every house sheet is combined; races are split into boys and girls by house and into Y7–8, Y9–11 and Sixth Form (Y12 runs with the seniors if the workbook has no Sixth Form sheet). Where places restart for each year group, each year is its own race. Summary sheets are ignored. Any other placings list (Position and Name columns, no times) can be pasted too. Our runners are matched and their place and the field size are saved; everyone else is counted, not stored. Each athlete page then shows **Compared with the school** (top % and the change since last year), and the event page shows where our runners finished in the field.
 
 ## 5. The fun bits (Yama)
 

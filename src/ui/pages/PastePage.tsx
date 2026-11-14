@@ -1,7 +1,8 @@
 // Paste-and-Match (spec 4.2–4.4): paste or dictate → review table → approve. Nothing commits before approval.
 import './paste.css';
 import { useDeferredValue, useMemo, useRef, useState, type DragEvent } from 'react';
-import { decodeText, droppedKind, readXlsxFirstSheet } from '../../engine/parse/xlsx';
+import { decodeText, droppedKind, readXlsxSheets } from '../../engine/parse/xlsx';
+import { wholeSchoolToTable } from '../../engine/parse/wholeSchool';
 import type { PerfKind } from '../../types';
 import { PERF_KINDS } from '../../types';
 import { Field, PageHeader, Panel, Seg, newId } from '../components/common';
@@ -63,9 +64,21 @@ export function PastePage() {
       }
       const buf = new Uint8Array(await f.arrayBuffer());
       if (kind === 'xlsx') {
-        const sheet = await readXlsxFirstSheet(buf);
-        setText(sheet.text);
-        toast(`Read “${sheet.sheetName}”, the first sheet of ${f.name} (${sheet.rows.length} rows).`, 'ok');
+        const sheets = await readXlsxSheets(buf);
+        // A whole-school race workbook (one sheet per house): every house sheet becomes one placings list per race.
+        const year = /20\d{2}/.exec(f.name)?.[0] ?? ev.date?.slice(0, 4) ?? '';
+        const school = wholeSchoolToTable(sheets, `Green Long Ducker ${year}`.trim());
+        if (school) {
+          setText(school.text);
+          toast(
+            `Read ${f.name} as a whole-school race: ${school.finishers} finishers in ${school.groups.length} races (${school.groups.map((g) => `${g.label} ${g.finishers}`).join(', ')})${school.skipped ? `; ${school.skipped} not racing or without a place` : ''}. Set the race date above, then check the matches.`,
+            'ok',
+          );
+        } else {
+          const sheet = sheets[0];
+          setText(sheet.text);
+          toast(`Read “${sheet.sheetName}”, the first sheet of ${f.name} (${sheet.rows.length} rows).`, 'ok');
+        }
       } else if (kind === 'text' || f.type.startsWith('text/')) {
         setText(decodeText(buf));
         toast(`Read ${f.name}.`, 'ok');
@@ -278,7 +291,7 @@ export function PastePage() {
           <button type="button" className="btn btn-sm" onClick={() => fileRef.current?.click()}>
             Choose a file…
           </button>
-          <span>or drag a .csv, .txt or .xlsx file onto the box (Excel: the first sheet is read). PDFs: select the table in the PDF viewer, copy and paste.</span>
+          <span>or drag a .csv, .txt or .xlsx file onto the box (Excel: the first sheet is read; a Green Long Ducker workbook with one sheet per house is read whole). PDFs: select the table in the PDF viewer, copy and paste.</span>
           <input
             ref={fileRef}
             type="file"
