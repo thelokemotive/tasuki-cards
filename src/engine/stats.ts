@@ -2,7 +2,7 @@
 // Each stat is a number or locked with a how-to-unlock; a number is never manufactured.
 import type { Athlete, ISODate, Performance } from '../types';
 import type { Config } from './config';
-import type { ArmLevels, AthleteRatings, OvrValue, PerfScore, RaceStat, RatingKey, StatBasis, StatKey, StatValue, Tier } from './types';
+import type { ArmLevels, AthleteRatings, OvrValue, PerfScore, RaceStat, RatingKey, StatBasis, StatEvidence, StatKey, StatValue, Tier } from './types';
 import { STAT_KEYS } from './types';
 import { ageOnDate } from './age';
 import { ARM_DOMAINS, armLevelsFromTest, type ArmDomain } from './arm';
@@ -363,13 +363,67 @@ export function tierFor(ovr: OvrValue, race: RaceStat, config: Config): { tier: 
   return { tier: ovr.value >= t.silverMin ? 'silver' : 'bronze' };
 }
 
-/** OVR = round(mean of the unlocked stats among the six); '—' when fewer than config.ovr.minUnlocked. */
+/**
+ * How much evidence is behind a stat: the current (not expired) scored results that feed it, one per day (two
+ * legs of one relay are one piece of evidence). Each day counts 1, less for a place with no time, an unofficial
+ * event, an effort under ovr.evidence.shortEffortKm, or a result older than olderThanMonths (factors multiply);
+ * the day's strongest result is the one counted. Confidence = weight ÷ (weight + halfResults).
+ */
+export function statEvidence(key: StatKey, entries: Entry[], config: Config): StatEvidence {
+  const ev = config.ovr.evidence;
+  const byDay = new Map<string, number>();
+  for (const e of entries) {
+    if (!e.ps.feeds.includes(key) || e.ps.expired) continue;
+    // ARM: any test that gave a domain a level is evidence; the others need a current score.
+    if (key === 'ARM' ? e.ps.monthsOld >= config.arm.windowMonths : e.ps.fresh == null) continue;
+    let w = 1;
+    if (e.ps.placeScore) w *= ev.placeOnlyWeight;
+    if (e.ctx.event?.official === false) w *= ev.unofficialWeight;
+    if (TIMED_EFFORT.has(e.perf.kind) && !e.ps.placeScore && e.ps.dEff != null && e.ps.dEff < ev.shortEffortKm) w *= ev.shortEffortWeight;
+    if (e.ps.monthsOld > ev.olderThanMonths) w *= ev.olderWeight;
+    byDay.set(e.perf.date, Math.max(byDay.get(e.perf.date) ?? 0, w));
+  }
+  const weight = [...byDay.values()].reduce((a, b) => a + b, 0);
+  return { results: byDay.size, weight, confidence: weight > 0 ? weight / (weight + ev.halfResults) : 0 };
+}
+
+const TIMED_EFFORT = new Set<string>(['race', 'relay_leg', 'parkrun', 'long_run', 'circuit', 'climb', 'descent']);
+
+/**
+ * OVR from the unlocked stats among the six; '—' when fewer than config.ovr.minUnlocked.
+ * Evidence-weighted (config.ovr.evidence.enabled): the stats are averaged in proportion to their confidence, and
+ * OVR = priorScore + proven × (average − priorScore), proven = n ÷ (n + ovrHalfResults), n = all the weighted
+ * results behind the unlocked stats. Two thin results move the OVR a little way from the starting assumption;
+ * a season of results moves it nearly all the way. Otherwise the plain average, as before.
+ */
 export function ovrFrom(stats: Record<StatKey, StatValue>, config: Config): OvrValue {
-  const values = STAT_KEYS.flatMap((k) => (!stats[k].locked && stats[k].value != null ? [stats[k].value as number] : []));
-  const unlocked = values.length;
+  const open = STAT_KEYS.map((k) => stats[k]).filter((s) => !s.locked && s.value != null);
+  const unlocked = open.length;
   if (unlocked === 0 || unlocked < config.ovr.minUnlocked) return { unlocked, display: '—' };
-  const value = roundScore(values.reduce((a, b) => a + b, 0) / unlocked);
-  return { value, unlocked, display: String(value) };
+  const plain = open.reduce((a, s) => a + (s.value as number), 0) / unlocked;
+  const ev = config.ovr.evidence;
+  if (!ev.enabled) {
+    const value = roundScore(plain);
+    return { value, unlocked, display: String(value) };
+  }
+  // A stat with no evidence record (built by hand in a test or a preview) counts as one result.
+  const one: StatEvidence = { results: 1, weight: 1, confidence: 1 / (1 + ev.halfResults) };
+  const evs = open.map((s) => ({ v: s.value as number, e: s.evidence && s.evidence.weight > 0 ? s.evidence : one }));
+  const c = evs.reduce((a, x) => a + x.e.confidence, 0);
+  const average = evs.reduce((a, x) => a + x.e.confidence * x.v, 0) / c;
+  const n = evs.reduce((a, x) => a + x.e.weight, 0);
+  const proven = n / (n + ev.ovrHalfResults);
+  const value = roundScore(ev.priorScore + proven * (average - ev.priorScore));
+  return {
+    value,
+    unlocked,
+    display: String(value),
+    plain,
+    proven,
+    evidence: proven < ev.estimateBelow ? 'estimate' : proven < ev.provenFrom ? 'building' : 'proven',
+    average,
+    results: evs.reduce((a, x) => a + x.e.results, 0),
+  };
 }
 
 /** Every rating for one athlete as of a date. Only live, verified results feed ratings; all are listed. */
@@ -393,6 +447,7 @@ export function computeAthleteRatings(input: StatsInput): AthleteRatings {
     NAV: bestFreshStat('NAV', entries, input),
     ARM: armStat(levels, byDomain, entries, input),
   };
+  for (const k of STAT_KEYS) if (!stats[k].locked) stats[k].evidence = statEvidence(k, entries, config);
   const race = raceStat(entries, own, input);
   const ovr = ovrFrom(stats, config);
   const { tier, note } = tierFor(ovr, race, config);

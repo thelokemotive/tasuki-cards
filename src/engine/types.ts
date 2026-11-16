@@ -64,7 +64,18 @@ export interface StatValue {
   unlockHelp?: string;
   provisional: boolean;
   basis?: StatBasis;
+  /** How much evidence is behind an unlocked stat (drives its share of the OVR). */
+  evidence?: StatEvidence;
   configVersion: number;
+}
+
+export interface StatEvidence {
+  /** Separate current results (one per day) that feed the stat. */
+  results: number;
+  /** The same, weighted: a place with no time, an unofficial or very short effort and an old result count for less. */
+  weight: number;
+  /** weight ÷ (weight + ovr.evidence.halfResults): 0 = nothing, 1 = fully proven. */
+  confidence: number;
 }
 
 export interface RaceStat extends StatValue {
@@ -90,6 +101,16 @@ export interface OvrValue {
   unlocked: number;
   /** '71' or '—' */
   display: string;
+  /** The plain average of the unlocked stats (what OVR was before evidence weighting). */
+  plain?: number;
+  /** The unlocked stats averaged in proportion to their confidence (before the proven share is applied). */
+  average?: number;
+  /** Proven share, 0–1: how far the evidence outweighs the starting assumption. */
+  proven?: number;
+  /** 'estimate' (thin evidence), 'building', or 'proven'. Set whenever there is a value and weighting is on. */
+  evidence?: 'estimate' | 'building' | 'proven';
+  /** Separate results behind the unlocked stats, in total. */
+  results?: number;
 }
 
 export interface AthleteRatings {

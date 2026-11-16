@@ -57,6 +57,7 @@ export function HelpPage() {
         </p>
         <p className="small muted">
           Standards: {isAgeGradeProvisional(c) ? 'provisional fallback table (ratings marked provisional).' : `Alan Jones 2025 road tables, commit ${AGE_GRADE_SOURCE.commit.slice(0, 7)}.`}
+          {c.ageGrade.subMile === 'world_record_curve' && !isAgeGradeProvisional(c) && ' The tables start at 1 mile. Below that, the runner’s mile standard is scaled along the track world records (200 m to the mile), because pace rises much faster over short distances than the road tables’ slope suggests.'}
         </p>
         <h3>Freshness</h3>
         <p>
@@ -75,7 +76,17 @@ export function HelpPage() {
           <li><strong>DSC</strong>: descent courses, scored against the course benchmark. A descent that is not a clean run is kept but never scored.</li>
           <li><strong>NAV</strong>{c.nav.provisional && ' (provisional)'}: navigation time against a prediction from the runner&apos;s own best Circuit pace (or, with no Circuit, a race: a short one directly, any other scaled to the route by Riegel&apos;s formula), with {c.nav.penaltySecPerError} s per control error.</li>
           <li><strong>ARM</strong>{c.arm.provisional && ' (provisional)'}: ankle, calf and balance tests, levels 1–5 each, using the best level in the last {c.arm.windowMonths} months, so ARM never falls on a bad retest.</li>
-          <li><strong>OVR</strong>: the average of the unlocked stats (shown as n/6). A locked stat shows a lock and how to unlock it, never a number.</li>
+          <li>
+            <strong>OVR</strong>:{' '}
+            {c.ovr.evidence.enabled ? (
+              <>
+                a proven rating built from the unlocked stats (shown as n/6). Each stat counts by how much evidence is behind it, and the OVR starts at {c.ovr.evidence.priorScore} and moves towards the average of the stats as results come in: OVR = {c.ovr.evidence.priorScore} + proven × (average − {c.ovr.evidence.priorScore}), where proven = results ÷ (results + {c.ovr.evidence.ovrHalfResults}). One time trial is a first estimate; a season of results is a proven level. This is the usual correction for small samples (regression to the mean), the same idea that chess and esports ratings use for new players. A place with no time, a stopwatch time trial, an effort under {c.ovr.evidence.shortEffortKm} km and a result more than {c.ovr.evidence.olderThanMonths} months old count as less than a full result; two results on one day count once.
+              </>
+            ) : (
+              <>the average of the unlocked stats (shown as n/6).</>
+            )}{' '}
+            A locked stat shows a lock and how to unlock it, never a number.
+          </li>
         </ul>
         <h3>Tiers</h3>
         <p>

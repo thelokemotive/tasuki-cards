@@ -46,3 +46,32 @@ export function yearGroupOn(athlete: Pick<Athlete, 'yearGroup' | 'yearGroupYear'
   const n = Math.min(13, Math.max(7, Number(athlete.yearGroup.slice(1)) + shift));
   return `Y${n}` as YearGroup;
 }
+
+/**
+ * The September rollover. An athlete whose year group was recorded for an earlier academic year (a Y9 in the
+ * 2025 Long Ducker workbook, or last year's roster) is moved up to the year group they are in on `today`,
+ * and the record is restamped with today's academic year. Estimated ages are unchanged: Y9 for 2025 and Y10
+ * for 2026 are the same pupil. Returns only the athletes that change.
+ * Left alone: Staff; records with no year stamp (they already mean "this year"); records stamped for a later
+ * year; and leavers (anyone who would now be past Y13), whose record keeps the year group and year it had, so
+ * their old results are still aged correctly.
+ */
+export function yearRollover(athletes: Athlete[], today: ISODate, config: Config): Athlete[] {
+  const { academicYearStartMonth: sm, academicYearStartDay: sd } = config.age;
+  const now = academicYearOf(today, sm, sd);
+  const out: Athlete[] = [];
+  for (const a of athletes) {
+    if (a.yearGroup === 'Staff' || a.yearGroupYear == null || !(a.yearGroupYear < now)) continue;
+    const n = Number(a.yearGroup.slice(1)) + (now - a.yearGroupYear);
+    if (!(n >= 7 && n <= 13)) continue;
+    out.push({ ...a, yearGroup: `Y${n}` as YearGroup, yearGroupYear: now });
+  }
+  return out;
+}
+
+/** True for a pupil whose recorded year group, moved up to `today`, is past Y13: they have left the school. */
+export function hasLeft(a: Pick<Athlete, 'yearGroup' | 'yearGroupYear'>, today: ISODate, config: Config): boolean {
+  if (a.yearGroup === 'Staff' || a.yearGroupYear == null) return false;
+  const { academicYearStartMonth: sm, academicYearStartDay: sd } = config.age;
+  return Number(a.yearGroup.slice(1)) + (academicYearOf(today, sm, sd) - a.yearGroupYear) > 13;
+}

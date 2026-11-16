@@ -32,9 +32,10 @@ describe('squad and whole school', () => {
     const { changes, summary } = planToChanges(plan, {}, snap, { now: '2026-11-14T00:00:00Z', by: 'Coach', newId: (p) => `${p}-${++n}`, wholeSchoolAthletes: true });
     const created = (changes.put?.athletes ?? []).map((a) => [a.preferredName, a.sex, a.yearGroup, a.yearGroupYear, a.squad]);
     expect(created).toEqual([
-      ['Ben', 'M', 'Y9', 2025, false],
-      ['Cal', 'M', 'Y11', 2025, false],
-      ['Dee', 'F', 'Y7', 2025, false],
+      // Year groups in the 2025 workbook, saved as the year the pupils are in today (November 2026).
+      ['Ben', 'M', 'Y10', 2026, false],
+      ['Cal', 'M', 'Y12', 2026, false],
+      ['Dee', 'F', 'Y8', 2026, false],
     ]);
     expect(summary.performances).toBe(4);
     const after = applyChanges(snap, changes);
