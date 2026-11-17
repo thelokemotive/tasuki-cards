@@ -12,7 +12,7 @@ import { displayName } from './display';
 import { formatPace, formatTime } from './format';
 import { resolveContext, type Lookup, type PerfContext } from './perf';
 import { bleepPercentile, bleepRow, fixedAgeAdjustment, perfFeeds, UNSCORED } from './scoring';
-import { navReferencePace } from './stats';
+import { navReferenceFor } from './stats';
 import { BLEEP_PERCENTILES } from './config';
 import { BENCHMARK_NOTE_PREFIX } from './benchmark';
 
@@ -135,7 +135,7 @@ function scoreWorking(ctx: PerfContext, ps: PerfScore, d: AthleteDerived, w: Who
   }
   if (p.kind === 'nav') {
     const route = ps.dEff ?? p.routeKmEff ?? ctx.dEff;
-    const ref = navReferencePace(d.perfs, lookup, config, d.athlete, d.ratings.asOf, route);
+    const ref = navReferenceFor(p, d.perfs, lookup, config, d.athlete, d.ratings.asOf, route);
     if (!ref || route == null || p.timeSec == null) return '';
     const refPerf = d.perfs.find((x) => x.id === ref.perfId);
     const refCtx = refPerf ? resolveContext(refPerf, lookup) : undefined;
@@ -283,7 +283,7 @@ export function explainStat(d: AthleteDerived, key: RatingKey, config: Config, l
   } else if (key === 'RACE') {
     const used = (stat.basis?.perfIds ?? []).map((id) => items.find((i) => i.perf.id === id)).filter((x): x is Item => !!x);
     const weights = used.length === 3 ? config.race.weights3 : used.length === 2 ? config.race.weights2 : [1];
-    paragraphs.push(`RACE blends the best ${used.length === 1 ? 'race' : `${used.length} races`} (verified races, relay legs and parkruns, after freshness)${used.length > 1 ? `, weighted ${weights.map((x) => `${Math.round(x * 100)}%`).join(' / ')}` : ''}. Racing more earns caps, never points.`);
+    paragraphs.push(`RACE blends the best ${used.length === 1 ? 'race' : `${used.length} races`} (verified races and relay legs at official events, after freshness; parkruns and time trials do not count)${used.length > 1 ? `, weighted ${weights.map((x) => `${Math.round(x * 100)}%`).join(' / ')}` : ''}. Racing more earns caps, never points.`);
     const sum = used.reduce((s, i, k) => s + (weights[k] ?? 0) * (i.ps.fresh ?? 0), 0);
     if (used.length > 1) paragraphs.push(`RACE = ${used.map((i, k) => `${Math.round((weights[k] ?? 0) * 100)}% × ${i.ps.fresh} (${placeOf(i.ctx)}, ${formatShortDate(i.perf.date)})`).join(' + ')} = ${num1(sum)} → ${stat.value}.`);
     for (const i of used) {

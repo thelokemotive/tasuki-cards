@@ -55,6 +55,19 @@ export function counts(p: Performance): boolean {
   return !p.deleted && p.verified;
 }
 
+/** Names that mean a stopwatch effort, not a race: "550 m time trial", "TT", タイムトライアル, 記録会. */
+const NOT_A_RACE = /time[\s-]*trial|\bTT\b|タイムトライアル|記録会|\btrial\b|\btraining\b|\bpractice\b/i;
+
+/**
+ * An official race: the event is marked official and is not a time trial, session or test (by its kind, or by
+ * its name when a pasted table arrived as a "race"). Only these feed RACE and earn race caps.
+ */
+export function isOfficialRace(ev: TasukiEvent | undefined): boolean {
+  if (!ev) return true;
+  if (ev.official === false) return false;
+  return !(ev.kind === 'time_trial' || ev.kind === 'session' || ev.kind === 'test' || NOT_A_RACE.test(ev.name ?? ''));
+}
+
 /**
  * Race caps ★: verified races and relay legs at official events. With a lookup, an unofficial event (a training
  * relay, a stopwatch time trial) earns no cap, and running two legs of one relay is one cap, not two.
@@ -62,7 +75,7 @@ export function counts(p: Performance): boolean {
 export function isRaceCap(p: Performance, lookup?: Lookup): boolean {
   if (!(counts(p) && (p.kind === 'race' || p.kind === 'relay_leg'))) return false;
   const ev = lookup && p.eventId ? lookup.events.get(p.eventId) : undefined;
-  return !(ev && ev.official === false);
+  return isOfficialRace(ev);
 }
 
 /** One performance per capped event (the first, oldest first), plus every capped result with no event. */

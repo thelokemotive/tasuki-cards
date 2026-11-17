@@ -53,8 +53,8 @@ export function yearGroupOn(athlete: Pick<Athlete, 'yearGroup' | 'yearGroupYear'
  * and the record is restamped with today's academic year. Estimated ages are unchanged: Y9 for 2025 and Y10
  * for 2026 are the same pupil. Returns only the athletes that change.
  * Left alone: Staff; records with no year stamp (they already mean "this year"); records stamped for a later
- * year; and leavers (anyone who would now be past Y13), whose record keeps the year group and year it had, so
- * their old results are still aged correctly.
+ * year. Leavers (anyone who would now be past Y13) keep the year group and year they had, so their old
+ * results are still aged correctly, and are made inactive.
  */
 export function yearRollover(athletes: Athlete[], today: ISODate, config: Config): Athlete[] {
   const { academicYearStartMonth: sm, academicYearStartDay: sd } = config.age;
@@ -63,10 +63,24 @@ export function yearRollover(athletes: Athlete[], today: ISODate, config: Config
   for (const a of athletes) {
     if (a.yearGroup === 'Staff' || a.yearGroupYear == null || !(a.yearGroupYear < now)) continue;
     const n = Number(a.yearGroup.slice(1)) + (now - a.yearGroupYear);
-    if (!(n >= 7 && n <= 13)) continue;
+    if (n > 13) {
+      // A leaver: off the boards, to-do lists and print runs; results and record kept.
+      if (a.active) out.push({ ...a, active: false });
+      continue;
+    }
+    if (n < 7) continue;
     out.push({ ...a, yearGroup: `Y${n}` as YearGroup, yearGroupYear: now });
   }
   return out;
+}
+
+/** Year groups recorded a year out (a workbook dated to the wrong year): move them by `delta` years, Y7–Y13. */
+export function shiftYearGroups(athletes: Athlete[], delta: number): Athlete[] {
+  return athletes.flatMap((a) => {
+    if (a.yearGroup === 'Staff') return [];
+    const n = Number(a.yearGroup.slice(1)) + delta;
+    return n >= 7 && n <= 13 ? [{ ...a, yearGroup: `Y${n}` as YearGroup }] : [];
+  });
 }
 
 /** True for a pupil whose recorded year group, moved up to `today`, is past Y13: they have left the school. */

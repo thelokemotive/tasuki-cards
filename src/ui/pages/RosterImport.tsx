@@ -8,6 +8,7 @@ import { newAthlete } from '../components/AthleteEditor';
 import { newId } from '../components/common';
 import { detectRosterLayout, parseRoster, ROSTER_FIELD_LABELS, type RosterField, type RosterLayout } from '../../engine/parse/roster';
 import { splitLine } from '../../engine/parse/split';
+import { academicYearOf } from '../../engine/dates';
 
 const FIELDS = Object.keys(ROSTER_FIELD_LABELS) as RosterField[];
 
@@ -46,7 +47,7 @@ export function RosterImport({ onClose }: { onClose: () => void }) {
     });
     const promoted: Athlete[] = promote.map((r) => {
       const a = school.get(r.duplicateOf!)!;
-      const ay = Number(today.slice(5, 7)) >= 9 ? Number(today.slice(0, 4)) : Number(today.slice(0, 4)) - 1;
+      const ay = academicYearOf(today, config.age.academicYearStartMonth, config.age.academicYearStartDay);
       return { ...a, squad: true, ...(r.yearGroup ? { yearGroup: r.yearGroup, yearGroupYear: ay } : {}), aliases: [...new Set([...a.aliases, ...r.aliases])], ...(r.dob ? { dob: r.dob } : {}), ...(r.house ? { house: r.house } : {}), ...(r.notes ? { notes: r.notes } : {}) };
     });
     await commit({ put: { athletes: [...athletes, ...promoted] } });
@@ -64,8 +65,8 @@ export function RosterImport({ onClose }: { onClose: () => void }) {
           <button className="btn" onClick={onClose}>
             Cancel
           </button>
-          <button className="btn btn-primary" disabled={!usable.length} onClick={approve} data-testid="approve-roster">
-            Import {usable.length} athletes
+          <button className="btn btn-primary" disabled={!usable.length && !promote.length} onClick={approve} data-testid="approve-roster">
+            Import {usable.length + promote.length} athletes
           </button>
         </>
       }

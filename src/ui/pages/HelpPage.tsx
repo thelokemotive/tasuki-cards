@@ -69,7 +69,7 @@ export function HelpPage() {
         </p>
         <h3>The stats</h3>
         <ul>
-          <li><strong>RACE</strong> (headline banner): best three race, relay-leg and parkrun scores weighted 50/30/20. Not part of OVR. ★ = race caps.</li>
+          <li><strong>RACE</strong> (headline banner): best three scores from races and relay legs at official events, weighted 50/30/20. parkruns and time trials do not count here (they feed SPD and END). Not part of OVR. ★ = race caps.</li>
           <li><strong>SPD</strong>: the best of the Campus Circuit{c.spd.allowRaces && <> and any race, relay leg or parkrun of up to {c.spd.raceMaxKmEff} km effort</>}.</li>
           <li><strong>END</strong>: the better of the bleep test rating and the best race or long run of {c.end.longRunMinKmEff} km or more. The card says which.</li>
           <li><strong>CLB</strong>: climb courses{c.clb.allowRaces && <>, and any race or long run with at least {c.clb.raceMinClimbM} m of climb and {c.clb.raceMinClimbPerKm} m per km (a hill race), scored on its effective distance</>}.</li>

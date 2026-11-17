@@ -41,7 +41,7 @@ function RevealView({ step, ups }: { step: number; ups: LevelUp[] }) {
       <div className="reveal-intro">
         <div className="reveal-jp">今週の進化</div>
         <h1>This week’s level-ups</h1>
-        <p>{ups.length === 0 ? 'No level-ups in the last 7 days. Next week, then.' : `${ups.length} runner${ups.length === 1 ? '' : 's'} climbed this week. Press → to reveal.`}</p>
+        <p>{ups.length === 0 ? 'No level-ups in the last 7 days. Next week, then.' : `${ups.length} runner${ups.length === 1 ? '' : 's'} climbed this week. Click anywhere, or press → or space, to reveal.`}</p>
       </div>
     );
   }
@@ -149,7 +149,7 @@ export function ProjectorPage() {
     <div className="projector">
       <YamaScene mood="night" shape="banner" seed={5} className="projector-art" preserveAspectRatio="xMidYMax slice" />
       <div className="projector-shade" />
-      <div className="projector-body">
+      <div className="projector-body" onClick={reveal ? () => go(1) : undefined} style={reveal ? { cursor: 'pointer' } : undefined}>
         <div className="projector-brand">
           <BrandMark size={34} />
           <strong>TASUKI CARDS</strong>

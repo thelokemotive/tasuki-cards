@@ -59,3 +59,16 @@ describe('5 km prediction', () => {
     expect(predictFiveK(ath, [perf({ distanceKm: 4, timeSec: 1049, verified: false }), perf({ distanceKm: 4, timeSec: 1049, date: '2024-01-01' })], lk, cfg, '2026-11-11')).toBeUndefined();
   });
 });
+
+describe('a fast short time trial cannot throw out a real 5 km', () => {
+  it('a 1:32 for 550 m and a 21:30 parkrun: both used, and the estimate stays close to the parkrun', () => {
+    const pr = predictFiveK(ath, [perf({ distanceKm: 0.55, timeSec: 92, date: '2026-10-20' }), perf({ kind: 'parkrun', distanceKm: 5, timeSec: 1290, date: '2026-10-10' })], lk, cfg, '2026-11-16')!;
+    expect(pr.sources.every((s) => s.used)).toBe(true);
+    expect(pr.predictedSec).toBeGreaterThan(1290 * 0.95);
+    expect(pr.predictedSec).toBeLessThan(1290);
+  });
+  it('a jogged 5 km is still left out when there is a faster one', () => {
+    const pr = predictFiveK(ath, [perf({ kind: 'parkrun', distanceKm: 5, timeSec: 1290, date: '2026-10-10' }), perf({ kind: 'parkrun', distanceKm: 5, timeSec: 1600, date: '2026-10-17' })], lk, cfg, '2026-11-16')!;
+    expect(pr.sources.filter((s) => s.used)).toHaveLength(1);
+  });
+});

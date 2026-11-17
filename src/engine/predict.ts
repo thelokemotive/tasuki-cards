@@ -12,7 +12,7 @@ import type { Config } from './config';
 import { ageOnDate } from './age';
 import { monthsBetween, daysBetween } from './dates';
 import { formatTime } from './format';
-import { counts, resolveContext, type Lookup, type PerfContext } from './perf';
+import { counts, isOfficialRace, resolveContext, type Lookup, type PerfContext } from './perf';
 
 export interface PredictConfig {
   enabled: boolean;
@@ -205,7 +205,7 @@ export function predictFiveK(athlete: Athlete, perfs: Performance[], lookup: Loo
     const growthPct = maturationBetween(athlete.sex, age, ageNow, cfg);
     const fiveKNow = fiveKThen / (1 + growthPct / 100);
     const years = Math.max(0, daysBetween(p.date, asOf) / 365.25);
-    const official = ctx.event ? ctx.event.official !== false : true;
+    const official = isOfficialRace(ctx.event);
     const sigma = Math.sqrt(
       (cfg.sigmaPerLogDistance * Math.abs(Math.log(cfg.targetKm / km))) ** 2 + (cfg.sigmaByKind[p.kind] ?? 0.03) ** 2 + (official ? 0 : cfg.sigmaUnofficial) ** 2 + (cfg.sigmaPerYear * years) ** 2,
     );
@@ -215,7 +215,10 @@ export function predictFiveK(athlete: Athlete, perfs: Performance[], lookup: Loo
 
   // Sub-maximal efforts (a jog, a walk) are common in school data: anything much slower than the fastest
   // projection is listed but not used.
-  const fastest = Math.min(...sources.map((s) => s.fiveKNow));
+  // The yardstick is the fastest projection from a result of 1.5 km of effort or more, when there is one: a
+  // sprint projects to 5 km with a wide margin of error, and must not throw out a real 5 km as "a jog".
+  const anchors = sources.filter((s) => s.km >= 1.5);
+  const fastest = Math.min(...(anchors.length ? anchors : sources).map((s) => s.fiveKNow));
   for (const s of sources) {
     if (s.fiveKNow > fastest * (1 + cfg.notFullEffortPct / 100)) {
       s.used = false;

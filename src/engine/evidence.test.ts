@@ -160,10 +160,42 @@ describe('September rollover of year groups', () => {
     expect(yearRollover([athlete({ yearGroup: 'Y7', yearGroupYear: 2024 })], AS_OF, cfg)[0].yearGroup).toBe('Y9');
   });
 
-  it('staff, unstamped records and leavers are left as they are', () => {
+  it('staff and unstamped records are left as they are; a leaver keeps their year group and is made inactive, once', () => {
     const leaver = athlete({ yearGroup: 'Y13', yearGroupYear: 2025 });
-    expect(yearRollover([athlete({ yearGroup: 'Staff', yearGroupYear: 2024 }), athlete({ yearGroupYear: undefined }), leaver], AS_OF, cfg)).toEqual([]);
+    expect(yearRollover([athlete({ yearGroup: 'Staff', yearGroupYear: 2024 }), athlete({ yearGroupYear: undefined })], AS_OF, cfg)).toEqual([]);
+    const [gone] = yearRollover([leaver], AS_OF, cfg);
+    expect([gone.yearGroup, gone.yearGroupYear, gone.active]).toEqual(['Y13', 2025, false]);
+    expect(yearRollover([gone], AS_OF, cfg)).toEqual([]);
     expect(hasLeft(leaver, AS_OF, cfg)).toBe(true);
     expect(hasLeft(athlete(), AS_OF, cfg)).toBe(false);
   });
 });
+
+describe('a time trial is not a race', () => {
+  it('a pasted "550 m time trial" feeds SPD but not RACE, and earns no cap, even when stored as an official race', () => {
+    const ev: TasukiEvent[] = [{ id: 'e1', name: 'Y10 550m Time Trial', date: '2026-10-20', kind: 'race', distanceKm: 0.55, official: true }, { id: 'e2', name: 'Hachimantai XC', date: '2026-10-25', kind: 'race', distanceKm: 3, official: true }];
+    const lk = makeLookup([], ev);
+    const tt = computeAthleteRatings({ athlete: athlete(), perfs: [perf({ eventId: 'e1', date: '2026-10-20', timeSec: 100 })], lookup: lk, config: cfg, asOf: AS_OF, streakActiveOrFrozen: false });
+    expect(tt.race.locked).toBe(true);
+    expect(tt.race.caps).toBe(0);
+    expect(tt.stats.SPD.locked).toBe(false);
+    const xc = computeAthleteRatings({ athlete: athlete(), perfs: [perf({ eventId: 'e2', date: '2026-10-25', timeSec: 720 })], lookup: lk, config: cfg, asOf: AS_OF, streakActiveOrFrozen: false });
+    expect([xc.race.locked, xc.race.caps]).toEqual([false, 1]);
+  });
+});
+
+describe('getting faster never lowers an old NAV score', () => {
+  it('a nav run is judged against the Circuit pace shown by that day, not a later personal best', () => {
+    const lk = makeLookup([{ id: 'c', name: 'Campus Circuit', kind: 'circuit', distanceKm: 1.3, climbM: 0, terrainFactor: 1, benchmarkMode: 'age_grade', version: 1 }], []);
+    const circuit1 = perf({ kind: 'circuit', courseId: 'c', date: '2026-09-10', timeSec: 390 });
+    const nav = perf({ kind: 'nav', date: '2026-10-10', timeSec: 1080, routeKmEff: 3, navErrors: 0 });
+    const circuit2 = perf({ kind: 'circuit', courseId: 'c', date: '2026-10-20', timeSec: 312 });
+    const rate2 = (perfs: Performance[]) => computeAthleteRatings({ athlete: athlete(), perfs, lookup: lk, config: cfg, asOf: AS_OF, streakActiveOrFrozen: false });
+    const before = rate2([circuit1, nav]).stats.NAV.value!;
+    expect(before).toBe(94); // 3 km × 300 s/km × 1.15 = 1035 s predicted; 1035 ÷ 1080 = 0.958
+    expect(rate2([circuit1, nav, circuit2]).stats.NAV.value).toBe(before);
+    // A nav run from before any Circuit or race still gets a score, from the first reference there is.
+    expect(rate2([nav, circuit2]).stats.NAV.locked).toBe(false);
+  });
+});
+

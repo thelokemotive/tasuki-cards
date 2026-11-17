@@ -5,6 +5,7 @@ import type { Course, DataSnapshot, ISODate, TasukiEvent, YearGroup } from '../t
 import type { Config } from './config';
 import type { AthleteDerived } from './derive';
 import { exponentFor } from './predict';
+import { effectiveDistance } from './perf';
 import { yearGroupOn } from './display';
 
 export const GLD_COURSES: Course[] = [
@@ -52,7 +53,7 @@ export function predictGld(d: AthleteDerived, config: Config, asOf: ISODate): Gl
   const course = gldCourseForYear(yearGroupOn(d.athlete, asOf, config, asOf));
   if (t5 == null || !course) return undefined;
   const cfg = config.predict;
-  const dEff = (course.distanceKm ?? 0) + Math.max(0, course.climbM ?? 0) / 100;
+  const dEff = effectiveDistance(course.distanceKm ?? 0, Math.max(0, course.climbM ?? 0), course.terrainFactor ?? 1);
   const b = exponentFor(d.ratings.ageNow.age, Math.min(dEff, cfg.targetKm), cfg);
   return { course, timeSec: t5 * Math.pow(dEff / cfg.targetKm, b) };
 }

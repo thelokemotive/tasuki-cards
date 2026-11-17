@@ -8,7 +8,7 @@ import { ageOnDate } from './age';
 import { ARM_DOMAINS, armLevelsFromTest, type ArmDomain } from './arm';
 import { formatLongDate, formatShortDate, isISODate, monthsBetween } from './dates';
 import { formatKm, formatTime } from './format';
-import { byDate, counts, raceCaps, resolveContext, type Lookup, type PerfContext } from './perf';
+import { byDate, counts, isOfficialRace, raceCaps, resolveContext, type Lookup, type PerfContext } from './perf';
 import { armScoreClamped, perfFeeds, roundScore, scorePerformance, UNSCORED } from './scoring';
 
 export interface StatsInput {
@@ -348,6 +348,15 @@ export function navReferencePace(
 }
 
 /**
+ * The reference pace for one nav run: what the runner had shown by the day of the run (so a faster Circuit
+ * later never lowers an old NAV score). A run from before any reference existed uses today's.
+ */
+export function navReferenceFor(perf: Performance, own: Performance[], lookup: Lookup, config: Config, athlete: Athlete, asOf: ISODate, routeKmEff?: number): NavReference | undefined {
+  const then = perf.date < asOf ? perf.date : asOf;
+  return navReferencePace(own, lookup, config, athlete, then, routeKmEff) ?? navReferencePace(own, lookup, config, athlete, asOf, routeKmEff);
+}
+
+/**
  * Tier (spec 3.10). Icon: caps ≥ iconMinCaps and RACE ≥ iconMinRace (whatever the OVR). Otherwise by OVR:
  * bronze < silverMin ≤ silver < goldMin ≤ gold, and gold also needs goldMinCaps race caps (else silver with
  * a note). No OVR ('—') → bronze.
@@ -378,7 +387,7 @@ export function statEvidence(key: StatKey, entries: Entry[], config: Config): St
     if (key === 'ARM' ? e.ps.monthsOld >= config.arm.windowMonths : e.ps.fresh == null) continue;
     let w = 1;
     if (e.ps.placeScore) w *= ev.placeOnlyWeight;
-    if (e.ctx.event?.official === false) w *= ev.unofficialWeight;
+    if (!isOfficialRace(e.ctx.event)) w *= ev.unofficialWeight;
     if (TIMED_EFFORT.has(e.perf.kind) && !e.ps.placeScore && e.ps.dEff != null && e.ps.dEff < ev.shortEffortKm) w *= ev.shortEffortWeight;
     if (e.ps.monthsOld > ev.olderThanMonths) w *= ev.olderWeight;
     byDay.set(e.perf.date, Math.max(byDay.get(e.perf.date) ?? 0, w));
@@ -430,11 +439,12 @@ export function ovrFrom(stats: Record<StatKey, StatValue>, config: Config): OvrV
 export function computeAthleteRatings(input: StatsInput): AthleteRatings {
   const { athlete, lookup, config, asOf } = input;
   const own = input.perfs.filter((p) => p.athleteId === athlete.id).sort(byDate);
-  const navRef = navReferencePace(own, lookup, config, athlete, asOf);
   const entries: Entry[] = own.map((perf) => {
     const ctx = resolveContext(perf, lookup);
-    // With no Circuit or short race, each nav route gets its own Riegel-predicted reference pace.
-    const ref = perf.kind === 'nav' && !navRef ? navReferencePace(own, lookup, config, athlete, asOf, perf.routeKmEff ?? ctx.dEff) : navRef;
+    // A nav run is judged against the pace the runner had shown by that day: getting faster on the Circuit
+    // later must not lower an old NAV score. With no Circuit or short race by then, the route gets its own
+    // Riegel-predicted reference pace.
+    const ref = perf.kind === 'nav' ? navReferenceFor(perf, own, lookup, config, athlete, asOf, perf.routeKmEff ?? ctx.dEff) : undefined;
     return { perf, ctx, ps: scorePerformance(ctx, athlete, config, asOf, { navRefPaceSecPerKm: ref?.secPerKm }) };
   });
 

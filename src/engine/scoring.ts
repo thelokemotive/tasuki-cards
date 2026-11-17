@@ -8,7 +8,7 @@ import type { PerfScore, RatingKey } from './types';
 import { ageOnDate } from './age';
 import { armLevelsFromTest, type ArmDomain } from './arm';
 import { isISODate, monthsBetween } from './dates';
-import type { PerfContext } from './perf';
+import { isOfficialRace, type PerfContext } from './perf';
 import { isAgeGradeProvisional, standardTime } from './standards';
 
 /**
@@ -229,7 +229,7 @@ export function perfFeeds(ctx: PerfContext, config: Config): RatingKey[] {
       // RACE is races and relay legs at official events. A parkrun is a run, not a race (it has its own
       // count and badges), and an unofficial event (a training relay, a stopwatch time trial) is not a race
       // either: both still feed SPD, END, CLB and the 5K prediction.
-      if (ctx.perf.kind !== 'parkrun' && ctx.event?.official !== false) out.push('RACE');
+      if (ctx.perf.kind !== 'parkrun' && isOfficialRace(ctx.event)) out.push('RACE');
       if (isShortRace(ctx, config)) out.push('SPD');
       if (longEnough) out.push('END');
       if (isHillRun(ctx, config)) out.push('CLB');
