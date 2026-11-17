@@ -14,6 +14,9 @@ interface SexTable {
 
 const ROAD: Record<Sex, SexTable> = { M: tables.M, F: tables.F };
 
+/** The road tables' shortest distance. */
+export const MILE_KM = 1.609344;
+
 export const AGE_GRADE_SOURCE = {
   source: tables.source,
   commit: tables.commit,
@@ -29,7 +32,8 @@ export function isAgeGradeProvisional(config: Config): boolean {
 
 /**
  * Standard time at distance d along one row of the table: log(time) is interpolated against
- * log(distance). Below the shortest distance, extrapolate along the slope of the two shortest;
+ * log(distance). Below the shortest distance (only with ageGrade.subMile = 'extrapolate'; otherwise the
+ * world-record curve below is used), extrapolate along the slope of the two shortest;
  * above the longest, along the slope of the two longest.
  */
 function alongDistance(row: number[], distances: number[], d: number): number {
@@ -47,7 +51,35 @@ function alongDistance(row: number[], distances: number[], d: number): number {
   return Math.exp(y0 + t * (y1 - y0));
 }
 
-function tableStandard(age: number, sex: Sex, d: number): number {
+/**
+ * World records on the track (seconds), 200 m to the mile: the shape of the speed–duration curve below the
+ * road tables' shortest distance (1 mile). Short efforts draw on anaerobic energy, so pace rises much faster
+ * below the mile than the mile–5 km slope suggests: extrapolating that slope made the 550 m standard 10–13%
+ * too slow (more for younger runners), and every short time trial that much too good.
+ * Men: 19.19, 43.03, 1:40.91, 2:11.96, 3:26.00, 3:43.13. Women: 21.34, 47.60, 1:53.28, 2:28.98, 3:48.68, 4:07.64.
+ */
+export const SUB_MILE_WR: Record<Sex, [km: number, sec: number][]> = {
+  M: [[0.2, 19.19], [0.4, 43.03], [0.8, 100.91], [1, 131.96], [1.5, 206.0], [MILE_KM, 223.13]],
+  F: [[0.2, 21.34], [0.4, 47.6], [0.8, 113.28], [1, 148.98], [1.5, 228.68], [MILE_KM, 247.64]],
+};
+
+/**
+ * World-record time at d (km) as a fraction of the mile record: log time interpolated against log distance
+ * between the records (below 200 m, along the 200–400 m slope). 1 at the mile.
+ */
+export function subMileRatio(sex: Sex, d: number): number {
+  const pts = SUB_MILE_WR[sex];
+  let i = 0;
+  while (i < pts.length - 2 && d >= pts[i + 1][0]) i++;
+  const [x0, y0] = pts[i];
+  const [x1, y1] = pts[i + 1];
+  const t = (Math.log(d) - Math.log(x0)) / (Math.log(x1) - Math.log(x0));
+  return Math.exp(Math.log(y0) + t * (Math.log(y1) - Math.log(y0))) / pts[pts.length - 1][1];
+}
+
+function tableStandard(age: number, sex: Sex, d: number, subMile: boolean): number {
+  // Below the mile: the age- and sex-specific mile standard, scaled along the world-record curve.
+  if (subMile && d < MILE_KM) return tableStandard(age, sex, MILE_KM, false) * subMileRatio(sex, d);
   const t = ROAD[sex];
   const a = Math.min(Math.max(age, t.minAge), t.maxAge);
   const lo = Math.floor(a);
@@ -83,7 +115,7 @@ export function standardTime(age: number, sex: Sex, dKm: number, config: Config)
   if (!(dKm > 0 && Number.isFinite(dKm))) throw new Error(`standardTime: distance must be a positive, finite number (got ${dKm})`);
   if (!Number.isFinite(age)) throw new Error(`standardTime: age must be a finite number (got ${age})`);
   if (sex !== 'M' && sex !== 'F') throw new Error(`standardTime: sex must be 'M' or 'F' (got ${String(sex)})`);
-  return config.ageGrade.table === 'fallback_provisional' ? fallbackStandard(age, sex, dKm, config) : tableStandard(age, sex, dKm);
+  return config.ageGrade.table === 'fallback_provisional' ? fallbackStandard(age, sex, dKm, config) : tableStandard(age, sex, dKm, config.ageGrade.subMile !== 'extrapolate');
 }
 
 /** AG% as a fraction (0.80 = 80%): Std(age, sex, D_eff) / timeSec. */

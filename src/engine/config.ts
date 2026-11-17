@@ -19,6 +19,13 @@ export interface Config {
   ageGrade: {
     /** Which standard table to use. 'fallback_provisional' marks every age-graded rating provisional. */
     table: AgeGradeTableId;
+    /**
+     * Standards below 1 mile (the road tables' shortest distance). 'world_record_curve': the runner's mile
+     * standard scaled along the track world records (200 m to the mile), so short efforts are judged against
+     * what is really possible over that distance. 'extrapolate': the mile–5 km slope carried downwards (the
+     * rule before November 2026; 10–13% too generous at 550 m).
+     */
+    subMile: 'world_record_curve' | 'extrapolate';
     /** Fallback (provisional) table, spec 3.4. */
     fallback: {
       open5kSec: Record<Sex, number>;
@@ -137,6 +144,36 @@ export interface Config {
   ovr: {
     /** Fewer unlocked stats than this → OVR shows "—". */
     minUnlocked: number;
+    /**
+     * Evidence-weighted OVR. Every separate result behind an unlocked stat is a piece of evidence (n in total,
+     * weighted). The stats are averaged, each in proportion to its own confidence c = n_stat ÷ (n_stat + halfResults),
+     * and that average is trusted only as far as the evidence goes:
+     * OVR = priorScore + proven × (average − priorScore), proven = n ÷ (n + ovrHalfResults).
+     * This is the standard small-sample correction (regression to the mean, as in empirical-Bayes and
+     * Glicko-style ratings): one run is a first estimate, not a proven level. Off: the plain average.
+     */
+    evidence: {
+      enabled: boolean;
+      /** The score assumed before there is evidence: about a 40% age grade, an untrained pupil. */
+      priorScore: number;
+      /** Results at which a single stat is half proven (its weight in the average). */
+      halfResults: number;
+      /** Results, across all stats, at which the OVR is half proven. */
+      ovrHalfResults: number;
+      /** A place with no time (the Green Long Ducker) counts as this fraction of a result. */
+      placeOnlyWeight: number;
+      /** A result at an unofficial event (a stopwatch time trial, a training relay). */
+      unofficialWeight: number;
+      /** An effort shorter than shortEffortKm of effort says less about a distance runner. */
+      shortEffortKm: number;
+      shortEffortWeight: number;
+      /** Results older than this many months count for less. */
+      olderThanMonths: number;
+      olderWeight: number;
+      /** Proven share (0–1) below which the OVR is marked as a first estimate, and above which it is proven. */
+      estimateBelow: number;
+      provenFrom: number;
+    };
   };
 
   tiers: {
@@ -230,6 +267,7 @@ export const DEFAULT_CONFIG: Config = {
 
   ageGrade: {
     table: 'alan_jones_2025',
+    subMile: 'world_record_curve',
     fallback: {
       open5kSec: { M: 769, F: 834 },
       expShort: 1.1,
@@ -311,7 +349,10 @@ export const DEFAULT_CONFIG: Config = {
     provisional: false,
   },
 
-  ovr: { minUnlocked: 2 },
+  ovr: {
+    minUnlocked: 2,
+    evidence: { enabled: true, priorScore: 50, halfResults: 1.5, ovrHalfResults: 1.5, placeOnlyWeight: 0.5, unofficialWeight: 0.75, shortEffortKm: 1, shortEffortWeight: 0.5, olderThanMonths: 12, olderWeight: 0.5, estimateBelow: 0.5, provenFrom: 0.75 },
+  },
 
   tiers: { silverMin: 65, goldMin: 75, goldMinCaps: 1, iconMinCaps: 3, iconMinRace: 85 },
 
@@ -402,6 +443,50 @@ export function goLiveMigration(configs: Config[] | undefined, createdAt: string
   return { ...nextConfigVersion(cur, draft, createdAt, GO_LIVE_NOTE), migration: GO_LIVE_MIGRATION };
 }
 
+/** Marks the version that brought in evidence-weighted OVR and the sub-mile standards. */
+export const EVIDENCE_MIGRATION = 'evidence-2026-11';
+export const EVIDENCE_NOTE = 'Evidence-weighted OVR; standards below 1 mile follow the world-record curve';
+
+/**
+ * One-off: a store created before these rules gets a new config version with them switched on, so the change
+ * is in the version history and the earlier versions keep the rules they were made with. Runs at most once.
+ */
+export function evidenceMigration(configs: Config[] | undefined, createdAt: string): Config | undefined {
+  if (!configs || configs.length === 0) return undefined;
+  if (configs.some((c) => c.migration === EVIDENCE_MIGRATION)) return undefined;
+  const on = (c: Config) => c.ovr.evidence.enabled && c.ageGrade.subMile === 'world_record_curve';
+  // A store first created with these rules has them in its first version: nothing to migrate (and a coach
+  // who later switches them off keeps that choice).
+  const first = withDefaults(configs.reduce((a, b) => (b.version < a.version ? b : a)));
+  const cur = currentConfig(configs);
+  if (on(first) || on(cur)) return undefined;
+  const draft = cloneConfig(cur);
+  draft.ageGrade.subMile = DEFAULT_CONFIG.ageGrade.subMile;
+  draft.ovr.evidence = { ...DEFAULT_CONFIG.ovr.evidence };
+  return { ...nextConfigVersion(currentConfig(configs), draft, createdAt, EVIDENCE_NOTE), migration: EVIDENCE_MIGRATION };
+}
+
+/**
+ * A stored version from before the evidence rules is read with them off, so its ratings can be reproduced.
+ * (withDefaults would otherwise fill the new keys with today's defaults.)
+ */
+function legacyRules(c: Partial<Config>): Partial<Config> {
+  if (c.ovr?.evidence && c.ageGrade?.subMile) return c;
+  return {
+    ...c,
+    ageGrade: { ...(c.ageGrade as Config['ageGrade']), subMile: c.ageGrade?.subMile ?? 'extrapolate' },
+    ovr: { ...(c.ovr as Config['ovr']), evidence: c.ovr?.evidence ?? { ...DEFAULT_CONFIG.ovr.evidence, enabled: false } },
+  };
+}
+
+/** The rules as they were before November 2026 (plain-average OVR, mile–5 km slope below the mile). */
+export function preEvidenceRules(c: Config): Config {
+  const out = cloneConfig(c);
+  out.ageGrade.subMile = 'extrapolate';
+  out.ovr.evidence.enabled = false;
+  return out;
+}
+
 /** Deep clone a config for editing. */
 export function cloneConfig(c: Config): Config {
   return JSON.parse(JSON.stringify(c)) as Config;
@@ -428,5 +513,5 @@ export function withDefaults(c: Partial<Config>): Config {
     }
     return val;
   };
-  return merge(DEFAULT_CONFIG, c) as Config;
+  return merge(DEFAULT_CONFIG, legacyRules(c)) as Config;
 }

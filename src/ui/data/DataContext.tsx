@@ -2,7 +2,8 @@
 // — the only way pages change data. Every commit autosaves through the Store.
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { DataSnapshot, ISODate } from '../../types';
-import { currentConfig, DEFAULT_CONFIG, goLiveMigration, type Config } from '../../engine/config';
+import { currentConfig, DEFAULT_CONFIG, evidenceMigration, goLiveMigration, type Config } from '../../engine/config';
+import { yearRollover } from '../../engine/display';
 import { todayTokyo } from '../../engine/dates';
 import { deriveAll, type Derived } from '../../engine/derive';
 import { seedCourses } from '../../demo/demoData';
@@ -48,21 +49,27 @@ const Ctx = createContext<DataApi | null>(null);
 
 /**
  * First-run seed (the Campus Circuit course and config version 1), plus one-off migrations of stored
- * data (the go-live config version that removes the provisional markers).
+ * data (the go-live config version that removes the provisional markers; the evidence rules; the year rollover).
  */
 export function withSeed(s: DataSnapshot, now: string = new Date().toISOString()): { snapshot: DataSnapshot; changes: Changes } {
   const changes: Changes = { put: {} };
   if (s.configs.length === 0) changes.put!.configs = [DEFAULT_CONFIG];
   else {
     const goLive = goLiveMigration(s.configs, now);
-    if (goLive) changes.put!.configs = [goLive];
+    const evidence = evidenceMigration(goLive ? [...s.configs, goLive] : s.configs, now);
+    const added = [goLive, evidence].filter((c): c is Config => !!c);
+    if (added.length) changes.put!.configs = added;
   }
   if (s.courses.length === 0) changes.put!.courses = seedCourses();
   // The Green Long Ducker courses, and every Long Ducker race linked to its course (also for later imports).
   const gld = gldMigration(applyChanges(s, changes));
   if (gld.courses.length) changes.put!.courses = [...(changes.put!.courses ?? []), ...gld.courses];
   if (gld.events.length) changes.put!.events = gld.events;
-  return { snapshot: applyChanges(s, changes), changes };
+  // September rollover: year groups recorded for an earlier academic year move up to this one.
+  const seeded = applyChanges(s, changes);
+  const moved = yearRollover(seeded.athletes, todayTokyo(new Date(now)), currentConfig(seeded.configs));
+  if (moved.length) changes.put!.athletes = moved;
+  return { snapshot: moved.length ? applyChanges(s, changes) : seeded, changes };
 }
 
 export function DataProvider({ children, storeOverride, derivedOverride }: { children: ReactNode; storeOverride?: Store; derivedOverride?: Derived }) {

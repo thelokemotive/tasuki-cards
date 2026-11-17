@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import type { Athlete, Course, Performance, TasukiEvent } from '../types';
-import { DEFAULT_CONFIG, cloneConfig, type Config } from './config';
+import { DEFAULT_CONFIG, cloneConfig, preEvidenceRules, type Config } from './config';
 import { makeLookup } from './perf';
 import type { OvrValue, RaceStat } from './types';
 import { STAT_KEYS } from './types';
 import { computeAthleteRatings, navReferencePace, tierFor } from './stats';
 
-const cfg = DEFAULT_CONFIG;
+// The spec's worked examples use the original rules; the November 2026 rules are tested in evidence.test.ts.
+const cfg = preEvidenceRules(DEFAULT_CONFIG);
 const AS_OF = '2026-10-22';
 
 function athlete(over: Partial<Athlete> = {}): Athlete {

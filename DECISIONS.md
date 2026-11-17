@@ -163,10 +163,59 @@ Plan and summary: `docs/YAMA-PLAN.md`.
 - Source: スポーツ庁 令和7年度 体力・運動能力調査, table 1-2, 持久走 (boys 1,500 m, girls 1,000 m), mean and SD in seconds by age 12–19 (n ≈ 150–370 per age and sex), in `src/engine/peer.ts`. These replace the research report's parameterised table, which was not used.
 - The runner's 5K prediction is converted to the survey distance with the same youth Riegel exponent, then compared as a speed (distance ÷ time) against the national mean and SD (delta method), giving "faster than X% of N-year-old boys/girls in Japan". The national survey covers every pupil tested, not just runners, so most academy runners sit well above the middle; below the middle, the panel adds how many more they would overtake at their realistic target.
 
+## Evidence-weighted OVR, standards below the mile, September rollover (16 Nov 2026)
+
+Three faults the coach reported after loading the Green Long Ducker and a 550 m time trial.
+
+- **Year groups were a year behind.** Pupils created from the 2025 Long Ducker workbook were stored with the year group in the workbook (Y9, for 2025) and shown as Y9 in November 2026. Ages were right (the engine already knew the year group referred to 2025); the label, the year-band filters and the boards were not. Fix: `yearRollover` (`src/engine/display.ts`). On load, and when an import creates athletes from an earlier year's results, any year group recorded for an earlier academic year moves up to the current one and the record is restamped. Y9 for 2025 and Y10 for 2026 give the same estimated age, so no rating changes. This also answers the old open question: year groups now roll over by themselves each 1 September. Leavers (anyone who would be past Y13) keep their record as it was, so their old results are still aged correctly; the athlete page says "left school".
+- **Short time trials were scored too generously.** The Alan Jones road tables start at 1 mile. Below that the app carried the mile–5 km slope downwards, but pace rises much faster over short distances (anaerobic energy), so the 550 m standard was 10% too slow for adults and about 13% for a 14-year-old, and every short time trial scored that much too high. Fix: below the mile, the runner's own mile standard (age and sex) is scaled along the track world records from 200 m to the mile (`SUB_MILE_WR` in `src/engine/standards.ts`; `config.ageGrade.subMile`). It is continuous at the mile, and nothing at or above the mile changes. The 1.30 km Campus Circuit moves by under 1%. Limit: the age factor below the mile is taken from the mile; young runners are, if anything, relatively better at short distances than that assumes, so short efforts are still slightly flattered. Track age-grade tables (800 m, 1500 m) would remove that.
+- **OVR took thin evidence at face value.** OVR was the plain average of the unlocked stats, so one time trial and one Long Ducker place (two stats) could outrank a runner with twenty parkruns. Fix (`statEvidence`, `ovrFrom` in `src/engine/stats.ts`; constants in `config.ovr.evidence`):
+  - Each stat's evidence is the number of separate days with a current result feeding it. A day counts 1; a place with no time ×0.5; an unofficial event ×0.75; an effort under 1 km ×0.5; a result over 12 months old ×0.5 (factors multiply).
+  - The stats are averaged in proportion to their confidence, c = n ÷ (n + 1.5).
+  - OVR = 50 + proven × (average − 50), proven = N ÷ (N + 1.5), N = all the evidence behind the unlocked stats. 50 is about a 40% age grade: an untrained pupil.
+  - This is ordinary small-sample shrinkage (regression to the mean; the same idea as empirical-Bayes estimates and the rating deviation in Glicko-style ratings). The individual stats are unchanged: SPD still shows what the runner ran. Only the OVR asks how well proven the picture is. The athlete page shows "first estimate", "building" or "proven" with the proven share, and "Why?" shows the arithmetic.
+  - Effect: one result per stat is 40% proven; a full six-stat card with one result each is 80% proven; a regular with 20+ results is 93%+ proven and within two points of the plain average. Gold (OVR 75) therefore needs either higher stats or more results than before: Gold has to be proven.
+- **Version history.** Both rules arrive as a new config version ("Evidence-weighted OVR; standards below 1 mile follow the world-record curve"), created once on load. Earlier versions are read with the old rules, so their ratings can be reproduced, and either rule can be switched off in Settings → Scoring. The spec's worked examples in the tests run under the old rules; `src/engine/evidence.test.ts` covers the new ones.
+
+## Coach's fixes and the first outside review (17 Nov 2026)
+
+The review pack (`docs/REVIEW-BRIEF.md`) went to three outside models. Each claim was checked against the code before acting on it.
+
+**From the coach**
+- **Reveal.** Click anywhere to step through the Friday reveal (→ and space still work); the control bar is no longer faint.
+- **A time trial is not a race.** Pasted results arrive as an official race by default, so a "550 m time trial" gave runners a RACE rating and a race cap without racing. An event whose kind is time trial, session or test, or whose name says so (time trial, TT, タイムトライアル, 記録会, training, practice), now feeds SPD/END/CLB and the 5 km prediction but not RACE, and earns no cap (`isOfficialRace`, `src/engine/perf.ts`). Any other event can still be unticked as official on its page.
+- **Year groups from a workbook a year out.** The event page has "Year groups from this import": the runners first added by that import, by year group, with "Move all up a year" and "Move all down a year". This covers a workbook saved under the wrong date, which the September rollover cannot detect.
+- **Squad by single year.** The Squad page and the pupils' "Find your card" page filter by Year 7 to Year 13 (the Squad page keeps the three bands as well).
+
+**Taken from the reviews (each confirmed in the code)**
+- **Pupil copy, opted-out runners.** A runner hidden online was only renamed; their results, ratings and board rows were still published. They are now left out of the published copy altogether.
+- **Pupil copy, birthdays.** The standard time behind a score is interpolated on the exact age, so to the hundredth of a second it gave away a date of birth. Standard times and 5 km workings are published to the nearest 5 s, age grades to the nearest 1%, and the prediction exponent and growth to two and no decimals.
+- **Roster import after a whole-school workbook.** The Import button was disabled when every pasted pupil was already a whole-school runner, which is the normal case after the Long Ducker. Fixed; the count includes them.
+- **Leavers** are made inactive at the September rollover (off boards, to-dos and print runs; record and results kept).
+- **NAV.** A nav run is scored against the pace the runner had shown by that day, so a faster Circuit later no longer lowers an old NAV score (`navReferenceFor`).
+- **5 km prediction.** A short time trial that projects fast could mark a real 5 km as "not a full effort". The yardstick is now the fastest projection from a result of 1.5 km of effort or more.
+- **Wording.** RACE explanations still said parkruns count; corrected. The Long Ducker prediction now uses the course terrain factor.
+- **Checks before merging.** `.github/workflows/test.yml` runs the tests and the build on every pull request.
+
+**Checked and not taken**
+- "Security rules ship placeholders" and "the tenant is not enforced": the placeholders were the redaction in the review pack, and the sign-in app is registered for the school's directory only, as the rules file says.
+- "Girls' bleep table is inverted at 11": it is, in the published paper. A separate audit confirmed all 154 cells for ages 11 to 17 match Tomkinson et al. 2017, Table 3. The 18+ rows are not in the paper.
+- Rewriting stats as averages, replacing OVR with fitted weights, incremental recalculation: no evidence yet that these beat the current rules on this squad's data, and the last is not needed at this size.
+
+**Open, in the order I would take them**
+1. **Bleep scores are too high for this school.** The audit puts the average Japanese pupil at about the 81st to 94th percentile of the international table, so an ordinary bleep test gives END in the high 80s to 90s, far above what the same pupil's 5 km would score. Re-anchor the bleep rating to the Japanese national means and SDs (the same survey already used for "Compared with Japan").
+2. **Unlocking a weak stat can lower OVR** (two strong stats, then a first ARM test at 55). Needs a rule that a new stat never costs points.
+3. **Armour thresholds**: the audit says ankle level 5 (14 cm) rewards hypermobility and the calf-raise levels are about one level too easy. Review with the coach before changing.
+4. **Standards below the mile for the youngest**: the world-record curve asks more of an 11-year-old over 400 m than the age-11 record. Needs youth track standards.
+5. **Website offline on the hill**: no service worker, so a cold start with no signal fails.
+6. **Long Ducker place score**: linear, and a Y9 is ranked against Y11s with no age allowance.
+7. **GPX intake, Japanese interface, phone layout.**
+
 ## Open questions for the coach
 
 1. Surge sanity gate: minimum of 3 legs with a baseline per event and distance (see above). Is that right?
 2. Every stat counts verified results only. OK?
 3. Growth Shield covers the six OVR stats but not RACE. OK?
 4. Bleep "laps" are 20 m shuttles, and the norms still need checking against Tomkinson et al. 2017.
-5. Year groups do not roll over automatically in September. Would an automatic roll-over be better?
+5. ~~Year groups do not roll over automatically in September.~~ They do now (16 Nov 2026).
+6. Evidence-weighted OVR makes Gold harder to reach on few results. Keep Gold at 75, or lower it a little?

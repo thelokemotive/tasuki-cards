@@ -13,7 +13,7 @@ import { AthleteEditor } from '../components/AthleteEditor';
 import { KIND_LABEL, PerformanceEditor } from '../components/PerformanceEditor';
 import { AvatarEditor } from '../avatar/AvatarEditor';
 import { AchievementModal, FreezeModal } from '../components/AthleteExtras';
-import { fullName, displayName } from '../../engine/display';
+import { fullName, displayName, hasLeft } from '../../engine/display';
 import { formatKm, formatTime } from '../../engine/format';
 import { formatLongDate, formatShortDate } from '../../engine/dates';
 import { verifyPerformance } from '../../engine/corrections';
@@ -90,7 +90,7 @@ function resultText(p: Performance): string {
 
 export function AthletePage() {
   const route = useRoute();
-  const { derived, snapshot, commit } = useData();
+  const { derived, snapshot, commit, today, config } = useData();
   const toast = useToast();
   const id = route.params[0];
   const d = id ? derived.athletes.get(id) : undefined;
@@ -148,7 +148,7 @@ export function AthletePage() {
         title={fullName(a)}
         subtitle={
           <>
-            {a.yearGroup} · {a.sex} · shown as “{displayName(a)}” · {r.ageNow.estimated ? 'estimated age' : 'age'} {r.ageNow.age.toFixed(1)}
+            {hasLeft(a, today, config) ? `left school (${a.yearGroup} in ${a.yearGroupYear})` : a.yearGroup} · {a.sex} · shown as “{displayName(a)}” · {r.ageNow.estimated ? 'estimated age' : 'age'} {r.ageNow.age.toFixed(1)}
             {!a.active && <span className="pill pill-warn" style={{ marginLeft: 8 }}>inactive</span>}
             {a.absoluteBoardOptOut && <span className="pill" style={{ marginLeft: 8 }}>opted out of absolute boards</span>}
           </>
@@ -232,6 +232,13 @@ export function AthletePage() {
                     <strong>{r.ovr.display}</strong> <span className="muted tiny">{r.ovr.unlocked}/6</span>
                   </td>
                   <td className="small" colSpan={2}>
+                    {r.ovr.evidence && (
+                      <>
+                        <span className={`pill ${r.ovr.evidence === 'proven' ? 'pill-ok' : r.ovr.evidence === 'estimate' ? 'pill-warn' : ''}`} title={`From ${r.ovr.results} result${r.ovr.results === 1 ? '' : 's'}. The average of the stats is ${Math.round(r.ovr.average ?? 0)}; the OVR moves towards it as results come in.`}>
+                          {r.ovr.evidence === 'proven' ? 'proven' : r.ovr.evidence === 'estimate' ? 'first estimate' : 'building'} · {Math.round((r.ovr.proven ?? 0) * 100)}%
+                        </span>{' '}
+                      </>
+                    )}
                     Tier <span className={`tier-${r.tier}`}>{r.tier}</span>
                     {r.tierNote && <span className="muted"> · {r.tierNote}</span>} · ★ {r.race.caps} race caps
                   </td>

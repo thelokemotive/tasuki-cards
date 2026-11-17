@@ -26,9 +26,14 @@ function publicPerf(p: Performance): Performance {
   return { ...p, rawInput: '', history: [] };
 }
 
-/** JSON text of the public copy. Maps are kept; every numeric `age` is rounded down. */
+/**
+ * JSON text of the public copy. Maps are kept. A runner whose family opted out is left out altogether: no
+ * card, no results, no place on any board. Nothing in it gives away a birthday: every `age` is rounded down to
+ * whole years, and the figures worked out from the exact age (the standard time and the age grade behind a
+ * score, and the working of the 5 km prediction) are rounded so the age cannot be worked back from them.
+ */
 export function makePublicPack(snapshot: DataSnapshot, derived: Derived): string {
-  const keep = new Set(snapshot.athletes.map((a) => a.id));
+  const keep = new Set(snapshot.athletes.filter((a) => !a.hiddenOnline).map((a) => a.id));
   const athletes = new Map<string, AthleteDerived>();
   for (const [id, d] of derived.athletes) {
     if (!keep.has(id)) continue;
@@ -39,17 +44,27 @@ export function makePublicPack(snapshot: DataSnapshot, derived: Derived): string
       ...snapshot,
       athletes: snapshot.athletes.filter((a) => keep.has(a.id)).map(publicAthlete),
       performances: snapshot.performances.filter((p) => keep.has(p.athleteId) && !p.deleted).map(publicPerf),
-      
+      participation: snapshot.participation.filter((p) => keep.has(p.athleteId)),
+      achievements: snapshot.achievements.filter((x) => keep.has(x.athleteId)),
       meta: { coachName: snapshot.meta.coachName },
     },
     derived: {
       ...derived,
       athletes,
+      surges: derived.surges.filter((x) => keep.has(x.athleteId)),
+      courseRecords: derived.courseRecords.filter((x) => keep.has(x.athleteId)),
     },
   };
+  const to = (x: number, step: number) => Math.round(x / step) * step;
   return JSON.stringify(pub, (key, value) => {
     if (value instanceof Map) return { __map: [...value.entries()] };
-    if (key === 'age' && typeof value === 'number') return Math.floor(value);
+    if (typeof value !== 'number') return value;
+    if (key === 'age') return Math.floor(value);
+    if (key === 'standardSec') return to(value, 5);
+    if (key === 'ageGrade') return Number(value.toFixed(2));
+    if (key === 'exponent') return Number(value.toFixed(2));
+    if (key === 'growthPct') return Number(value.toFixed(0));
+    if (key === 'fiveKThen' || key === 'fiveKNow') return to(value, 5);
     return value;
   });
 }

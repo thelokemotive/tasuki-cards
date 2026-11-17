@@ -12,7 +12,7 @@ import { displayName } from './display';
 import { formatPace, formatTime } from './format';
 import { resolveContext, type Lookup, type PerfContext } from './perf';
 import { bleepPercentile, bleepRow, fixedAgeAdjustment, perfFeeds, UNSCORED } from './scoring';
-import { navReferencePace } from './stats';
+import { navReferenceFor } from './stats';
 import { BLEEP_PERCENTILES } from './config';
 import { BENCHMARK_NOTE_PREFIX } from './benchmark';
 
@@ -135,7 +135,7 @@ function scoreWorking(ctx: PerfContext, ps: PerfScore, d: AthleteDerived, w: Who
   }
   if (p.kind === 'nav') {
     const route = ps.dEff ?? p.routeKmEff ?? ctx.dEff;
-    const ref = navReferencePace(d.perfs, lookup, config, d.athlete, d.ratings.asOf, route);
+    const ref = navReferenceFor(p, d.perfs, lookup, config, d.athlete, d.ratings.asOf, route);
     if (!ref || route == null || p.timeSec == null) return '';
     const refPerf = d.perfs.find((x) => x.id === ref.perfId);
     const refCtx = refPerf ? resolveContext(refPerf, lookup) : undefined;
@@ -283,7 +283,7 @@ export function explainStat(d: AthleteDerived, key: RatingKey, config: Config, l
   } else if (key === 'RACE') {
     const used = (stat.basis?.perfIds ?? []).map((id) => items.find((i) => i.perf.id === id)).filter((x): x is Item => !!x);
     const weights = used.length === 3 ? config.race.weights3 : used.length === 2 ? config.race.weights2 : [1];
-    paragraphs.push(`RACE blends the best ${used.length === 1 ? 'race' : `${used.length} races`} (verified races, relay legs and parkruns, after freshness)${used.length > 1 ? `, weighted ${weights.map((x) => `${Math.round(x * 100)}%`).join(' / ')}` : ''}. Racing more earns caps, never points.`);
+    paragraphs.push(`RACE blends the best ${used.length === 1 ? 'race' : `${used.length} races`} (verified races and relay legs at official events, after freshness; parkruns and time trials do not count)${used.length > 1 ? `, weighted ${weights.map((x) => `${Math.round(x * 100)}%`).join(' / ')}` : ''}. Racing more earns caps, never points.`);
     const sum = used.reduce((s, i, k) => s + (weights[k] ?? 0) * (i.ps.fresh ?? 0), 0);
     if (used.length > 1) paragraphs.push(`RACE = ${used.map((i, k) => `${Math.round((weights[k] ?? 0) * 100)}% × ${i.ps.fresh} (${placeOf(i.ctx)}, ${formatShortDate(i.perf.date)})`).join(' + ')} = ${num1(sum)} → ${stat.value}.`);
     for (const i of used) {
@@ -324,7 +324,28 @@ export function explainOvr(d: AthleteDerived, config: Config): string[] {
   const unlocked = STATS.filter((k) => !r.stats[k].locked);
   const out: string[] = [];
   if (r.ovr.value == null) out.push(`OVR needs at least ${config.ovr.minUnlocked} unlocked stats (${unlocked.length} so far).`);
-  else out.push(`OVR = the average of the ${unlocked.length} unlocked stats: (${unlocked.map((k) => r.stats[k].value).join(' + ')}) ÷ ${unlocked.length} = ${num1(unlocked.reduce((s, k) => s + (r.stats[k].value ?? 0), 0) / unlocked.length)} → ${r.ovr.value}. Locked stats do not count against it.`);
+  else if (r.ovr.proven == null || r.ovr.average == null) out.push(`OVR = the average of the ${unlocked.length} unlocked stats: (${unlocked.map((k) => r.stats[k].value).join(' + ')}) ÷ ${unlocked.length} = ${num1(unlocked.reduce((s, k) => s + (r.stats[k].value ?? 0), 0) / unlocked.length)} → ${r.ovr.value}. Locked stats do not count against it.`);
+  else {
+    const ev = config.ovr.evidence;
+    const n = unlocked.reduce((s, k) => s + (r.stats[k].evidence?.weight ?? 1), 0);
+    const pct = Math.round(r.ovr.proven * 100);
+    out.push(
+      `OVR is a proven rating: it counts each unlocked stat by how much evidence is behind it. ${unlocked
+        .map((k) => {
+          const e = r.stats[k].evidence;
+          return `${k} ${r.stats[k].value} (${e ? `${e.results} result${e.results === 1 ? '' : 's'}${Math.abs(e.weight - e.results) > 1e-9 ? `, counting as ${num1(e.weight)}` : ''}` : '1 result'})`;
+        })
+        .join(', ')}. Averaged with the better-evidenced stats counting for more: ${num1(r.ovr.average)}.`,
+    );
+    out.push(
+      `One result is a first estimate, not a proven level, so the OVR starts from ${ev.priorScore} (an untrained pupil of the same age) and moves towards that average as results come in: with ${num1(n)} result${Math.abs(n - 1) < 1e-9 ? '' : 's'} counted it is ${pct}% proven (${num1(n)} ÷ (${num1(n)} + ${ev.ovrHalfResults})). OVR = ${ev.priorScore} + ${pct}% × (${num1(r.ovr.average)} − ${ev.priorScore}) = ${r.ovr.value}.`,
+    );
+    out.push(
+      r.ovr.evidence === 'proven'
+        ? 'There is plenty of evidence here, so the OVR sits close to the average of the stats.'
+        : `${r.ovr.evidence === 'estimate' ? 'This is a first estimate.' : 'The evidence is building.'} Every new result on a different day makes the OVR more proven and moves it closer to the average of the stats (${num1(r.ovr.average)}). A place with no time, a stopwatch time trial, an effort under ${ev.shortEffortKm} km and a result over ${ev.olderThanMonths} months old each count as less than a full result. Locked stats do not count against it.`,
+    );
+  }
   out.push(`Tier: ${r.tier[0].toUpperCase()}${r.tier.slice(1)}${r.tierNote ? ` (${r.tierNote})` : ''}. ★ ${r.race.caps} race cap${r.race.caps === 1 ? '' : 's'}.`);
   return out;
 }

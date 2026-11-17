@@ -1,7 +1,8 @@
 // Paste-and-Match (spec 4.2): parse → match names → review rows with warnings → (coach approves) →
 // one change set. Nothing here writes anything: planToChanges only describes what approval would do.
 import type { Athlete, CategoryWinner, Course, DataSnapshot, EventKind, ISODate, Participation, Performance, PerfKind, PerfSource, TasukiEvent } from '../../types';
-import type { Config } from '../config';
+import { currentConfig, type Config } from '../config';
+import { yearRollover } from '../display';
 import type { Changes } from '../../store/changes';
 import { isoWeek } from '../dates';
 import { matchName, normaliseName, withLearnedAlias, type NameMatch } from '../names';
@@ -468,7 +469,10 @@ export function planToChanges(plan: ImportPlan, decisions: Record<string, RowDec
   if (perfs.length) changes.put!.performances = perfs;
   if (parts.length) changes.put!.participation = parts;
   if (events.size) changes.put!.events = [...events.values()];
-  const athletePuts = [...created.values(), ...[...touched].map((id) => athletes.get(id)!)];
+  // A runner created from an earlier year's results (Y9 in the 2025 workbook) is saved in today's year group.
+  const fresh = [...created.values()];
+  const moved = new Map(yearRollover(fresh, ctx.now.slice(0, 10), currentConfig(snapshot.configs)).map((a) => [a.id, a]));
+  const athletePuts = [...fresh.map((a) => moved.get(a.id) ?? a), ...[...touched].map((id) => athletes.get(id)!)];
   if (athletePuts.length) changes.put!.athletes = athletePuts;
   summary.newAthletes = created.size;
   return { changes, summary };

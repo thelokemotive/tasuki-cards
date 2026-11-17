@@ -22,11 +22,30 @@ describe('the view-only copy for pupils', () => {
     expect(json).not.toMatch(/"age":\d+\.\d/);
   });
 
-  it('a runner hidden online appears only as "Hidden runner"', () => {
+  it('a runner hidden online is left out altogether: no card, no results, no board rows', () => {
+    const hidden = snap.athletes[1];
     const s2 = { ...snap, athletes: snap.athletes.map((a, i) => (i === 1 ? { ...a, hiddenOnline: true } : a)) };
     const j = makePublicPack(s2, deriveAll(s2, '2026-11-13', DEFAULT_CONFIG));
-    expect(j).not.toContain(`"${snap.athletes[1].givenName}"`);
-    expect(readPublicPack(j).snapshot.athletes[1].preferredName).toBe('Hidden runner');
+    const p2 = readPublicPack(j);
+    expect(j).not.toContain(`"${hidden.givenName}"`);
+    expect(j).not.toContain(hidden.id);
+    expect(p2.snapshot.athletes).toHaveLength(snap.athletes.length - 1);
+    expect(p2.derived.athletes.has(hidden.id)).toBe(false);
+    expect(p2.snapshot.performances.some((x) => x.athleteId === hidden.id)).toBe(false);
+  });
+
+  it('an exact age cannot be worked back from the figures behind a score', () => {
+    // The standard time is interpolated on the exact age, so to the hundredth of a second it gives the birthday.
+    const exact = [...derived.athletes.values()].flatMap((d) => d.ratings.perfScores).filter((x) => x.standardSec != null);
+    expect(exact.some((x) => !Number.isInteger(x.standardSec))).toBe(true);
+    for (const d of pub.derived.athletes.values()) {
+      for (const x of d.ratings.perfScores) {
+        if (x.standardSec != null) expect(x.standardSec % 5).toBe(0);
+        if (x.ageGrade != null) expect(Number(x.ageGrade.toFixed(2))).toBe(x.ageGrade);
+        expect(Number.isInteger(x.age)).toBe(true);
+      }
+      for (const s of d.prediction?.sources ?? []) expect(Number.isInteger(s.age) && s.fiveKNow % 5 === 0).toBe(true);
+    }
   });
 
   it('keeps the ratings exactly as the coach sees them', () => {

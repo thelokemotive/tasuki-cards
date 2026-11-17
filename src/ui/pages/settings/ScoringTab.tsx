@@ -39,6 +39,17 @@ const SECTION_LABELS: Record<string, string> = {
 };
 
 const HELP: Record<string, string> = {
+  'ageGrade.subMile': 'How standards are set below 1 mile, where the road tables stop.',
+  'ovr.evidence.enabled': 'On: OVR = prior + proven × (average − prior). Off: the plain average of the unlocked stats.',
+  'ovr.evidence.priorScore': 'Where an OVR starts before there is evidence (50 ≈ a 40% age grade).',
+  'ovr.evidence.halfResults': 'Results at which one stat is half proven (its weight in the average).',
+  'ovr.evidence.ovrHalfResults': 'Results, across all stats, at which the OVR is half proven. Higher = slower to trust.',
+  'ovr.evidence.placeOnlyWeight': 'A place with no time counts as this fraction of a result.',
+  'ovr.evidence.unofficialWeight': 'A result at an unofficial event (stopwatch time trial, training relay).',
+  'ovr.evidence.shortEffortWeight': 'An effort shorter than “short effort km”.',
+  'ovr.evidence.olderWeight': 'A result older than “older than months”.',
+  'ovr.evidence.estimateBelow': 'Proven share below which the OVR is labelled a first estimate.',
+  'ovr.evidence.provenFrom': 'Proven share from which the OVR is labelled proven.',
   'runScore.anchorAG': 'Age grade that scores 99 (0.80 = 80%, “national class”).',
   'freshness.decayGraceMonths': 'Months a result counts in full.',
   'freshness.decayPointsPerMonth': 'Points lost per month after the grace period.',
@@ -115,6 +126,14 @@ function ValueEditor({ path, value, onChange }: { path: Path; value: unknown; on
       <select className="select" value={value as string} onChange={(e) => onChange(e.target.value)}>
         <option value="alan_jones_2025">Alan Jones 2025 road tables ({AGE_GRADE_SOURCE.commit.slice(0, 7)})</option>
         <option value="fallback_provisional">Fallback table (provisional)</option>
+      </select>
+    );
+  }
+  if (key === 'ageGrade.subMile') {
+    return (
+      <select className="select" value={value as string} onChange={(e) => onChange(e.target.value)}>
+        <option value="world_record_curve">World-record curve (200 m to the mile)</option>
+        <option value="extrapolate">Mile–5 km slope carried down (before Nov 2026)</option>
       </select>
     );
   }

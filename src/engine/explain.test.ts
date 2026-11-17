@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Athlete, DataSnapshot, Performance } from '../types';
 import { SCHEMA_VERSION } from '../types';
-import { DEFAULT_CONFIG } from './config';
+import { DEFAULT_CONFIG, preEvidenceRules } from './config';
 import { deriveAll } from './derive';
 import { explainAll, explainOvr, explainStat, explanationText } from './explain';
 import { buildDemoData, seedCourses, CAMPUS_CIRCUIT_ID } from '../demo/demoData';
@@ -156,7 +156,18 @@ describe('explainStat: every kind of working', () => {
   it('OVR in words', () => {
     const d = deriveAll(snap([perf({ eventId: 'e3k', timeSec: 1000 }), perf({ kind: 'bleep', bleepLaps: 40 })]), AS_OF);
     const lines = explainOvr(d.athletes.get('aiko')!, cfg);
-    expect(lines[0]).toMatch(/^OVR = the average of the 2 unlocked stats: \(\d+ \+ \d+\) ÷ 2 = [\d.]+ → \d+\./);
+    const r = d.athletes.get('aiko')!.ratings;
+    expect(lines[0]).toMatch(/^OVR is a proven rating: .*SPD \d+ \(1 result\), END \d+ \(1 result\)/);
+    // two full results: 2 ÷ (2 + 1.5) = 57% proven, and the last number in the working is the OVR shown
+    expect(lines[1]).toContain('57% proven');
+    expect(lines[1]).toMatch(new RegExp(`= ${r.ovr.value}\\.$`));
+    expect(lines[2]).toMatch(/^The evidence is building\./);
+  });
+
+  it('OVR in words with evidence weighting off: the plain average', () => {
+    const off = preEvidenceRules(cfg);
+    const d = deriveAll(snap([perf({ eventId: 'e3k', timeSec: 1000 }), perf({ kind: 'bleep', bleepLaps: 40 })]), AS_OF, off);
+    expect(explainOvr(d.athletes.get('aiko')!, off)[0]).toMatch(/^OVR = the average of the 2 unlocked stats: \(\d+ \+ \d+\) ÷ 2 = [\d.]+ → \d+\./);
   });
 });
 

@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_CONFIG, cloneConfig } from './config';
+import { DEFAULT_CONFIG, cloneConfig, preEvidenceRules } from './config';
 import { ageGrade, AGE_GRADE_SOURCE, interpolateKeyed, isAgeGradeProvisional, standardTime } from './standards';
 import tables from './data/ageGradeRoad2025.json';
 
-const cfg = DEFAULT_CONFIG;
+// The spec's worked examples use the original rules; the November 2026 rules are tested in evidence.test.ts.
+const cfg = preEvidenceRules(DEFAULT_CONFIG);
 
 describe('Alan Jones 2025 road tables (spot checks against the source xlsx, sheet AgeStdSec / AgeStanSec)', () => {
   it('records the source commit', () => {

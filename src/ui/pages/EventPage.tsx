@@ -1,6 +1,6 @@
 // One event: details (editable), academy results with corrections, category winners, Tasuki Surge.
 import { useState } from 'react';
-import type { EventKind, Performance, TasukiEvent } from '../../types';
+import { YEAR_GROUPS, type EventKind, type Performance, type TasukiEvent } from '../../types';
 import { Empty, Field, Modal, PageHeader, Panel, Prov } from '../components/common';
 import { useToast } from '../components/Toast';
 import { useData } from '../data/DataContext';
@@ -8,7 +8,7 @@ import { Link, useRoute } from '../router';
 import { PerformanceEditor, KIND_LABEL } from '../components/PerformanceEditor';
 import { formatKm, formatTime } from '../../engine/format';
 import { formatLongDate, isISODate } from '../../engine/dates';
-import { fullName } from '../../engine/display';
+import { fullName, shiftYearGroups } from '../../engine/display';
 import { formatPct } from '../../engine/boards';
 
 const KINDS: EventKind[] = ['race', 'relay', 'parkrun', 'time_trial', 'session', 'test'];
@@ -91,7 +91,8 @@ function EventEditor({ event, onClose }: { event: TasukiEvent; onClose: () => vo
 
 export function EventPage() {
   const route = useRoute();
-  const { snapshot, derived } = useData();
+  const { snapshot, fullSnapshot, derived, commit } = useData();
+  const toast = useToast();
   const event = snapshot.events.find((e) => e.id === route.params[0]);
   const [editing, setEditing] = useState(false);
   const [perfEdit, setPerfEdit] = useState<Performance | null>(null);
@@ -123,6 +124,36 @@ export function EventPage() {
           </>
         }
       />
+      {(() => {
+        // Runners first added by this import (whole-school runners included): their year groups came from this
+        // event's results, so a workbook from another year can leave all of them a year out.
+        const added = fullSnapshot.athletes.filter((a) => a.createdAt && fullSnapshot.performances.some((p) => p.eventId === event.id && p.athleteId === a.id && p.createdAt === a.createdAt));
+        if (added.length < 5) return null;
+        const counts = new Map<string, number>();
+        for (const a of added) counts.set(a.yearGroup, (counts.get(a.yearGroup) ?? 0) + 1);
+        const summary = YEAR_GROUPS.filter((y) => counts.has(y)).map((y) => `${y} × ${counts.get(y)}`).join(', ');
+        const move = async (delta: number) => {
+          const moved = shiftYearGroups(added, delta);
+          if (!moved.length || !window.confirm(`Move ${moved.length} runners ${delta > 0 ? 'up' : 'down'} one year group? Their ratings are recalculated for the new age.`)) return;
+          await commit({ put: { athletes: moved } });
+          toast(`${moved.length} runners moved ${delta > 0 ? 'up' : 'down'} a year`, 'ok');
+        };
+        return (
+          <Panel title="Year groups from this import">
+            <p className="small">
+              {added.length} runners were first added from these results, and are now: {summary}. If the results were from an earlier year and everyone is a year behind (or ahead), move them all at once.
+            </p>
+            <div className="row" style={{ gap: 8, marginTop: 8 }}>
+              <button className="btn" onClick={() => move(1)}>
+                Move all up a year
+              </button>
+              <button className="btn" onClick={() => move(-1)}>
+                Move all down a year
+              </button>
+            </div>
+          </Panel>
+        );
+      })()}
       {(() => {
         // Where our runners sit in the whole field: fastest on the left, last finisher on the right.
         const field = Math.max(event.fieldSize ?? 0, ...perfs.map((p) => p.fieldSize ?? 0), ...perfs.map((p) => p.place ?? 0));

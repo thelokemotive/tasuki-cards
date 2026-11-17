@@ -9,6 +9,7 @@ import { displayName, fullName, yearBand } from '../../engine/display';
 import { STAT_KEYS, type RatingKey, type YearBand } from '../../engine/types';
 import { CAMPS, developmentFocus } from '../../engine/coach';
 import type { AthleteDerived } from '../../engine/derive';
+import { YEAR_GROUPS, type YearGroup } from '../../types';
 import { formatTime } from '../../engine/format';
 
 type Col = RatingKey | 'OVR';
@@ -32,11 +33,11 @@ function heat(v: number | undefined): React.CSSProperties {
 export function SquadPage() {
   const { derived } = useData();
   const [sort, setSort] = useState<Col>('OVR');
-  const [band, setBand] = useState<'all' | YearBand>('all');
+  const [band, setBand] = useState<'all' | YearBand | YearGroup>('all');
   const [sex, setSex] = useState<'all' | 'F' | 'M'>('all');
   const [names, setNames] = useState<'coach' | 'display'>('coach');
   const rows = useMemo(() => {
-    const list = [...derived.athletes.values()].filter((d) => d.athlete.active && (band === 'all' || yearBand(d.athlete.yearGroup) === band) && (sex === 'all' || d.athlete.sex === sex));
+    const list = [...derived.athletes.values()].filter((d) => d.athlete.active && (band === 'all' || d.athlete.yearGroup === band || yearBand(d.athlete.yearGroup) === band) && (sex === 'all' || d.athlete.sex === sex));
     return list.sort((a, b) => (value(b, sort) ?? -1) - (value(a, sort) ?? -1) || fullName(a.athlete).localeCompare(fullName(b.athlete)));
   }, [derived, sort, band, sex]);
   const avg = (k: Col) => {
@@ -50,7 +51,18 @@ export function SquadPage() {
       <Panel
         actions={
           <>
-            <Seg value={band} onChange={setBand} options={[{ value: 'all', label: 'All' }, { value: 'Y7-8', label: 'Y7–8' }, { value: 'Y9-11', label: 'Y9–11' }, { value: 'Y12-13', label: 'Y12–13' }, { value: 'Staff', label: 'Staff' }]} />
+            <select className="select" style={{ maxWidth: 150 }} value={band} onChange={(e) => setBand(e.target.value as typeof band)} aria-label="Year group">
+              <option value="all">All years</option>
+              {YEAR_GROUPS.filter((y) => y !== 'Staff').map((y) => (
+                <option key={y} value={y}>
+                  Year {y.slice(1)}
+                </option>
+              ))}
+              <option value="Y7-8">Y7–8 together</option>
+              <option value="Y9-11">Y9–11 together</option>
+              <option value="Y12-13">Y12–13 together</option>
+              <option value="Staff">Staff</option>
+            </select>
             <Seg value={sex} onChange={setSex} options={[{ value: 'all', label: 'All' }, { value: 'F', label: 'Girls' }, { value: 'M', label: 'Boys' }]} />
             <Seg value={names} onChange={setNames} options={[{ value: 'coach', label: 'Full names' }, { value: 'display', label: 'Display names' }]} />
           </>

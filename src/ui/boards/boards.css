@@ -45,7 +45,7 @@
 .projector .board-row--top2 .board-rank { color: #d6dbe3; }
 .projector .board-row--top3 .board-rank { color: #e0a173; }
 .projector .board-foot { color: #6f7a94; }
-.projector-bar { position: fixed; bottom: 12px; right: 12px; display: flex; gap: 8px; opacity: 0.25; transition: opacity 0.2s; z-index: 5; }
+.projector-bar { position: fixed; bottom: 12px; right: 12px; display: flex; gap: 8px; opacity: 0.8; transition: opacity 0.2s; z-index: 5; }
 .projector-bar:hover { opacity: 1; }
 .projector-bar .btn { background: rgb(255 255 255 / 10%); color: #fff; border-color: rgb(255 255 255 / 25%); }
 
