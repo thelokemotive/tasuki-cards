@@ -1,8 +1,8 @@
 // Winter Mode: keep fitness (and the streak) alive over the school holidays and the snow season with a
 // small, fixed weekly dose, without rewarding junk miles or cramming.
 //
-// The rule ("Rule of 2"): a winter week is kept with config.winter.sessionsPerWeek sessions, at least one
-// of them a run (outdoors, treadmill, or any counted result). One armour (calf/ankle) or gym session can
+// The rule ("Rule of 2"): a winter week is kept with config.winter.sessionsPerWeek sessions on separate
+// days, at least one of them a run (outdoors, treadmill, or any counted result). One armour (calf/ankle) or gym session can
 // stand in for the others. Ski days are recorded but never count: pupils ski anyway, and the point is
 // running impact for calves and Achilles, which ski boots take away.
 //
@@ -16,7 +16,7 @@
 //   after config.freshness.decayGraceMonths), so there is no "decay shield" to sell.
 // - Load flags are nudges, not locks. The acute:chronic ratio research is disputed (Impellizzeri et al.
 //   2020), so the spike rule is a generous plain-English warning, not an injury-risk number.
-import type { Athlete, Calendar, ISODate, ISOWeek, Participation, Performance, TopUp, WinterPhase } from '../types';
+import type { Athlete, Calendar, ISODate, ISOWeek, Participation, Performance, SoreSpot, TopUp, WinterPhase } from '../types';
 import type { Config } from './config';
 import { addDays, daysBetween, isoWeek, weekMonday, weekSunday, weeksInRange } from './dates';
 import { counts } from './perf';
@@ -26,9 +26,9 @@ export type WinterWeekState = 'kept' | 'rest' | 'missed' | 'current';
 export interface WinterWeek {
   week: ISOWeek;
   phase: WinterPhase;
-  /** Runs that count (top-up runs and treadmill runs of at least minRunMinutes, gym runs, counted results). */
+  /** Days with a run that counts (top-up and treadmill runs of at least minRunMinutes, gym runs, counted results). */
   runs: number;
-  /** Sessions that count towards the target (runs + at most target − 1 armour/gym sessions). */
+  /** Sessions that count towards the target, one per day (run days + at most target − 1 armour/gym days). */
   sessions: number;
   /** Sessions logged beyond the target: recorded, worth nothing extra. */
   extra: number;
@@ -42,7 +42,7 @@ export interface WinterWeek {
   restBy?: 'pass' | 'coach';
 }
 
-export type WinterFlagKind = 'return' | 'spike' | 'volume' | 'soreness' | 'pain';
+export type WinterFlagKind = 'return' | 'spike' | 'volume' | 'soreness' | 'pain' | 'growth';
 
 export interface WinterFlag {
   kind: WinterFlagKind;
@@ -82,6 +82,7 @@ interface Session {
   minutes: number;
   sharp: boolean;
   soreness?: number;
+  soreWhere?: SoreSpot;
 }
 
 /** Winter phase covering any day of `week` (the earliest such phase). */
@@ -106,11 +107,11 @@ function topUpSession(q: Participation & { topUp: TopUp }, config: Config): Sess
   const t = q.topUp;
   const w = config.winter;
   const minutes = Math.max(0, t.minutes || 0);
-  if (t.activity === 'ski') return { date: q.date, kind: 'ski', minutes, sharp: false, soreness: t.soreness };
+  if (t.activity === 'ski') return { date: q.date, kind: 'ski', minutes, sharp: false, soreness: t.soreness, soreWhere: t.soreWhere };
   const isRun = t.activity === 'run' || t.activity === 'treadmill' || (t.activity === 'gym' && ((t.km ?? 0) > 0 || !!t.sharp));
-  if (isRun) return minutes >= w.minRunMinutes ? { date: q.date, kind: 'run', minutes, sharp: !!t.sharp, soreness: t.soreness } : undefined;
+  if (isRun) return minutes >= w.minRunMinutes ? { date: q.date, kind: 'run', minutes, sharp: !!t.sharp, soreness: t.soreness, soreWhere: t.soreWhere } : undefined;
   const min = t.activity === 'armour' ? w.armourMinMinutes : w.minRunMinutes;
-  return minutes >= min ? { date: q.date, kind: 'other', minutes, sharp: !!t.sharp, soreness: t.soreness } : undefined;
+  return minutes >= min ? { date: q.date, kind: 'other', minutes, sharp: !!t.sharp, soreness: t.soreness, soreWhere: t.soreWhere } : undefined;
 }
 
 /** Every session for one athlete: top-ups, Saturday runs and counted results (a result is a run). */
@@ -166,9 +167,12 @@ export function computeWinter(input: {
     const mon = weekMonday(week);
     const sun = weekSunday(week);
     const inWeek = sessions.filter((s) => mon <= s.date && s.date <= sun);
-    const runs = inWeek.filter((s) => s.kind === 'run').length;
-    const others = inWeek.filter((s) => s.kind === 'other').length;
-    const counted = Math.min(target, runs + Math.min(others, target - 1));
+    // Sessions count on separate days: two runs on one Sunday are one session (no last-minute cramming).
+    const runDays = new Set(inWeek.filter((s) => s.kind === 'run').map((s) => s.date));
+    const otherDays = new Set(inWeek.filter((s) => s.kind === 'other' && !runDays.has(s.date)).map((s) => s.date));
+    const runs = runDays.size;
+    const logged = inWeek.filter((s) => s.kind !== 'ski').length;
+    const counted = Math.min(target, runs + Math.min(otherDays.size, target - 1));
     const keptNow = runs >= 1 && counted >= target;
     let state: WinterWeekState;
     let restBy: WinterWeek['restBy'];
@@ -182,7 +186,7 @@ export function computeWinter(input: {
       phase,
       runs,
       sessions: counted,
-      extra: Math.max(0, runs + others - counted),
+      extra: Math.max(0, logged - counted),
       runMinutes: Math.round(runMinutesBetween(inWeek, mon, sun)),
       sharp: inWeek.some((s) => s.sharp && s.kind !== 'ski'),
       skiDays: new Set(inWeek.filter((s) => s.kind === 'ski').map((s) => s.date)).size,
@@ -233,10 +237,11 @@ export function winterFlags(sessions: Session[], athlete: Athlete, config: Confi
   const flags: WinterFlag[] = [];
   const runs = sessions.filter((s) => s.kind === 'run' && s.date <= asOf);
   const last = runs.at(-1);
-  const before = runs.length > 1 ? runs.at(-2) : undefined;
   const gapNow = last ? daysBetween(last.date, asOf) : Infinity;
-  const backThisWeek = last && daysBetween(last.date, asOf) < 7 && (!before || daysBetween(before.date, last.date) >= w.returnAfterDays);
-  if (gapNow >= w.returnAfterDays || backThisWeek) {
+  // A break is no run for returnAfterDays, or barely any (less than one short run's worth) in the
+  // returnAfterDays before this week: one 10-minute jog in a fortnight does not wake up the tendons.
+  const fortnightBefore = runMinutesBetween(runs, addDays(asOf, -6 - w.returnAfterDays), addDays(asOf, -7));
+  if (gapNow >= w.returnAfterDays || fortnightBefore < w.firstBackMinutes) {
     flags.push({
       kind: 'return',
       message: `First week back after a break: keep each run to ${w.firstBackMinutes} minutes, easy, and save the surges for next week.`,
@@ -259,16 +264,24 @@ export function winterFlags(sessions: Session[], athlete: Athlete, config: Confi
   }
 
   const recent = [...sessions].reverse().find((s) => s.soreness != null && daysBetween(s.date, asOf) <= 3);
-  if (recent && recent.soreness! >= w.painFlag) {
-    flags.push({ kind: 'pain', message: `Soreness ${recent.soreness}/10 after your last session. No running until it settles; tell the coach.`, coach: true });
+  const where = recent?.soreWhere ? ` (${recent.soreWhere})` : '';
+  const growing = recent && (recent.soreWhere === 'heel' || recent.soreWhere === 'knee') && w.growthYears.includes(athlete.yearGroup);
+  if (recent && growing && recent.soreness! >= w.sorenessSwap) {
+    flags.push({
+      kind: 'growth',
+      message: `Sore ${recent.soreWhere} ${recent.soreness}/10. In growing runners heel and knee pain needs a check: no running or hopping until the coach has seen it.`,
+      coach: true,
+    });
+  } else if (recent && recent.soreness! >= w.painFlag) {
+    flags.push({ kind: 'pain', message: `Soreness ${recent.soreness}/10${where} after your last session. No running until it settles; tell the coach.`, coach: true });
   } else if (recent && recent.soreness! >= w.sorenessSwap) {
-    flags.push({ kind: 'soreness', message: `Soreness ${recent.soreness}/10: make the next session armour (calf raises, pogo hops, ankle work), not a run. It still counts.`, coach: false });
+    flags.push({ kind: 'soreness', message: `Soreness ${recent.soreness}/10${where}: make the next session armour (calf raises, pogo hops, ankle work), not a run. It still counts.`, coach: false });
   }
   return flags;
 }
 
 function nextStep(week: WinterWeek | undefined, target: number, flags: WinterFlag[], config: Config): string {
-  if (flags.some((f) => f.kind === 'pain')) return 'Rest and tell the coach. A coach rest week keeps your flame.';
+  if (flags.some((f) => f.kind === 'pain' || f.kind === 'growth')) return 'Rest and tell the coach. A coach rest week keeps your flame.';
   if (!week) return 'Winter Mode is not on this week.';
   const swap = flags.some((f) => f.kind === 'soreness');
   const easy = flags.some((f) => f.kind === 'return' || f.kind === 'spike');

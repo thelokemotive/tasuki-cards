@@ -34,17 +34,17 @@ function publicPerf(p: Performance): Performance {
  * whole years, and the figures worked out from the exact age (the standard time and the age grade behind a
  * score, and the working of the 5 km prediction) are rounded so the age cannot be worked back from them.
  */
-/** Winter top-ups without soreness or notes: how a pupil feels is health information, for the coach only. */
+/** Winter top-ups without soreness, where it hurts, or notes: how a pupil feels is health information, for the coach only. */
 function publicParticipation(p: Participation): Participation {
   if (!p.topUp) return p;
-  const { soreness: _s, note: _n, ...topUp } = p.topUp;
+  const { soreness: _s, soreWhere: _w, note: _n, ...topUp } = p.topUp;
   return { ...p, topUp };
 }
 
 /** Winter summary without the soreness and pain nudges (and a next step that might mention them). */
 function publicWinter(w: WinterSummary | undefined): WinterSummary | undefined {
   if (!w) return w;
-  const health = w.flags.some((f) => f.kind === 'soreness' || f.kind === 'pain' || f.kind === 'volume');
+  const health = w.flags.some((f) => f.kind === 'soreness' || f.kind === 'pain' || f.kind === 'volume' || f.kind === 'growth');
   return { ...w, flags: w.flags.filter((f) => f.kind === 'return' || f.kind === 'spike'), next: health ? '' : w.next };
 }
 

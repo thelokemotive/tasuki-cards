@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Athlete } from '../../types';
 import { DEFAULT_CONFIG } from '../config';
-import { activityFrom, parseTopUps, topUpParticipation } from './topUps';
+import { activityFrom, parseTopUps, soreSpotFrom, topUpParticipation } from './topUps';
 
 // Invented pupils. The header row is a Microsoft Forms "Open in Excel" export, copied and pasted (tabs).
 function athlete(id: string, given: string, family: string): Athlete {
@@ -50,5 +50,11 @@ describe('winter top-ups from a Forms export', () => {
 
   it('knows the activities in English and Japanese', () => {
     expect(['Run outdoors', 'トレッドミル', 'スキー', 'Gym (Tuesday)', 'Ankle and calf armour'].map(activityFrom)).toEqual(['run', 'treadmill', 'ski', 'gym', 'armour']);
+  });
+
+  it('reads where it is sore', () => {
+    expect(['Nowhere', 'Heel', 'Knee or below the kneecap', 'Achilles', 'かかと', '', 'Elbow'].map(soreSpotFrom)).toEqual([undefined, 'heel', 'knee', 'achilles', 'heel', undefined, 'other']);
+    const text = [HEADER + '\tWhere is it sore?', row('9', '', '', '', 'Aiko Testfield', '2026-12-22', 'Run', '25', '', 'No', '', '5', 'Heel')].join('\n');
+    expect(parseTopUps(text, roster, DEFAULT_CONFIG, '2026-12-31').rows[0].topUp).toMatchObject({ soreness: 5, soreWhere: 'heel' });
   });
 });

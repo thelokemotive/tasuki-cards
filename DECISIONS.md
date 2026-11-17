@@ -226,6 +226,20 @@ The coach asked for a light, science-backed way to keep the squad (and himself) 
 - **House Frost Cup** ranks houses by the share of weeks kept, so nobody is ranked last on their own (the outside motivation review: no public bottom-half rankings).
 - **Strava**: we do not compete with it as a GPS logger. Strava is for 13+ (16+ in some places), its maps show where children run, and it has no school team, cards or coach. Tasuki is the team layer: a Strava or watch screenshot is accepted as the photo like a treadmill screen.
 
+### Second outside spec (Gemini "maintenance engine"), checked against the code
+
+Taken:
+- **Sessions count on separate days.** Two runs (or a run and armour) on the same day are one session, so a week cannot be saved by cramming on Sunday. Dates carry no clock time, so "different day" stands in for the suggested 36 hours.
+- **A thin fortnight is a break.** The first-week-back advice now also fires when there were under 20 running minutes in the 14 days before this week, not only after 14 days with no run at all.
+- **Where it is sore.** The form asks; heel or knee soreness of 4+ in Y7–Y10 goes straight to the coach with no session suggested (Sever's and Osgood–Schlatter are common at these ages and need a person, not an app). Elsewhere, 4–5 is still an armour swap.
+- **Session cards** (`src/engine/winterSessions.ts`): easy run, sharp run, treadmill surges, ski-boot antidote, sore-legs armour, staff tempo. Each runner's page shows the one that fits their week, with their own treadmill speeds.
+
+Not taken:
+- **Readiness decay on card stats** (−1.5 a missed week on END/SPD, −2 on ARM). The numbers have no source, a winter costs nothing in the real ratings (decay starts at 6 months), and the motivation review the coach shared says downward card moves drive pupils away. The flame, the week strip and the first-week-back advice already say "you have not been running".
+- **EWMA acute:chronic ratio with a 15% spike rule.** Still the disputed ratio, and at one or two runs a week the exponential averages swing on a single run; `max(4 km, 1.15 × chronic)` would warn a pupil who simply did the Rule of 2 after a quiet week. The plain rule (1.5× the previous four weeks and over 60 minutes) stays.
+- **Snow weeks demanding exactly one run plus one antidote.** Two runs also give the impact the antidote replaces; the snow-week suggestion already steers to the antidote.
+- **sRPE, heart rate, GPX/FIT, XP and NAV quizzes.** The spec assumes these exist; they do not. Heart rate is also not collected from under-16s (the privacy review).
+
 ## Open questions for the coach
 
 1. Surge sanity gate: minimum of 3 legs with a baseline per event and distance (see above). Is that right?

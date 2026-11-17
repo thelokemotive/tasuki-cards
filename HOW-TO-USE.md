@@ -41,13 +41,15 @@ Drag the Green Long Ducker workbook (one sheet per house: Year, names and Positi
 
 **Winter Mode** (❄ in the menu). Add the winter weeks once: the Christmas holiday (kind *Holiday*) and the snow season (kind *Snow season*). From then on:
 
-- **The rule for everyone**: 2 sessions a week, at least one a run of 15+ minutes (outdoors, treadmill, parkrun, Circuit). One armour session (10 minutes of calf raises, pogo hops, ankle work) or gym session can be the other. Staff need 3. Ski days are logged but do not count. Extra sessions earn nothing.
+- **The rule for everyone**: 2 sessions a week on different days, at least one a run of 15+ minutes (outdoors, treadmill, parkrun, Circuit). One armour session (10 minutes of calf raises, pogo hops, ankle work) or gym session can be the other. Staff need 3. Ski days are logged but do not count. Extra sessions earn nothing.
 - **The ⚡**: a week with race-pace surges or strides. Every runner's page shows their spring 5K target as a **treadmill speed** for surges and for easy running; **Treadmill paces** on the Winter page lists the whole squad to print for the gym.
 - **Pupils log sessions** with a Microsoft Form (the questions are under **Setting up the form** on the Winter page; set it to school accounts only with names recorded). They can attach a photo of the treadmill screen. Each week: Responses → Open in Excel, copy everything, paste into **Paste the top-up form**, **Add**. Pasting the same responses twice is harmless.
 - **Tuesday gym**: tick who came and **Record gym**. With *treadmill surges* ticked it counts as a sharp run.
 - **What it does for them**: a kept week lights the 🔥 and counts in the main streak; a missed holiday week never breaks the streak. One rest pass per winter is used automatically; for illness or injury use **Apply freeze…**.
 - **What it tells you**: **For the coach** lists soreness of 6/10 or more and anyone running more than 4 hours a week. Pupils see gentler nudges (first week back: short and easy; a big jump: ease off; soreness 4+: do armour instead). Soreness and notes are never in the pupils' website copy.
 - **House Frost Cup**: the share of weeks kept by each house's pupils.
+- **Session cards**: six ready-made sessions on the Winter page to print; each runner's page shows the one for their week with their own treadmill speeds.
+- **Sore heel or knee** (Y7–Y10, 4/10 or more) goes to **For the coach** with no session suggested.
 
 Top-ups never change a rating, a PB or the 5K prediction (treadmills are not calibrated). The spring time trial shows whether the winter worked.
 

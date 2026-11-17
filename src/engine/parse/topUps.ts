@@ -2,7 +2,7 @@
 // Columns are found by their question text, so the form can be worded freely as long as each question
 // contains a keyword: name, date, what/activity, minutes, km/distance, surge/stride, photo/screen, sore.
 // The photo itself stays in the school's OneDrive; only "a photo came with it" is recorded here.
-import type { Athlete, ISODate, Participation, TopUp, TopUpActivity } from '../../types';
+import type { Athlete, ISODate, Participation, SoreSpot, TopUp, TopUpActivity } from '../../types';
 import type { Config } from '../config';
 import { isoWeek } from '../dates';
 import { matchName, type NameMatch } from '../names';
@@ -20,11 +20,12 @@ export interface TopUpRow {
   problems: string[];
 }
 
-type Col = 'id' | 'name' | 'date' | 'activity' | 'minutes' | 'km' | 'sharp' | 'photo' | 'sore' | 'completed' | 'note';
+type Col = 'where' | 'id' | 'name' | 'date' | 'activity' | 'minutes' | 'km' | 'sharp' | 'photo' | 'sore' | 'completed' | 'note';
 
 const HEADERS: [Col, RegExp][] = [
   ['id', /^id$/i],
   ['completed', /completion time|completed|timestamp|送信/i],
+  ['where', /where|which part|場所|どこ/i],
   ['sore', /sore|pain|痛/i],
   ['sharp', /surge|stride|race[-\s]?pace|pick-?up|ダッシュ/i],
   ['photo', /photo|picture|screen|screenshot|写真/i],
@@ -59,6 +60,20 @@ export function activityFrom(text: string): TopUpActivity | undefined {
   if (/gym|ジム/.test(t)) return 'gym';
   if (/run|jog|parkrun|ラン|走/.test(t)) return 'run';
   return undefined;
+}
+
+/** Where it is sore, from a Forms choice ("Heel", "Below the kneecap", "かかと"). Empty or "nowhere": undefined. */
+export function soreSpotFrom(text: string): SoreSpot | undefined {
+  const t = text.toLowerCase().trim();
+  if (!t || /^(no|none|nowhere|n\/a|-|なし)/.test(t)) return undefined;
+  if (/achilles|アキレス/.test(t)) return 'achilles';
+  if (/heel|かかと|踵/.test(t)) return 'heel';
+  if (/knee|膝|ひざ/.test(t)) return 'knee';
+  if (/shin|すね|脛/.test(t)) return 'shin';
+  if (/calf|ふくらはぎ/.test(t)) return 'calf';
+  if (/hip|股関節|腰/.test(t)) return 'hip';
+  if (/foot|arch|toe|足裏|足/.test(t)) return 'foot';
+  return 'other';
 }
 
 function numberFrom(text: string): number | undefined {
@@ -118,6 +133,7 @@ export function parseTopUps(text: string, roster: Athlete[], config: Config, tod
             ...(yes(cell(cells, 'sharp')) ? { sharp: true } : {}),
             proof: photo && !/^(no|none|-)$/i.test(photo) ? 'photo' : 'none',
             ...(soreness != null && soreness >= 0 && soreness <= 10 ? { soreness } : {}),
+            ...(soreSpotFrom(cell(cells, 'where')) ? { soreWhere: soreSpotFrom(cell(cells, 'where')) } : {}),
             ...(note ? { note } : {}),
           }
         : undefined;

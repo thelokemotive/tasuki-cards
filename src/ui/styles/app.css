@@ -339,3 +339,9 @@ table.table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 .winter-pace strong { font-size: 20px; }
 .winter-ticks { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 4px 12px; margin: 10px 0; }
 td .winter-strip { flex-wrap: nowrap; }
+.winter-sessions { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+.winter-session { border: 1px solid var(--line); border-left: 4px solid var(--sky); border-radius: 8px; padding: 8px 12px; background: var(--surface); }
+.winter-session-head { display: flex; flex-direction: column; }
+.winter-session ol { margin: 6px 0 0; padding-left: 18px; }
+@media print { .winter-session { break-inside: avoid; } }
+.winter-next-cell { min-width: 260px; }

@@ -5,6 +5,25 @@ import type { Config } from '../../engine/config';
 import { pacePlan, type WinterWeek } from '../../engine/winter';
 import { formatPace, formatTime } from '../../engine/format';
 import { formatShortDate, weekMonday } from '../../engine/dates';
+import { fillSession, suggestedSession, WINTER_SESSIONS, type WinterSession } from '../../engine/winterSessions';
+
+export function SessionCard({ s }: { s: WinterSession }) {
+  return (
+    <div className="winter-session">
+      <div className="winter-session-head">
+        <strong>{s.title}</strong>
+        <span className="tiny muted">
+          {s.minutes} · counts as {s.counts}
+        </span>
+      </div>
+      <ol className="small">
+        {s.steps.map((t) => (
+          <li key={t}>{t}</li>
+        ))}
+      </ol>
+    </div>
+  );
+}
 
 const WEEK_ICON: Record<WinterWeek['state'], string> = { kept: '🔥', rest: '🛡', missed: '·', current: '○' };
 
@@ -85,6 +104,12 @@ export function WinterPanel({ d, config, coach }: { d: AthleteDerived; config: C
           {f.message}
         </p>
       ))}
+      {(() => {
+        // In the pupil copy a health nudge is removed and `next` is blank: then suggest nothing.
+        const id = coach || w.next ? suggestedSession(w, d.athlete.yearGroup === 'Staff') : undefined;
+        const s = WINTER_SESSIONS.find((x) => x.id === id);
+        return s ? <SessionCard s={fillSession(s, d.athlete.yearGroup === 'Staff' ? d.prediction?.predictedSec : d.prediction?.realisticSec, config)} /> : null;
+      })()}
       <PaceLine fiveKSec={d.prediction?.realisticSec} config={config} label="Spring 5K target" />
     </div>
   );

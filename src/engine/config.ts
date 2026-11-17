@@ -214,6 +214,8 @@ export interface Config {
     /** Soreness at or above this: the next session should be armour, not a run. At or above painFlag: tell the coach. */
     sorenessSwap: number;
     painFlag: number;
+    /** Soreness at or above sorenessSwap in the heel or knee goes to the coach for these year groups (growth plates). */
+    growthYears: string[];
     /** Treadmill incline (%) that makes belt pace roughly match outdoor pace (Jones & Doust 1996). */
     treadmillInclinePct: number;
   };
@@ -405,6 +407,7 @@ export const DEFAULT_CONFIG: Config = {
     weeklyMinutesFlag: 240,
     sorenessSwap: 4,
     painFlag: 6,
+    growthYears: ['Y7', 'Y8', 'Y9', 'Y10'],
     treadmillInclinePct: 1,
   },
 

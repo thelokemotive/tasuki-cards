@@ -194,6 +194,8 @@ export type ParticipationType = 'circuit' | 'saturday_run' | 'freeze' | 'top_up'
 /** What a winter top-up session was. 'run' is outdoors; 'gym' is a coached gym session (e.g. Tuesday mornings). */
 export type TopUpActivity = 'run' | 'treadmill' | 'gym' | 'armour' | 'ski';
 
+export type SoreSpot = 'heel' | 'achilles' | 'calf' | 'shin' | 'knee' | 'hip' | 'foot' | 'other';
+
 /**
  * A winter top-up session (Winter Mode). Logged by the pupil through a school form or by the coach.
  * It never feeds a rating, a PB or a prediction: treadmills are not calibrated and the entry is self-reported.
@@ -208,6 +210,8 @@ export interface TopUp {
   proof?: 'photo' | 'coach' | 'link' | 'none';
   /** Soreness or pain afterwards, 0–10. */
   soreness?: number;
+  /** Where it is sore. Heel and knee matter most in growing pupils (Sever's, Osgood-Schlatter). */
+  soreWhere?: SoreSpot;
   note?: string;
 }
 

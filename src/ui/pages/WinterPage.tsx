@@ -10,7 +10,8 @@ import { displayName, fullName } from '../../engine/display';
 import { formatLongDate, isoWeek, isISODate } from '../../engine/dates';
 import { parseTopUps, topUpParticipation } from '../../engine/parse/topUps';
 import { YEAR_GROUPS } from '../../types';
-import { PaceLine, WeekStrip } from '../components/WinterPanel';
+import { PaceLine, SessionCard, WeekStrip } from '../components/WinterPanel';
+import { WINTER_SESSIONS } from '../../engine/winterSessions';
 import { pacePlan, winterHouseCup } from '../../engine/winter';
 import { formatTime } from '../../engine/format';
 
@@ -22,6 +23,7 @@ const FORM_QUESTIONS = [
   'Did you finish with race-pace surges or strides? (Yes / No)',
   'Photo of the treadmill screen or watch: the screen only, no people (file upload, optional)',
   'How sore afterwards? 0 = fine, 10 = very sore (rating 0–10)',
+  'Where is it sore? (choice: Nowhere / Heel / Achilles / Calf / Shin / Knee or below the kneecap / Foot / Hip / Other)',
 ];
 
 export function WinterPage() {
@@ -188,7 +190,7 @@ export function WinterPage() {
                             {w.thisWeek ? `${w.thisWeek.sessions}/${w.target}` : '—'}
                             {w.thisWeek?.sharp ? ' ⚡' : ''}
                           </td>
-                          <td className="small">
+                          <td className="small winter-next-cell">
                             {w.flags.length > 0 && <span title={w.flags.map((f) => f.message).join('\n')}>⚠ </span>}
                             {w.next}
                           </td>
@@ -231,6 +233,15 @@ export function WinterPage() {
                 </table>
               </div>
             )}
+          </Panel>
+
+          <Panel title="Session cards">
+            <p className="small muted">Six ready-made sessions. Each runner's page shows the one that fits their week, with their own treadmill speeds. Print these for the gym and the boarding houses.</p>
+            <div className="winter-sessions">
+              {WINTER_SESSIONS.map((s) => (
+                <SessionCard key={s.id} s={{ ...s, steps: s.steps.map((t) => t.replace('{race}', 'your surge speed').replace('{easy}', 'your easy speed')) }} />
+              ))}
+            </div>
           </Panel>
 
           {cup.length > 0 && (

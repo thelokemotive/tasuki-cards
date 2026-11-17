@@ -5,6 +5,7 @@ import { isoWeek } from './dates';
 import { makeLookup } from './perf';
 import { computeStreak } from './streak';
 import { computeWinter, pacePlan, phaseOfWeek, winterHouseCup, winterWeeks } from './winter';
+import { fillSession, suggestedSession, WINTER_SESSIONS } from './winterSessions';
 
 // Fictional runners. Winter 2026–27: Christmas holiday Mon 21 Dec 2026 – Sun 10 Jan 2027 (2026-W52, 2026-W53,
 // 2027-W01), then the snow season in term from Mon 11 Jan 2027.
@@ -86,6 +87,13 @@ describe('the Rule of 2', () => {
     expect(w.flame).toBe(1);
   });
 
+  it('counts sessions on separate days: two runs on one Sunday are one session', () => {
+    const w = winter([run('2026-12-27'), tread('2026-12-27'), armour('2026-12-27')], '2026-12-27');
+    expect(w.weeks[0]).toMatchObject({ runs: 1, sessions: 1, extra: 2, state: 'current' });
+    const ok = winter([run('2026-12-26'), run('2026-12-27')], '2026-12-27');
+    expect(ok.weeks[0].state).toBe('kept');
+  });
+
   it('marks a week sharp when a session had race-pace surges', () => {
     const w = winter([run('2026-12-22'), tread('2026-12-24', 25, { sharp: true })], '2026-12-27');
     expect(w.weeks[0].sharp).toBe(true);
@@ -149,6 +157,22 @@ describe('load and soreness nudges', () => {
     expect(w.next).toMatch(/up to 20 minutes/);
   });
 
+  it('one short jog in the fortnight before is still a break', () => {
+    const thin = winter([run('2026-12-08', 15), run('2026-12-21'), run('2026-12-22')], '2026-12-23');
+    expect(thin.flags.map((f) => f.kind)).toContain('return');
+    const regular = winter([run('2026-12-09'), run('2026-12-12'), run('2026-12-15'), run('2026-12-21')], '2026-12-23');
+    expect(regular.flags.map((f) => f.kind)).not.toContain('return');
+  });
+
+  it('heel or knee soreness in a growing pupil goes to the coach; the same in a sixth-former is an armour swap', () => {
+    const y8 = winter([run('2026-12-22', 25, { soreness: 4, soreWhere: 'heel' })], '2026-12-23', { ...AIKO, yearGroup: 'Y8' });
+    expect(y8.flags.find((f) => f.kind === 'growth')?.coach).toBe(true);
+    expect(suggestedSession(y8, false)).toBeUndefined();
+    const y12 = winter([run('2026-12-22', 25, { soreness: 4, soreWhere: 'knee' })], '2026-12-23', { ...AIKO, yearGroup: 'Y12' });
+    expect(y12.flags.map((f) => f.kind)).toContain('soreness');
+    expect(suggestedSession(y12, false)).toBe('sore');
+  });
+
   it('flags a big jump on the previous four weeks', () => {
     const parts = [run('2026-11-24', 30), run('2026-12-01', 30), run('2026-12-08', 30), run('2026-12-15', 30), run('2026-12-21', 50), run('2026-12-22', 50), run('2026-12-23', 50)];
     const w = winter(parts, '2026-12-23');
@@ -193,5 +217,24 @@ describe('House Frost Cup', () => {
       ['Peregrine', 1, 1],
       ['Kestrel', 1, 0],
     ]);
+  });
+});
+
+describe('session cards', () => {
+  it('suggests the session that fits the week', () => {
+    const regular = [run('2026-12-09'), run('2026-12-12'), run('2026-12-15')];
+    expect(suggestedSession(winter([...regular, run('2026-12-21')], '2026-12-23'), false)).toBe('sharp');
+    expect(suggestedSession(winter([...regular, run('2026-12-21', 25, { sharp: true })], '2026-12-23'), false)).toBe('easy');
+    expect(suggestedSession(winter(regular, '2026-12-16'), false)).toBeUndefined(); // not a winter week
+    expect(suggestedSession(winter([run('2026-12-22'), run('2026-12-24')], '2026-12-24'), false)).toBeUndefined(); // kept
+    const snowRegular = [run('2027-01-01'), run('2027-01-05'), run('2027-01-08')];
+    expect(suggestedSession(winter([...snowRegular, run('2027-01-12')], '2027-01-13'), false)).toBe('antidote');
+    expect(suggestedSession(winter(snowRegular, '2027-01-13'), false)).toBe('treadmill');
+  });
+
+  it('fills in the runner own treadmill speeds', () => {
+    const s = fillSession(WINTER_SESSIONS.find((x) => x.id === 'treadmill')!, 1200, cfg);
+    expect(s.steps.join(' ')).toContain('4 × 1 minute at 15.0 km/h');
+    expect(s.steps.join(' ')).toContain('12.0 km/h');
   });
 });
