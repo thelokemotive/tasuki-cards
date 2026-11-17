@@ -189,7 +189,27 @@ export interface Performance {
 }
 
 /** Circuit performances count as participation automatically (derived, not stored). */
-export type ParticipationType = 'circuit' | 'saturday_run' | 'freeze';
+export type ParticipationType = 'circuit' | 'saturday_run' | 'freeze' | 'top_up';
+
+/** What a winter top-up session was. 'run' is outdoors; 'gym' is a coached gym session (e.g. Tuesday mornings). */
+export type TopUpActivity = 'run' | 'treadmill' | 'gym' | 'armour' | 'ski';
+
+/**
+ * A winter top-up session (Winter Mode). Logged by the pupil through a school form or by the coach.
+ * It never feeds a rating, a PB or a prediction: treadmills are not calibrated and the entry is self-reported.
+ */
+export interface TopUp {
+  activity: TopUpActivity;
+  minutes: number;
+  km?: number;
+  /** Surges or strides at spring race pace were done in this session. */
+  sharp?: boolean;
+  /** 'photo': a photo of the treadmill or watch screen came with the form; 'coach': the coach saw it. */
+  proof?: 'photo' | 'coach' | 'link' | 'none';
+  /** Soreness or pain afterwards, 0–10. */
+  soreness?: number;
+  note?: string;
+}
 
 export interface Participation {
   id: string;
@@ -197,7 +217,18 @@ export interface Participation {
   isoWeek: ISOWeek;
   type: ParticipationType;
   date: ISODate;
+  /** Set when type is 'top_up'. */
+  topUp?: TopUp;
   demo?: boolean;
+}
+
+/** A stretch of the winter: school holidays (no school runs) or the snow season (skiing, gym). */
+export interface WinterPhase {
+  id: string;
+  name: string;
+  start: ISODate;
+  end: ISODate;
+  kind: 'holiday' | 'snow';
 }
 
 export interface HalfTerm {
@@ -212,6 +243,8 @@ export interface Calendar {
   holidayWeeks: ISOWeek[];
   /** One streak freeze allowed per half-term. */
   halfTerms: HalfTerm[];
+  /** Winter Mode: the weeks in which top-up sessions keep the streak alive. Empty or absent: off. */
+  winter?: WinterPhase[];
 }
 
 export interface ManualAchievement {

@@ -12,6 +12,7 @@ import { computeCourseRecords, computeInForm, computePersonalBests } from './pbs
 import { badgeRow, computeBadges } from './badges';
 import { computeAvatarUnlocks, type AvatarUnlocks } from './avatarUnlocks';
 import { predictFiveK, type Prediction } from './predict';
+import { computeWinter, type WinterSummary } from './winter';
 
 /** Badges shown on the card's badge row (spec 5: "badge row (up to 5 icons)"). */
 export const CARD_BADGE_ROW = 5;
@@ -36,6 +37,8 @@ export interface AthleteDerived {
   avatarUnlocks: AvatarUnlocks;
   /** Next-5K prediction and targets; undefined with no usable timed result. */
   prediction?: Prediction;
+  /** Winter Mode weeks, flame and nudges; undefined when no winter phase is set. */
+  winter?: WinterSummary;
 }
 
 export interface Derived {
@@ -80,7 +83,11 @@ export function deriveAll(snapshot: DataSnapshot, asOf: ISODate, configOverride?
 
   const base = snapshot.athletes.map((athlete) => {
     const own = perfsBy.get(athlete.id) ?? [];
-    const streak = computeStreak({ athleteId: athlete.id, perfs: own, participation: partBy.get(athlete.id) ?? [], calendar, config, asOf, lookup });
+    const parts = partBy.get(athlete.id) ?? [];
+    const winter = computeWinter({ athlete, perfs: own, participation: parts, calendar, config, asOf });
+    const winterKept = winter && config.winter.countsTowardStreak ? new Set(winter.weeks.filter((w) => w.state === 'kept').map((w) => w.week)) : undefined;
+    const winterRest = winter && config.winter.countsTowardStreak ? new Set(winter.weeks.filter((w) => w.state === 'rest').map((w) => w.week)) : undefined;
+    const streak = computeStreak({ athleteId: athlete.id, perfs: own, participation: parts, calendar, config, asOf, lookup, winterKept, winterRest });
     const ratings = computeAthleteRatings({
       athlete,
       perfs: own,
@@ -89,7 +96,7 @@ export function deriveAll(snapshot: DataSnapshot, asOf: ISODate, configOverride?
       asOf,
       streakActiveOrFrozen: streak.status === 'active' || streak.status === 'frozen',
     });
-    return { athlete, own, streak, ratings };
+    return { athlete, own, streak, ratings, winter };
   });
 
   const surges = computeSurges({ perfs: perfs.filter((p) => p.date <= asOf), lookup, config });
@@ -97,7 +104,7 @@ export function deriveAll(snapshot: DataSnapshot, asOf: ISODate, configOverride?
   const courseRecords = computeCourseRecords({ athletes: snapshot.athletes, perfs, lookup, config, asOf });
 
   const athletes = new Map<string, AthleteDerived>();
-  for (const { athlete, own, streak, ratings } of base) {
+  for (const { athlete, own, streak, ratings, winter } of base) {
     const upToDate = own.filter((p) => p.date <= asOf);
     const { current, history } = computePersonalBests(upToDate, lookup);
     const inForm = computeInForm({ athleteId: athlete.id, perfs: own, perfScores: ratings.perfScores, lookup, config, asOf });
@@ -116,6 +123,7 @@ export function deriveAll(snapshot: DataSnapshot, asOf: ISODate, configOverride?
       surges: mySurges,
       avatarUnlocks: computeAvatarUnlocks(ratings, streak, mySurges, config),
       prediction: predictFiveK(athlete, own, lookup, config, asOf),
+      winter,
     });
   }
 

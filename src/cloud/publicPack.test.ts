@@ -56,4 +56,23 @@ describe('the view-only copy for pupils', () => {
     }
     expect(pub.derived.lookup.courses.size).toBe(derived.lookup.courses.size);
   });
+
+  it('winter top-ups go out without soreness, notes or pain flags', () => {
+    const a = snap.athletes[0];
+    const s3 = {
+      ...snap,
+      calendar: { ...snap.calendar, winter: [{ id: 'w', name: 'Autumn top-up', start: '2026-11-09', end: '2026-11-15', kind: 'holiday' as const }] },
+      participation: [
+        ...snap.participation,
+        { id: 'tu1', athleteId: a.id, isoWeek: '2026-W46', type: 'top_up' as const, date: '2026-11-12', topUp: { activity: 'run' as const, minutes: 25, soreness: 7, note: 'knee hurts on stairs' } },
+      ],
+    };
+    const d3 = deriveAll(s3, '2026-11-13', DEFAULT_CONFIG);
+    expect(d3.athletes.get(a.id)?.winter?.flags.some((f) => f.kind === 'pain')).toBe(true);
+    const j = makePublicPack(s3, d3);
+    expect(j).not.toContain('knee hurts');
+    expect(j).not.toContain('"soreness"');
+    expect(j).not.toMatch(/Soreness \d/);
+    expect(readPublicPack(j).snapshot.participation.find((p) => p.id === 'tu1')?.topUp?.minutes).toBe(25);
+  });
 });

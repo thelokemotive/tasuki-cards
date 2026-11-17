@@ -24,6 +24,7 @@ import { ExplainModal, StudentSheet } from '../components/StatExplain';
 import { DevelopmentFocus, StatRadar, SummitLadder } from '../components/Mountain';
 import { NextFiveK } from '../components/NextFiveK';
 import { GldPanel } from '../components/GldPanel';
+import { WinterPanel } from '../components/WinterPanel';
 import { Placings } from '../components/Placings';
 import { paceOf } from '../../engine/explain';
 import { formatPace } from '../../engine/format';
@@ -123,6 +124,11 @@ export function AthletePage() {
         <Panel>
           <StudentSheet d={d} />
         </Panel>
+        {d.winter && (
+          <Panel title="Winter Mode">
+            <WinterPanel d={d} config={derived.config} coach={false} />
+          </Panel>
+        )}
       </div>
     );
   }
@@ -279,6 +285,12 @@ export function AthletePage() {
           <DevelopmentFocus d={d} config={derived.config} />
         </Panel>
       </div>
+
+      {d.winter && (
+        <Panel title="Winter Mode">
+          <WinterPanel d={d} config={derived.config} coach />
+        </Panel>
+      )}
 
       <div className="grid-2">
         <Panel title={`Streak: ${d.streak.currentStreak} week${d.streak.currentStreak === 1 ? '' : 's'} (best ${d.streak.bestStreak})`} actions={<button className="btn btn-sm" onClick={() => setFreezeOpen(true)}>Apply freeze…</button>}>

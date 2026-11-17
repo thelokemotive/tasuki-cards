@@ -11,6 +11,7 @@ export * from './format';
 export * from './scoring';
 export * from './stats';
 export * from './streak';
+export * from './winter';
 export * from './surge';
 export * from './pbs';
 export * from './badges';

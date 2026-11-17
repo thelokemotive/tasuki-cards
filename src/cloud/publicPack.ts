@@ -4,9 +4,11 @@
 // - nothing identifying for runners whose family opted out ("Hidden runner", no card)
 // - names as each runner's display setting shows them (full, first name + initial, or alias); no aliases
 // - no dates of birth, no coach notes, no raw pasted text, no correction history
+// - no winter soreness, pain flags or session notes (health information stays with the coach)
 // - ratings computed by the coach from the full data (so they match the printed cards), with every age
 //   rounded down to whole years.
-import type { Athlete, DataSnapshot, Performance } from '../types';
+import type { Athlete, DataSnapshot, Participation, Performance } from '../types';
+import type { WinterSummary } from '../engine/winter';
 import type { AthleteDerived, Derived } from '../engine/derive';
 import { displayName } from '../engine/display';
 
@@ -32,19 +34,33 @@ function publicPerf(p: Performance): Performance {
  * whole years, and the figures worked out from the exact age (the standard time and the age grade behind a
  * score, and the working of the 5 km prediction) are rounded so the age cannot be worked back from them.
  */
+/** Winter top-ups without soreness or notes: how a pupil feels is health information, for the coach only. */
+function publicParticipation(p: Participation): Participation {
+  if (!p.topUp) return p;
+  const { soreness: _s, note: _n, ...topUp } = p.topUp;
+  return { ...p, topUp };
+}
+
+/** Winter summary without the soreness and pain nudges (and a next step that might mention them). */
+function publicWinter(w: WinterSummary | undefined): WinterSummary | undefined {
+  if (!w) return w;
+  const health = w.flags.some((f) => f.kind === 'soreness' || f.kind === 'pain' || f.kind === 'volume');
+  return { ...w, flags: w.flags.filter((f) => f.kind === 'return' || f.kind === 'spike'), next: health ? '' : w.next };
+}
+
 export function makePublicPack(snapshot: DataSnapshot, derived: Derived): string {
   const keep = new Set(snapshot.athletes.filter((a) => !a.hiddenOnline).map((a) => a.id));
   const athletes = new Map<string, AthleteDerived>();
   for (const [id, d] of derived.athletes) {
     if (!keep.has(id)) continue;
-    athletes.set(id, { ...d, athlete: publicAthlete(d.athlete), perfs: d.perfs.filter((p) => !p.deleted).map(publicPerf) });
+    athletes.set(id, { ...d, athlete: publicAthlete(d.athlete), perfs: d.perfs.filter((p) => !p.deleted).map(publicPerf), winter: publicWinter(d.winter) });
   }
   const pub: PublicData = {
     snapshot: {
       ...snapshot,
       athletes: snapshot.athletes.filter((a) => keep.has(a.id)).map(publicAthlete),
       performances: snapshot.performances.filter((p) => keep.has(p.athleteId) && !p.deleted).map(publicPerf),
-      participation: snapshot.participation.filter((p) => keep.has(p.athleteId)),
+      participation: snapshot.participation.filter((p) => keep.has(p.athleteId)).map(publicParticipation),
       achievements: snapshot.achievements.filter((x) => keep.has(x.athleteId)),
       meta: { coachName: snapshot.meta.coachName },
     },

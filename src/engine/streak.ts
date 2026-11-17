@@ -37,6 +37,10 @@ export function computeStreak(input: {
   config: Config;
   asOf: ISODate;
   lookup: Lookup;
+  /** Winter Mode weeks kept (src/engine/winter.ts): each counts as a streak week, holiday or not. */
+  winterKept?: Set<ISOWeek>;
+  /** Winter Mode rest weeks (a rest pass or a coach rest): held like a freeze, using none of the half-term allowance. */
+  winterRest?: Set<ISOWeek>;
 }): StreakResult {
   const { athleteId, calendar, config, asOf, lookup } = input;
   const currentWeek = isoWeek(asOf);
@@ -49,6 +53,7 @@ export function computeStreak(input: {
     if (isCircuitPerf(p, lookup)) activeWeeks.add(isoWeek(p.date));
     if (p.kind === 'parkrun' || p.kind === 'long_run') bonusWeeks.add(isoWeek(p.date));
   }
+  const winterKept = new Set([...(input.winterKept ?? [])].filter((w) => w <= currentWeek));
   const freezeWeeks = new Set<ISOWeek>();
   for (const q of input.participation) {
     if (q.athleteId !== athleteId) continue;
@@ -57,7 +62,7 @@ export function computeStreak(input: {
     if (q.type === 'freeze' && q.isoWeek <= currentWeek) freezeWeeks.add(q.isoWeek);
   }
 
-  const relevant = [...activeWeeks, ...freezeWeeks, ...[...bonusWeeks].filter((w) => holidays.has(w))].filter((w) => w <= currentWeek);
+  const relevant = [...activeWeeks, ...winterKept, ...freezeWeeks, ...[...bonusWeeks].filter((w) => holidays.has(w))].filter((w) => w <= currentWeek);
   if (relevant.length === 0) {
     return { athleteId, currentStreak: 0, bestStreak: 0, status: 'none', holidayBonusFlames: 0, weeks: [] };
   }
@@ -66,8 +71,10 @@ export function computeStreak(input: {
   const freezesUsed = new Map<string, number>();
   const weeks: StreakWeek[] = weeksInRange(first, currentWeek).map((week) => {
     let state: StreakWeekState;
-    if (holidays.has(week)) state = 'holiday';
+    if (winterKept.has(week)) state = 'counted';
+    else if (holidays.has(week)) state = 'holiday';
     else if (activeWeeks.has(week)) state = 'counted';
+    else if (input.winterRest?.has(week)) state = 'frozen';
     else if (freezeWeeks.has(week) && takeFreeze(week)) state = 'frozen';
     else state = week === currentWeek ? 'current' : 'missed';
     return { week, state, holidayBonus: state === 'holiday' && bonusWeeks.has(week) };
