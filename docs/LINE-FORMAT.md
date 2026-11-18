@@ -32,7 +32,7 @@ Coach Example 9:45:00
 
 | Header | Fields |
 |---|---|
-| `# event: <name> \| <date> \| <kind> \| …` | kind is one of `race`, `relay_leg` (or `relay`), `parkrun`, `long_run`, `circuit`, `climb`, `descent`, `nav`. Optional fields: `<n> km` (distance), `climb <n> m`, `place <p>/<n>` (place and field size), `field <n>` (field size), `course <course name>`, `unofficial`. |
+| `# event: <name> \| <date> \| <kind> \| …` | kind is one of `race`, `relay_leg` (or `relay`), `parkrun`, `long_run`, `circuit`, `climb`, `descent`, `nav`, `treadmill`. Optional fields: `<n> km` (distance), `climb <n> m`, `place <p>/<n>` (place and field size), `field <n>` (field size), `course <course name>`, `unofficial`. |
 | `# test: bleep \| <date>` | 20 m shuttle run; result lines give laps. |
 | `# test: arm \| <date>` | ARM (Armour) tests; result lines give ankle / calf / stork / hop. |
 | `# test: nav \| <date> \| course <course name> \| <n> km` | Navigation test; `<n> km` is the effective route distance. |

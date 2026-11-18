@@ -1,5 +1,5 @@
 // Top-bar account chip on the website: who is signed in, sign out, and (head coach only) the coach list.
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useToast } from '../components/Toast';
 import { OWNER_EMAIL, parseCoachEmails, useAccount } from './account';
 
@@ -8,6 +8,11 @@ export function AccountMenu() {
   const toast = useToast();
   const [open, setOpen] = useState(false);
   const [text, setText] = useState('');
+  const [logs, setLogs] = useState<boolean | null>(null);
+  const tm = account?.isOwner ? account.treadmill : undefined;
+  useEffect(() => {
+    if (open && tm) tm.isOpen().then(setLogs, () => setLogs(null));
+  }, [open, tm]);
   if (!account) return null;
   const { rejected, emails } = parseCoachEmails(text);
   return (
@@ -41,6 +46,25 @@ export function AccountMenu() {
                 />
                 Pupil view open (everyone at school can see cards and boards)
               </label>
+              {tm && logs != null && (
+                <label className="acct-label acct-toggle">
+                  <input
+                    type="checkbox"
+                    checked={logs}
+                    onChange={(e) => {
+                      const on = e.target.checked;
+                      tm.setOpen(on).then(
+                        () => {
+                          setLogs(on);
+                          toast(on ? 'Treadmill logging open' : 'Treadmill logging closed', 'ok');
+                        },
+                        (err) => toast(`Could not change: ${err instanceof Error ? err.message : err}`, 'err'),
+                      );
+                    }}
+                  />
+                  Treadmill logging open (pupils send runs with a photo of the console, for you to approve)
+                </label>
+              )}
               <label className="acct-label" htmlFor="coach-list">
                 Other coaches (one school email per line)
               </label>
