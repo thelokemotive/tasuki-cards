@@ -111,6 +111,11 @@ export interface OvrValue {
   evidence?: 'estimate' | 'building' | 'proven';
   /** Separate results behind the unlocked stats, in total. */
   results?: number;
+  /**
+   * With ovr.newStatNeverCosts: the stats in the OVR, when a new stat (fewer than ovr.newStatResults results)
+   * was left out because counting it would have lowered the OVR.
+   */
+  counted?: StatKey[];
 }
 
 export interface AthleteRatings {
@@ -198,7 +203,7 @@ export interface SurgeResult {
   noBaseline: boolean;
 }
 
-export type BadgeKind = 'caps' | 'parkrun' | 'distance' | 'mountain' | 'streak' | 'arm' | 'surge' | 'record' | 'expedition' | 'custom';
+export type BadgeKind = 'caps' | 'parkrun' | 'distance' | 'mountain' | 'streak' | 'arm' | 'surge' | 'record' | 'expedition' | 'custom' | 'treadmill';
 
 export interface Badge {
   /** Stable key, e.g. 'streak-8', 'distance-10k', 'record:<courseId>:F:Y9-11'. */

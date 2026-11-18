@@ -2,7 +2,7 @@
 // — the only way pages change data. Every commit autosaves through the Store.
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { DataSnapshot, ISODate } from '../../types';
-import { currentConfig, DEFAULT_CONFIG, evidenceMigration, goLiveMigration, type Config } from '../../engine/config';
+import { currentConfig, DEFAULT_CONFIG, engagementMigration, evidenceMigration, goLiveMigration, type Config } from '../../engine/config';
 import { yearRollover } from '../../engine/display';
 import { todayTokyo } from '../../engine/dates';
 import { deriveAll, type Derived } from '../../engine/derive';
@@ -57,7 +57,9 @@ export function withSeed(s: DataSnapshot, now: string = new Date().toISOString()
   else {
     const goLive = goLiveMigration(s.configs, now);
     const evidence = evidenceMigration(goLive ? [...s.configs, goLive] : s.configs, now);
-    const added = [goLive, evidence].filter((c): c is Config => !!c);
+    const sofar = [...s.configs, goLive, evidence].filter((c): c is Config => !!c);
+    const engagement = engagementMigration(sofar, now);
+    const added = [goLive, evidence, engagement].filter((c): c is Config => !!c);
     if (added.length) changes.put!.configs = added;
   }
   if (s.courses.length === 0) changes.put!.courses = seedCourses();

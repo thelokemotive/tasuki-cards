@@ -92,10 +92,11 @@ const EVENT_KIND: Record<PerfKind, EventKind> = {
   nav: 'test',
   bleep: 'test',
   arm: 'test',
+  treadmill: 'session',
 };
 
 const COURSE_KINDS: PerfKind[] = ['circuit', 'climb', 'descent', 'nav'];
-const TIMED: PerfKind[] = ['race', 'relay_leg', 'parkrun', 'long_run', 'circuit', 'climb', 'descent', 'nav'];
+const TIMED: PerfKind[] = ['race', 'relay_leg', 'parkrun', 'long_run', 'circuit', 'climb', 'descent', 'nav', 'treadmill'];
 
 const sameName = (a: string, b: string) => normaliseName(a) === normaliseName(b);
 

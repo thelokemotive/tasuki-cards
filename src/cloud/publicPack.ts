@@ -21,7 +21,7 @@ export const HIDDEN_NAME = 'Hidden runner';
 
 function publicAthlete(a: Athlete): Athlete {
   const name = a.hiddenOnline ? HIDDEN_NAME : displayName(a);
-  return { ...a, givenName: name, familyName: '', preferredName: name, displayMode: 'full', publicAlias: undefined, aliases: [], dob: undefined, notes: undefined };
+  return { ...a, givenName: name, familyName: '', preferredName: name, displayMode: 'full', publicAlias: undefined, aliases: [], dob: undefined, notes: undefined, schoolAccounts: undefined };
 }
 
 function publicPerf(p: Performance): Performance {

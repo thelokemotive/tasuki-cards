@@ -58,6 +58,11 @@ export interface Athlete {
   squad?: boolean;
   /** Family opted out of the website's pupil view: shown there only as "Hidden runner", with no card. */
   hiddenOnline?: boolean;
+  /**
+   * Coach-only: school sign-ins that have sent this runner's treadmill logs and been approved, so a log from
+   * a different account for this card is flagged. Never published.
+   */
+  schoolAccounts?: string[];
   house?: string;
   avatar: Avatar;
   active: boolean;
@@ -121,8 +126,10 @@ export type PerfKind =
   | 'descent'
   | 'bleep'
   | 'nav'
-  | 'arm';
-export const PERF_KINDS: PerfKind[] = ['race', 'relay_leg', 'parkrun', 'long_run', 'circuit', 'climb', 'descent', 'bleep', 'nav', 'arm'];
+  | 'arm'
+  /** A session on a school treadmill, logged by the pupil from a photo of the console. Habit, not ratings. */
+  | 'treadmill';
+export const PERF_KINDS: PerfKind[] = ['race', 'relay_leg', 'parkrun', 'long_run', 'circuit', 'climb', 'descent', 'bleep', 'nav', 'arm', 'treadmill'];
 
 export type PerfSource = 'coach' | 'paste' | 'voice' | 'form';
 
@@ -175,6 +182,10 @@ export interface Performance {
   arm?: ArmMeasures;
   // descent
   cleanRun?: boolean;
+  // treadmill (climbM is worked out from the incline: distance × incline)
+  inclinePct?: number;
+  /** How hard it felt, 1 (very easy) to 10 (flat out): the pupil's own word, never a heart rate. */
+  effort?: number;
   /** Coach entry defaults true; student-reported defaults false until the coach ticks it. */
   verified: boolean;
   source: PerfSource;

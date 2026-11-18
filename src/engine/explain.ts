@@ -49,7 +49,7 @@ export interface StatExplanation {
 }
 
 const STAT_LONG: Record<RatingKey, string> = { RACE: 'RACE', SPD: 'SPD (speed)', END: 'END (endurance)', CLB: 'CLB (climbing)', DSC: 'DSC (descending)', NAV: 'NAV (navigation)', ARM: 'ARM (armour)' };
-const KIND_WORD: Record<string, string> = { race: 'race', relay_leg: 'relay leg', parkrun: 'parkrun', long_run: 'long run', circuit: 'Circuit run', climb: 'climb', descent: 'descent', nav: 'nav course', bleep: 'bleep test', arm: 'ARM test' };
+const KIND_WORD: Record<string, string> = { race: 'race', relay_leg: 'relay leg', parkrun: 'parkrun', long_run: 'long run', treadmill: 'treadmill run', circuit: 'Circuit run', climb: 'climb', descent: 'descent', nav: 'nav course', bleep: 'bleep test', arm: 'ARM test' };
 
 const km = (x: number) => `${Number(x.toFixed(2))} km`;
 const pct = (x: number) => `${(x * 100).toFixed(1)}%`;
@@ -79,7 +79,7 @@ function noun(sex: Sex, age: number): string {
 
 function placeOf(ctx: PerfContext): string {
   const k = ctx.perf.kind;
-  if (k === 'race' || k === 'relay_leg' || k === 'parkrun' || k === 'long_run') return ctx.event?.name ?? ctx.course?.name ?? KIND_WORD[k];
+  if (k === 'race' || k === 'relay_leg' || k === 'parkrun' || k === 'long_run' || k === 'treadmill') return ctx.event?.name ?? ctx.course?.name ?? KIND_WORD[k];
   if (k === 'bleep') return 'the bleep test';
   if (k === 'arm') return 'the ARM test';
   return ctx.course?.name ?? ctx.event?.name ?? KIND_WORD[k] ?? k;
@@ -327,16 +327,22 @@ export function explainOvr(d: AthleteDerived, config: Config): string[] {
   else if (r.ovr.proven == null || r.ovr.average == null) out.push(`OVR = the average of the ${unlocked.length} unlocked stats: (${unlocked.map((k) => r.stats[k].value).join(' + ')}) ÷ ${unlocked.length} = ${num1(unlocked.reduce((s, k) => s + (r.stats[k].value ?? 0), 0) / unlocked.length)} → ${r.ovr.value}. Locked stats do not count against it.`);
   else {
     const ev = config.ovr.evidence;
-    const n = unlocked.reduce((s, k) => s + (r.stats[k].evidence?.weight ?? 1), 0);
+    const inAvg = r.ovr.counted ?? unlocked;
+    const left = unlocked.filter((k) => !inAvg.includes(k));
+    const n = inAvg.reduce((s, k) => s + (r.stats[k].evidence?.weight ?? 1), 0);
     const pct = Math.round(r.ovr.proven * 100);
     out.push(
-      `OVR is a proven rating: it counts each unlocked stat by how much evidence is behind it. ${unlocked
+      `OVR is a proven rating: it counts each stat by how much evidence is behind it. ${inAvg
         .map((k) => {
           const e = r.stats[k].evidence;
           return `${k} ${r.stats[k].value} (${e ? `${e.results} result${e.results === 1 ? '' : 's'}${Math.abs(e.weight - e.results) > 1e-9 ? `, counting as ${num1(e.weight)}` : ''}` : '1 result'})`;
         })
         .join(', ')}. Averaged with the better-evidenced stats counting for more: ${num1(r.ovr.average)}.`,
     );
+    if (left.length)
+      out.push(
+        `${left.map((k) => `${k} ${r.stats[k].value}`).join(' and ')} ${left.length === 1 ? 'is new' : 'are new'} (fewer than ${config.ovr.newStatResults} results) and not in the OVR yet: counting ${left.length === 1 ? 'it' : 'them'} now would lower it. A new stat never costs OVR points: it joins as soon as it would lift the OVR, and for good once it has ${config.ovr.newStatResults} results.`,
+      );
     out.push(
       `One result is a first estimate, not a proven level, so the OVR starts from ${ev.priorScore} (an untrained pupil of the same age) and moves towards that average as results come in: with ${num1(n)} result${Math.abs(n - 1) < 1e-9 ? '' : 's'} counted it is ${pct}% proven (${num1(n)} ÷ (${num1(n)} + ${ev.ovrHalfResults})). OVR = ${ev.priorScore} + ${pct}% × (${num1(r.ovr.average)} − ${ev.priorScore}) = ${r.ovr.value}.`,
     );

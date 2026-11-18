@@ -7,6 +7,7 @@ import { DataProvider, useData } from './data/DataContext';
 import { ToastProvider, useToast } from './components/Toast';
 import { Link, navigate, useRoute, type Route } from './router';
 import { ViewerHome } from './cloud/ViewerHome';
+import { LogRunPage } from './cloud/LogRunPage';
 import { backupOverdueDays, exportEverything } from './data/backup';
 import { formatLongDate } from '../engine/dates';
 import { BrandMark } from './components/BrandMark';
@@ -73,6 +74,7 @@ const TITLES: Record<string, string> = {
 // Everyone at school who is not a coach: view only (their card and sheet, the boards, the projector).
 const VIEWER_NAV: NavItem[] = [
   { page: 'home', to: '/', label: 'Cards', icon: '▣' },
+  { page: 'log', to: '/log', label: 'Log a run', icon: '📷' },
   { page: 'boards', to: '/boards', label: 'Boards', icon: '≡' },
 ];
 
@@ -83,6 +85,7 @@ function ToShare({ id }: { id: string }) {
 
 function renderViewerPage(route: Route): ReactNode {
   if (route.page === 'boards') return <BoardsPage />;
+  if (route.page === 'log') return <LogRunPage />;
   if (route.page === 'athlete' && route.params[0]) return route.params[1] === 'share' ? <AthletePage /> : <ToShare id={route.params[0]} />;
   return <ViewerHome />;
 }

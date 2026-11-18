@@ -12,6 +12,9 @@ import { displayName } from '../../engine/display';
 import { STAT_NAMES } from '../cards/cardData';
 import { DevelopmentFocus, StatRadar, SummitLadder } from './Mountain';
 import { NextFiveK } from './NextFiveK';
+import { MyWeek } from '../treadmill/MyWeek';
+import { useAccount } from '../cloud/account';
+import { navigate } from '../router';
 
 const STATUS_PILL: Record<ConsideredStatus, string> = {
   used: 'pill-ok',
@@ -121,7 +124,8 @@ export function ExplainModal({ d, stat, onClose }: { d: AthleteDerived; stat: Ra
 
 /** Student-readable sheet: every rating explained, display name only, no DOB, nothing coach-only. */
 export function StudentSheet({ d }: { d: AthleteDerived }) {
-  const { derived } = useData();
+  const { derived, snapshot } = useData();
+  const viewer = useAccount()?.viewer ?? false;
   const all = explainAll(d, derived.config, derived.lookup, { audience: 'student' });
   const ovr = explainOvr(d, derived.config);
   const name = displayName(d.athlete);
@@ -140,6 +144,10 @@ export function StudentSheet({ d }: { d: AthleteDerived }) {
         As of {formatLongDate(derived.asOf)}. Every number comes from your verified results; ages are in whole years. Results that did not count are listed with the reason.
       </p>
       <section className="student-stat student-first">
+        <h2>This week</h2>
+        <MyWeek d={d} config={derived.config} calendar={snapshot.calendar} asOf={derived.asOf} onLog={viewer ? () => navigate('/log') : undefined} />
+      </section>
+      <section className="student-stat">
         <h2>Your next 5K</h2>
         <NextFiveK d={d} config={derived.config} student />
       </section>

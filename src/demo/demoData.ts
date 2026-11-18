@@ -574,6 +574,23 @@ export function buildDemoData(today: ISODate): DemoData {
     }
   }
 
+  // ---- treadmill sessions logged from console photos (fixed numbers: no draws, so nothing above changes) --
+  {
+    const tread: [string, string, number, number, number, number, boolean][] = [
+      // given, family, days ago, km, seconds, incline %, verified
+      ['Hana', 'Mockridge', 26, 4, 1500, 1, true],
+      ['Hana', 'Mockridge', 12, 5, 1830, 1, true],
+      ['Hana', 'Mockridge', 2, 3, 1080, 2, false],
+      ['Nanami', 'Imaginary', 9, 6, 2160, 0.5, true],
+      ['Nanami', 'Imaginary', 3, 6.5, 2300, 0.5, true],
+    ];
+    for (const [given, family, ago, km, sec, inc, ok] of tread) {
+      const r = by(given, family);
+      const date = addDays(today, -ago);
+      addPerf(r, { date, kind: 'treadmill', distanceKm: km, timeSec: sec, climbM: Math.round(km * 10 * inc), inclinePct: inc, effort: 6, verified: ok, source: 'form', rawInput: `Demo treadmill ${km.toFixed(3)} km in ${formatTime(sec)} at ${inc.toFixed(1)}%; read from a photo by ${r.name}` });
+    }
+  }
+
   // ---- achievements --------------------------------------------------------------------------------
   const expDate = addMonths(today, -4);
   const achievements: ManualAchievement[] = [kai, by('Nanami', 'Imaginary'), by('Haruto', 'Testington'), by('Chloe', 'Makebelieve'), coachEx].map((r, i) => ({
