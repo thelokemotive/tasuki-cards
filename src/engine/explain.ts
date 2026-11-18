@@ -49,7 +49,7 @@ export interface StatExplanation {
 }
 
 const STAT_LONG: Record<RatingKey, string> = { RACE: 'RACE', SPD: 'SPD (speed)', END: 'END (endurance)', CLB: 'CLB (climbing)', DSC: 'DSC (descending)', NAV: 'NAV (navigation)', ARM: 'ARM (armour)' };
-const KIND_WORD: Record<string, string> = { race: 'race', relay_leg: 'relay leg', parkrun: 'parkrun', long_run: 'long run', circuit: 'Circuit run', climb: 'climb', descent: 'descent', nav: 'nav course', bleep: 'bleep test', arm: 'ARM test' };
+const KIND_WORD: Record<string, string> = { race: 'race', relay_leg: 'relay leg', parkrun: 'parkrun', long_run: 'long run', treadmill: 'treadmill run', circuit: 'Circuit run', climb: 'climb', descent: 'descent', nav: 'nav course', bleep: 'bleep test', arm: 'ARM test' };
 
 const km = (x: number) => `${Number(x.toFixed(2))} km`;
 const pct = (x: number) => `${(x * 100).toFixed(1)}%`;
@@ -79,7 +79,7 @@ function noun(sex: Sex, age: number): string {
 
 function placeOf(ctx: PerfContext): string {
   const k = ctx.perf.kind;
-  if (k === 'race' || k === 'relay_leg' || k === 'parkrun' || k === 'long_run') return ctx.event?.name ?? ctx.course?.name ?? KIND_WORD[k];
+  if (k === 'race' || k === 'relay_leg' || k === 'parkrun' || k === 'long_run' || k === 'treadmill') return ctx.event?.name ?? ctx.course?.name ?? KIND_WORD[k];
   if (k === 'bleep') return 'the bleep test';
   if (k === 'arm') return 'the ARM test';
   return ctx.course?.name ?? ctx.event?.name ?? KIND_WORD[k] ?? k;

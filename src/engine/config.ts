@@ -205,6 +205,11 @@ export interface Config {
   };
 
   treadmill: {
+    /**
+     * A verified treadmill run at least end.longRunMinKmEff of effort (distance + incline as climb) feeds END,
+     * age-graded like a long run. Shorter sessions keep the streak and count for the km club only.
+     */
+    feedsEnd: boolean;
     /** Treadmill km club badges: total verified treadmill km. */
     kmMilestones: number[];
     /** A log is flagged (not refused) outside these. */
@@ -383,7 +388,7 @@ export const DEFAULT_CONFIG: Config = {
 
   streak: { milestones: [4, 8, 12, 20], freezesPerHalfTerm: 1, treadmillCounts: true },
 
-  treadmill: { kmMilestones: [10, 25, 50, 100, 200], minKm: 1, maxSpeedKmh: 22, maxInclinePct: 15, maxDaysOld: 14 },
+  treadmill: { feedsEnd: true, kmMilestones: [10, 25, 50, 100, 200], minKm: 1, maxSpeedKmh: 22, maxInclinePct: 15, maxDaysOld: 14 },
 
   surge: {
     exponent: 1.1,
@@ -499,7 +504,7 @@ function legacyRules(c: Partial<Config>): Partial<Config> {
   // Versions from before the engagement rules (Nov 2026) are read with them off, likewise.
   const engaged: Partial<Config> =
     c.ovr && c.ovr.newStatNeverCosts === undefined
-      ? { ...c, ovr: { ...c.ovr, newStatNeverCosts: false }, streak: { ...(c.streak as Config['streak']), treadmillCounts: c.streak?.treadmillCounts ?? false } }
+      ? { ...c, ovr: { ...c.ovr, newStatNeverCosts: false }, streak: { ...(c.streak as Config['streak']), treadmillCounts: c.streak?.treadmillCounts ?? false }, treadmill: { ...DEFAULT_CONFIG.treadmill, ...c.treadmill, feedsEnd: c.treadmill?.feedsEnd ?? false } }
       : c;
   if (engaged.ovr?.evidence && engaged.ageGrade?.subMile) return engaged;
   return {
@@ -511,19 +516,20 @@ function legacyRules(c: Partial<Config>): Partial<Config> {
 
 /** Marks the version that brought in "a new stat never lowers OVR" and treadmill sessions in streaks. */
 export const ENGAGEMENT_MIGRATION = 'engagement-2026-11';
-export const ENGAGEMENT_NOTE = 'A new stat never lowers OVR; treadmill sessions keep the weekly streak';
+export const ENGAGEMENT_NOTE = 'A new stat never lowers OVR; treadmill sessions keep the weekly streak, and long ones feed END';
 
 /** One-off, as evidenceMigration: switches both rules on in a new version, once, for a store made before them. */
 export function engagementMigration(configs: Config[] | undefined, createdAt: string): Config | undefined {
   if (!configs || configs.length === 0) return undefined;
   if (configs.some((c) => c.migration === ENGAGEMENT_MIGRATION)) return undefined;
-  const on = (c: Config) => c.ovr.newStatNeverCosts && c.streak.treadmillCounts;
+  const on = (c: Config) => c.ovr.newStatNeverCosts && c.streak.treadmillCounts && c.treadmill.feedsEnd;
   const first = withDefaults(configs.reduce((a, b) => (b.version < a.version ? b : a)));
   const cur = currentConfig(configs);
   if (on(first) || on(cur)) return undefined;
   const draft = cloneConfig(cur);
   draft.ovr.newStatNeverCosts = true;
   draft.streak.treadmillCounts = true;
+  draft.treadmill.feedsEnd = true;
   return { ...nextConfigVersion(cur, draft, createdAt, ENGAGEMENT_NOTE), migration: ENGAGEMENT_MIGRATION };
 }
 

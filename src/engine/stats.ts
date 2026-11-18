@@ -33,7 +33,7 @@ interface Lock {
   help: string;
 }
 
-const KIND_LABEL: Record<string, string> = { race: 'Race', relay_leg: 'Relay leg', parkrun: 'parkrun', long_run: 'Long run' };
+const KIND_LABEL: Record<string, string> = { race: 'Race', relay_leg: 'Relay leg', parkrun: 'parkrun', long_run: 'Long run', treadmill: 'Treadmill' };
 const DEFAULT_PLACE: Record<StatKey, string> = { SPD: 'the Circuit', END: 'run', CLB: 'climb', DSC: 'descent', NAV: 'nav course', ARM: 'ARM test' };
 
 /** Best first: highest FreshScore, then highest unpenalised score, then most recent. */

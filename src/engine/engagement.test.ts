@@ -110,8 +110,13 @@ describe('treadmill sessions', () => {
     expect(computeStreak({ athleteId: 'a1', perfs, participation: [], calendar, config: off, asOf: '2026-11-18', lookup }).currentStreak).toBe(0);
   });
 
-  it('never feed a rating', () => {
-    expect(perfFeeds(resolveContext(tm('2026-11-02', 10, 3000), lookup), cfg)).toEqual([]);
+  it('a long one feeds END like a long run; a short one feeds nothing; never SPD or CLB', () => {
+    expect(perfFeeds(resolveContext(tm('2026-11-02', 10, 3000, { climbM: 500 }), lookup), cfg)).toEqual(['END']);
+    expect(perfFeeds(resolveContext(tm('2026-11-02', 4.6, 1500, { climbM: 46 }), lookup), cfg)).toEqual(['END']);
+    expect(perfFeeds(resolveContext(tm('2026-11-02', 4, 1500), lookup), cfg)).toEqual([]);
+    const off = cloneConfig(cfg);
+    off.treadmill.feedsEnd = false;
+    expect(perfFeeds(resolveContext(tm('2026-11-02', 10, 3000), lookup), off)).toEqual([]);
   });
 
   it('earn the km club badge for total treadmill km, and count nothing towards First 5K', () => {
@@ -157,5 +162,18 @@ describe('established stats always count', () => {
   it('a new stat becomes part of the profile at its second result', () => {
     expect(ovrFrom(stats({ SPD: [80, 3], END: [76, 4], ARM: [55, 1] }), cfg).counted).toEqual(['SPD', 'END']);
     expect(ovrFrom(stats({ SPD: [80, 3], END: [76, 4], ARM: [55, 2] }), cfg).counted).toBeUndefined();
+  });
+});
+
+describe('a long treadmill run is scored for END', () => {
+  it('age-graded like a long run, with the incline counted as climb', async () => {
+    const { scorePerformance } = await import('./scoring');
+    const athlete = { id: 'a1', givenName: 'Aiko', familyName: 'T', preferredName: 'Aiko', aliases: [], sex: 'F', yearGroup: 'Y10', yearGroupYear: 2026, displayMode: 'full', absoluteBoardOptOut: false, avatar: { seed: 1, skinTone: 0, hairStyle: 0, hairColour: 0, kitColour: 'academy-navy', accessory: 'none' }, active: true } as const;
+    const long = scorePerformance(resolveContext(tm('2026-11-10', 6, 2100, { climbM: 60 }), lookup), { ...athlete, aliases: [] }, cfg, '2026-11-18');
+    expect(long.feeds).toEqual(['END']);
+    expect(long.score).toBeGreaterThan(50);
+    expect(long.dEff).toBeCloseTo(6.6, 9);
+    const short = scorePerformance(resolveContext(tm('2026-11-10', 3, 1000), lookup), { ...athlete, aliases: [] }, cfg, '2026-11-18');
+    expect(short.unscoredReason).toMatch(/treadmill session/);
   });
 });

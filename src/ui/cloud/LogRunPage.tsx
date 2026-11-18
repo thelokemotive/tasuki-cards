@@ -63,7 +63,7 @@ export function LogRunPage() {
 
   return (
     <div className="stack">
-      <PageHeader title="Log a treadmill run" subtitle="Every session keeps your weekly streak going and counts towards the treadmill km club." />
+      <PageHeader title="Log a treadmill run" subtitle="Every session keeps your weekly streak going and counts towards the treadmill km club. A run of 5 km or more also counts for your END rating." />
       <Panel title="Which card is yours?">
         <select
           className="select"

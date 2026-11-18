@@ -1,7 +1,8 @@
 // Treadmill sessions: what a logged run is, how it is checked, and the pupil's own treadmill numbers.
-// A treadmill session is habit, not a rating: it keeps the weekly streak going (config.streak.treadmillCounts),
-// fills the treadmill log and earns km club badges, but never feeds SPD, END or any other stat. Belts differ,
-// the pupil can hold the rails, and the photo cannot show who ran.
+// A treadmill session is mostly habit: it keeps the weekly streak going (config.streak.treadmillCounts), fills
+// the treadmill log and earns km club badges. Only a long one (at least end.longRunMinKmEff of effort, incline
+// counted as climb) feeds a rating, END, age-graded like a long run (config.treadmill.feedsEnd). It never feeds
+// SPD or CLB: belts differ and the rails can be held, which matters far more over a fast or steep effort.
 import type { ISODate, Performance } from '../../types';
 import type { Config } from '../config';
 import { addDays, isISODate } from '../dates';

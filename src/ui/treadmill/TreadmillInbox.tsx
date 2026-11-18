@@ -66,7 +66,7 @@ export function TreadmillInbox() {
       }
     >
       <p className="tiny muted" style={{ marginTop: 0 }}>
-        Sent by pupils from a photo of the console. Approving saves a treadmill session (it keeps the weekly streak going and counts for the treadmill km club; it never changes a rating). The photo is deleted once you decide.
+        Sent by pupils from a photo of the console. Approving saves a treadmill session: it keeps the weekly streak going and counts for the treadmill km club, and a run of 5 km of effort or more also counts for END, like a long run. The photo is deleted once you decide.
       </p>
       <div className="tm-inbox">
         {sorted.map((log) => {

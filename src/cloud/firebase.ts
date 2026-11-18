@@ -198,7 +198,7 @@ export async function connect(): Promise<Cloud> {
     treadmill: {
       async isOpen() {
         try {
-          return (await getDoc(doc(db, PUBLIC, 'settings'))).data()?.treadmillLogs === true;
+          return (await getDoc(doc(db, PUBLIC, 'settings'))).data()?.treadmillLogs !== false;
         } catch {
           return false;
         }

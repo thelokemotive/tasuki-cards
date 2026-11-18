@@ -11,7 +11,7 @@ Tasuki Cards turns the trail running squad's results into ratings, cards and lea
 - Name, preferred name, year group, sex, house, and date of birth (needed for age-graded ratings).
 - Running results: times, events, attendance at sessions, badges.
 - A cartoon avatar the pupil designs. No photographs of pupils.
-- **Treadmill logs (new, 18 Nov 2026, off until switched on):** a pupil can send a treadmill run (distance, time, incline, speed, how hard it felt, and the date) with a photo of the treadmill's display. The photo is read on the pupil's phone and only a small crop of the lit numbers is sent, never the rest of the picture; it is deleted as soon as a coach approves or turns the run down. The run is recorded with the pupil's school sign-in name so the coach can check it came from them.
+- **Treadmill logs (new, 18 Nov 2026, on; one switch turns it off):** a pupil can send a treadmill run (distance, time, incline, speed, how hard it felt, and the date) with a photo of the treadmill's display. The photo is read on the pupil's phone and only a small crop of the lit numbers is sent, never the rest of the picture; it is deleted as soon as a coach approves or turns the run down. The run is recorded with the pupil's school sign-in name so the coach can check it came from them.
 - An optional free-text coach note per runner. I will keep medical, pastoral and SEN information out of it; that stays in the school's own systems.
 
 No contact details, addresses, photos of people, location tracking or messaging. Pupils cannot message each other or comment on anything.
@@ -32,4 +32,4 @@ Google Firebase (Firestore), in Google's Tokyo region, under a Firebase project 
 1. Are you content for pupil names, dates of birth and results to be held in Google Firebase on these terms, given that the project sits under my personal Google account and not a school-administered one?
 2. Who else should be on the coach list (it currently holds only me)?
 3. Are you content with the pupil view as described above? Any runner whose name should not appear can be set to an alias, or opted out of the ability boards, on their athlete page; it can also be closed at any time with one switch. The email that goes with this note is `docs/SAFEGUARDING-EMAIL.md`.
-4. Are you content for pupils to send treadmill runs as described above (it stays off until you agree; one switch turns it on or off)?
+4. Are you content for pupils to send treadmill runs as described above? It is on from 18 Nov 2026; one switch turns it off at once.

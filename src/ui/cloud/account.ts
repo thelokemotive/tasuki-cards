@@ -36,7 +36,7 @@ export interface TreadmillLog {
 export type NewTreadmillLog = Omit<TreadmillLog, 'id' | 'uid' | 'email' | 'name' | 'at'>;
 
 export interface TreadmillCloud {
-  /** Whether the head coach has opened treadmill logging (off until then; everyone at school can read it). */
+  /** Whether treadmill logging is open (on unless the head coach switches it off; everyone at school can read it). */
   isOpen(): Promise<boolean>;
   /** Head coach only. */
   setOpen(on: boolean): Promise<void>;

@@ -67,11 +67,11 @@ service cloud.firestore {
         && (!('photo' in d) || (d.photo is bytes && d.photo.size() <= 150000))
         && d.at == request.time;
     }
-    // Treadmill logging has its own switch (public/settings.treadmillLogs, set by the head coach), off until
-    // it is turned on.
+    // Treadmill logging has its own switch (public/settings.treadmillLogs, set by the head coach). On unless
+    // he switches it off.
     function logsOpen() {
-      return exists(/databases/$(database)/documents/public/settings)
-        && get(/databases/$(database)/documents/public/settings).data.get('treadmillLogs', false) == true;
+      return !exists(/databases/$(database)/documents/public/settings)
+        || get(/databases/$(database)/documents/public/settings).data.get('treadmillLogs', true) == true;
     }
     match /inbox/{id} {
       allow create: if member() && pupilViewOpen() && logsOpen() && validLog(id);

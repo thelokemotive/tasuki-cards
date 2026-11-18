@@ -17,7 +17,10 @@ const id = (uid) => `${uid}_${Date.now()}`;
 let pass = 0, fail = 0;
 async function t(name, p) { try { await p; pass++; console.log('ok  ', name); } catch (e) { fail++; console.log('FAIL', name, e.message?.slice(0, 200)); } }
 
-await t('logging closed (no switch yet): refused', assertFails(setDoc(doc(pupil, 'inbox', id('pupilA1')), log('pupilA1'))));
+await t('logging open by default (no switch yet)', assertSucceeds(setDoc(doc(pupil, 'inbox', id('pupilA1')), log('pupilA1'))));
+await env.withSecurityRulesDisabled(async (c) => setDoc(doc(c.firestore(), 'public', 'settings'), { treadmillLogs: false }));
+await new Promise((r) => setTimeout(r, 2));
+await t('logging switched off: refused', assertFails(setDoc(doc(pupil, 'inbox', id('pupilA1')), log('pupilA1'))));
 await t('a pupil cannot open logging', assertFails(setDoc(doc(pupil, 'public', 'settings'), { treadmillLogs: true })));
 await env.withSecurityRulesDisabled(async (c) => setDoc(doc(c.firestore(), 'access', 'main'), { coaches: ['helper@harrowappi.jp'], pupilView: true }));
 const helper = ms('coach2', 'helper@harrowappi.jp', 'Helper');

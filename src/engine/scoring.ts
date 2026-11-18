@@ -41,7 +41,7 @@ export const UNSCORED = {
   noAge: "age or sex unknown (check the athlete's year group, date of birth and sex)",
   badNavErrors: 'nav errors must be a whole number of 0 or more',
   unknownKind: 'unknown result kind',
-  treadmill: 'treadmill session: counts for the streak and the treadmill log, not ratings',
+  treadmill: 'treadmill session: counts for the streak and the km club; END needs a run of at least the long-run distance',
 } as const;
 
 /** A usable measurement: a finite number above zero (rejects NaN, Infinity and blanks). */
@@ -217,7 +217,8 @@ export function isHillRun(ctx: PerfContext, config: Config): boolean {
  * The ratings a performance belongs to, judged by its kind and where it was run.
  * race / relay_leg / parkrun → RACE, + SPD when D_eff ≤ spd.raceMaxKmEff, + END when D_eff ≥
  * end.longRunMinKmEff, + CLB when climb ≥ clb.raceMinClimbM and ≥ clb.raceMinClimbPerKm per km;
- * long_run → END when long enough, + CLB on the same hill rule; circuit → SPD; climb → CLB;
+ * long_run → END when long enough, + CLB on the same hill rule; treadmill → END when long enough
+ * (treadmill.feedsEnd); circuit → SPD; climb → CLB;
  * descent → DSC; nav → NAV; bleep → END; arm → ARM.
  */
 export function perfFeeds(ctx: PerfContext, config: Config): RatingKey[] {
@@ -239,6 +240,9 @@ export function perfFeeds(ctx: PerfContext, config: Config): RatingKey[] {
       if (longEnough) out.push('END');
       if (isHillRun(ctx, config)) out.push('CLB');
       return out;
+    case 'treadmill':
+      // A long treadmill run is endurance evidence; incline is never a hill (it does not feed CLB).
+      return config.treadmill.feedsEnd && longEnough ? ['END'] : [];
     case 'circuit':
       return ['SPD'];
     case 'climb':
@@ -345,9 +349,11 @@ export function scorePerformance(ctx: PerfContext, athlete: Athlete, config: Con
     case 'relay_leg':
     case 'parkrun':
     case 'long_run':
+    case 'treadmill':
     case 'circuit':
     case 'climb':
     case 'descent': {
+      if (p.kind === 'treadmill' && perfFeeds(ctx, config).length === 0) return unscored(UNSCORED.treadmill);
       if (p.kind === 'descent' && p.cleanRun === false) return unscored(UNSCORED.notClean);
       if (!positive(p.timeSec)) {
         const hill = WHOLE_SCHOOL_HILL.test(ctx.event?.name ?? '') || WHOLE_SCHOOL_HILL.test(ctx.course?.name ?? '');
@@ -373,8 +379,6 @@ export function scorePerformance(ctx: PerfContext, athlete: Athlete, config: Con
       const ag = std / p.timeSec;
       return scored(runScoreFromAG(ag, config), agProvisional, { ageGrade: ag, standardSec: std });
     }
-    case 'treadmill':
-      return unscored(UNSCORED.treadmill);
     default:
       return unscored(UNSCORED.unknownKind);
   }

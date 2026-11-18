@@ -34,9 +34,9 @@ parkrun has no download. Open the results page for the week, press **Ctrl+A** th
 
 Pupils log treadmill runs themselves on the website: **Log a run** (📷) → pick their card once → **Photo of the console** before pressing Stop. The phone reads the four green readouts (distance, time, incline, speed) itself; the pupil checks them, says how hard it felt, and taps **Send to my coach**. Only a small crop of the green numbers is sent, never the rest of the photo.
 
-- **Turn it on** (head coach): account chip, top right → tick **Treadmill logging open**. It is off until you do, and closing the pupil view closes it too.
+- **On by default.** To pause it (head coach): account chip, top right → untick **Treadmill logging open**. Closing the pupil view closes it too.
 - **Approve**: runs waiting appear on **Home** under **Treadmill runs to check**, with the photo, the numbers, who sent it (their school sign-in) and anything worth a look (typed rather than photographed, a number changed after reading, under 1 km, a sign-in that has sent runs for another card, a duplicate). **Approve** saves it; **Turn down** removes it. The photo is deleted either way. With several clean runs waiting, **Approve the N with nothing to check** does them all.
-- **What a treadmill run counts for**: the weekly streak (like a Circuit run), the **treadmill km club** badges (10, 25, 50, 100, 200 km) and the pupil's "This week" panel. It never changes a rating: belts differ and the photo cannot show who ran.
+- **What a treadmill run counts for**: the weekly streak (like a Circuit run), the **treadmill km club** badges (10, 25, 50, 100, 200 km) and the pupil's "This week" panel. A run of at least 5 km of effort (distance plus incline as climb: 5 km at 1% is 5.5 km) also feeds **END**, age-graded like a long run. Treadmill runs never feed SPD or CLB.
 - **Yourself**: **Quick Entry** → What: **Treadmill** → **📷 Read a treadmill photo** fills in the time, distance and climb (this works in the offline file too).
 - Microsoft Forms still works for anything else (holiday runs): nothing about it has changed.
 
