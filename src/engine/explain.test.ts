@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import type { Athlete, DataSnapshot, Performance } from '../types';
 import { SCHEMA_VERSION } from '../types';
-import { DEFAULT_CONFIG, preEvidenceRules } from './config';
+import { DEFAULT_CONFIG, preEvidenceRules, preArmouryRules } from './config';
 import { deriveAll } from './derive';
 import { explainAll, explainOvr, explainStat, explanationText } from './explain';
 import { buildDemoData, seedCourses, CAMPUS_CIRCUIT_ID } from '../demo/demoData';
 import { formatTime } from './format';
 import { standardTime } from './standards';
 
-const cfg = DEFAULT_CONFIG;
+const cfg = preArmouryRules(DEFAULT_CONFIG);
 const AS_OF = '2026-10-12';
 
 const aiko: Athlete = {
@@ -131,7 +131,7 @@ describe('explainStat: every kind of working', () => {
   it('ARM: best level per domain and the formula', () => {
     const { e } = explain([perf({ kind: 'arm', arm: { ankleCm: 11, calfReps: 18, storkSec: 22 } })], 'ARM');
     const t = e.paragraphs.join(' ');
-    expect(t).toContain("Aiko's best levels: ankle level 3 (11 cm, 12 Oct); calf level 2 (18 heel raises, 12 Oct); balance level 3 (22 s, 12 Oct).");
+    expect(t).toContain("Aiko's best levels: ankle level 3 (11 cm, 12 Oct); calf level 2 (18 heel raises, 12 Oct); landing level 3 (22 s stork, 12 Oct).");
     expect(t).toContain('ARM = 40 + (8 − 3) × 59 ÷ 12 = 64.6 → 65.');
   });
 

@@ -127,38 +127,47 @@ function nameBefore(text: string): string {
   return text.replace(/[,，:;\-–]+\s*$/, '').trim();
 }
 
+const ARM_WORD: Record<string, 'ankle' | 'calf' | 'hop' | 'stork'> = { ankle: 'ankle', lunge: 'ankle', calf: 'calf', wall: 'calf', hop: 'hop', landing: 'hop', land: 'hop', stork: 'stork' };
+const ARM_RANGE = { ankle: [0, 25], calf: [0, 80], hop: [0, 250], stork: [0, 300] } as const;
+
+/**
+ * ARM line: `Name lunge 9.5/11 wall 24/27 landing 95/110` (left/right), any order. One number = the weaker side.
+ * Old words still work: ankle, calf, hop, stork, `hop yes|no`. Optional `by FL` = staff initials who checked.
+ */
 function parseArm(body: string, row: RawRow): void {
   const arm: ArmMeasures = {};
-  const re = /\b(ankle|calf|stork|hop)\s*[:=]?\s*(\d+(?:\.\d+)?|yes|no|y|n|pass|fail)\b/gi;
+  const n = '(\\d+(?:\\.\\d+)?)';
+  const re = new RegExp(`\\b(ankle|lunge|calf|wall|hop|landing|land|stork)\\s*[:=]?\\s*(?:${n}\\s*(?:\\/\\s*${n})?|(yes|no|y|n|pass|fail))(?![\\w.])`, 'gi');
   let m: RegExpExecArray | null;
   let first = -1;
   while ((m = re.exec(body))) {
     if (first < 0) first = m.index;
-    const v = m[2].toLowerCase();
-    switch (m[1].toLowerCase()) {
-      case 'ankle':
-        arm.ankleCm = Number(v);
-        break;
-      case 'calf':
-        arm.calfReps = Number(v);
-        break;
-      case 'stork':
-        arm.storkSec = Number(v);
-        break;
-      case 'hop':
-        arm.hopStickBothLegs = ['yes', 'y', 'pass'].includes(v);
-        break;
+    const what = ARM_WORD[m[1].toLowerCase()];
+    if (m[4]) {
+      if (what === 'hop') arm.hopStickBothLegs = ['yes', 'y', 'pass'].includes(m[4].toLowerCase());
+      else row.errors.push(`${m[1]} needs a number`);
+      continue;
+    }
+    const a = Number(m[2]);
+    const b = m[3] != null ? Number(m[3]) : undefined;
+    const [lo, hi] = ARM_RANGE[what];
+    for (const v of [a, b]) if (v != null && (!Number.isFinite(v) || v < lo || v > hi)) row.errors.push(`Implausible ${m[1]}: ${v}`);
+    if (what === 'stork') {
+      arm.storkSec = a;
+      continue;
+    }
+    const key = what === 'ankle' ? 'ankleCm' : what === 'calf' ? 'calfReps' : 'hopCm';
+    if (b == null) arm[key] = a;
+    else {
+      arm[`${key}L` as const] = a;
+      arm[`${key}R` as const] = b;
     }
   }
+  const by = /\bby\s+([A-Za-z]{1,4})\b/.exec(body);
+  if (by) arm.verifiedBy = by[1].toUpperCase();
   row.name = nameBefore(first >= 0 ? body.slice(0, first) : body);
-  if (first < 0) row.errors.push('No ARM measures (ankle, calf, stork, hop)');
-  else {
-    row.arm = arm;
-    for (const k of ['ankleCm', 'calfReps', 'storkSec'] as const) {
-      const v = arm[k];
-      if (v != null && (!Number.isFinite(v) || v < 0 || v > 300)) row.errors.push(`Implausible ${k}: ${v}`);
-    }
-  }
+  if (first < 0) row.errors.push('No ARM measures (lunge, wall, landing)');
+  else row.arm = arm;
 }
 
 function parseBleep(body: string, row: RawRow): void {

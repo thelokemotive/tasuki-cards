@@ -3,7 +3,7 @@
 import type { Athlete, ISODate, ManualAchievement, Performance, PerfKind } from '../types';
 import type { Config } from './config';
 import type { Badge, BadgeKind, CourseRecord, StreakResult, SurgeResult } from './types';
-import { ARM_DOMAINS, armLevelsFromTest, type ArmDomain } from './arm';
+import { ARM_DOMAINS, ARM_PLATE_NAME, armLevelsFromTest, type ArmDomain } from './arm';
 import { weekMonday } from './dates';
 import { byDate, counts, raceCapPerfs, resolveContext, TIMED_KINDS, type Lookup } from './perf';
 import { treadmillBadges } from './treadmill/session';
@@ -11,7 +11,7 @@ import { treadmillBadges } from './treadmill/session';
 /** Order badges are listed in (the spec's order); the card row re-sorts by prestige. */
 const KIND_ORDER: BadgeKind[] = ['caps', 'parkrun', 'distance', 'mountain', 'streak', 'treadmill', 'arm', 'surge', 'record', 'expedition', 'custom'];
 
-const ARM_LABEL: Record<ArmDomain, string> = { ankle: 'Ankle', calf: 'Calf', balance: 'Balance' };
+const ARM_LABEL: Record<ArmDomain, string> = ARM_PLATE_NAME;
 
 const BAND_LABEL: Record<CourseRecord['band'], string> = { 'Y7-8': 'Y7–8', 'Y9-11': 'Y9–11', 'Y12-13': 'Y12–13', Staff: 'Staff' };
 

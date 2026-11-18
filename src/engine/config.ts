@@ -135,7 +135,9 @@ export interface Config {
     /** Minimum value for levels 1..5. */
     ankleCm: [number, number, number, number, number];
     calfReps: [number, number, number, number, number];
-    /** Levels 1..4 (seconds). Level 5 = level-4 threshold and hop-and-stick passed on both legs. */
+    /** The Landing: hop-and-stick rungs (cm) for levels 1..5. */
+    hopCm: [number, number, number, number, number];
+    /** Legacy tests only (before Nov 2026): levels 1..4 from eyes-closed seconds; L5 = L4 + hop gate. */
     storkSec: [number, number, number, number];
     windowMonths: number;
     provisional: boolean;
@@ -400,8 +402,9 @@ export const DEFAULT_CONFIG: Config = {
   nav: { allowance: 1.15, penaltySecPerError: 120, maxErrors: 3, refRaceMaxKmEff: 5, effAtMin: 0.5, riegelExponent: 1.06, provisional: false },
 
   arm: {
-    ankleCm: [5, 8, 10, 12, 14],
-    calfReps: [10, 15, 20, 25, 30],
+    ankleCm: [6, 8, 10, 12, 14],
+    calfReps: [20, 25, 30, 35, 40],
+    hopCm: [80, 95, 110, 125, 140],
     storkSec: [5, 10, 20, 30],
     windowMonths: 12,
     provisional: false,
@@ -584,11 +587,39 @@ export function engagementMigration(configs: Config[] | undefined, createdAt: st
   return { ...nextConfigVersion(cur, draft, createdAt, ENGAGEMENT_NOTE), migration: ENGAGEMENT_MIGRATION };
 }
 
+/** Marks the version that brought in THE ARMOURY battery (Lunge, Wall, Landing ladder; both legs kept). */
+export const ARMOURY_MIGRATION = 'armoury-2026-11';
+export const ARMOURY_NOTE = 'THE ARMOURY: Landing (hop-and-stick ladder) replaces the stork; Wall levels 20–40 reps; Lunge level 1 at 6 cm';
+
+/**
+ * One-off, as evidenceMigration: a store made before the Armoury battery gets a new config version with the new
+ * plate thresholds, once. Earlier versions keep theirs, and old stork-only tests keep the stork rule.
+ */
+export function armouryMigration(configs: Config[] | undefined, createdAt: string): Config | undefined {
+  if (!configs || configs.length === 0) return undefined;
+  if (configs.some((c) => c.migration === ARMOURY_MIGRATION)) return undefined;
+  // A store first created with the Armoury battery already holds its thresholds in version 1.
+  const first = configs.reduce((a, b) => (b.version < a.version ? b : a));
+  if ((first.arm as Partial<Config['arm']> | undefined)?.hopCm) return undefined;
+  const cur = currentConfig(configs);
+  const draft = cloneConfig(cur);
+  draft.arm = { ...DEFAULT_CONFIG.arm, windowMonths: cur.arm.windowMonths };
+  return { ...nextConfigVersion(cur, draft, createdAt, ARMOURY_NOTE), migration: ARMOURY_MIGRATION };
+}
+
 /** The rules as they were before November 2026 (plain-average OVR, mile–5 km slope below the mile). */
 export function preEvidenceRules(c: Config): Config {
   const out = cloneConfig(c);
   out.ageGrade.subMile = 'extrapolate';
   out.ovr.evidence.enabled = false;
+  return out;
+}
+
+/** The ARM thresholds before THE ARMOURY (Nov 2026): Lunge from 5 cm, Wall 10–30 reps (the stork rule is unchanged). */
+export function preArmouryRules(c: Config): Config {
+  const out = cloneConfig(c);
+  out.arm.ankleCm = [5, 8, 10, 12, 14];
+  out.arm.calfReps = [10, 15, 20, 25, 30];
   return out;
 }
 

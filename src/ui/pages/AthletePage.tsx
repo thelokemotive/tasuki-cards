@@ -1,6 +1,7 @@
 // Athlete page and Career Vault (spec 7): card, stat history, every result with source and
 // verification, PBs, badges, streak calendar, and every result ever (expired and deleted included).
 import './athlete.css';
+import { armMeasuresText } from '../../engine/arm';
 import { useMemo, useState } from 'react';
 import type { Performance } from '../../types';
 import { Empty, PageHeader, Panel, Prov, Seg } from '../components/common';
@@ -81,8 +82,7 @@ function StreakCalendar({ d }: { d: AthleteDerived }) {
 function resultText(p: Performance): string {
   if (p.kind === 'bleep') return p.bleepLaps != null ? `${p.bleepLaps} laps` : '—';
   if (p.kind === 'arm') {
-    const a = p.arm ?? {};
-    return [a.ankleCm != null && `ankle ${a.ankleCm} cm`, a.calfReps != null && `calf ${a.calfReps}`, a.storkSec != null && `stork ${a.storkSec} s`, a.hopStickBothLegs != null && `hop ${a.hopStickBothLegs ? '✓' : '✗'}`].filter(Boolean).join(' · ') || '—';
+    return armMeasuresText(p.arm) || '—';
   }
   const t = p.timeSec != null ? formatTime(p.timeSec) : '—';
   const extra = [p.place && `${p.place}${p.fieldSize ? `/${p.fieldSize}` : ''}`, p.kind === 'nav' && p.navErrors != null && `${p.navErrors} err`, p.kind === 'descent' && p.cleanRun === false && 'not clean', p.legNumber && `leg ${p.legNumber}`].filter(Boolean);
@@ -258,7 +258,7 @@ export function AthletePage() {
             </table>
           </div>
           <p className="tiny muted">Click any stat for the working behind it: which result, the calculation, and why the other results did not count.</p>
-          {r.arm.missing.length > 0 && r.arm.missing.length < 3 && <p className="small muted">ARM levels so far: ankle {r.arm.ankle ?? '—'}, calf {r.arm.calf ?? '—'}, balance {r.arm.balance ?? '—'}.</p>}
+          {r.arm.missing.length > 0 && r.arm.missing.length < 3 && <p className="small muted">ARM levels so far: ankle {r.arm.ankle ?? '—'}, calf {r.arm.calf ?? '—'}, landing {r.arm.balance ?? '—'}.</p>}
         </Panel>
       </div>
 

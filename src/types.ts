@@ -133,15 +133,28 @@ export const PERF_KINDS: PerfKind[] = ['race', 'relay_leg', 'parkrun', 'long_run
 
 export type PerfSource = 'coach' | 'paste' | 'voice' | 'form';
 
-/** All measured on the weaker side. */
+/**
+ * One ARM test (THE ARMOURY). Since Nov 2026 each leg is kept (…L / …R) and the app works out the weaker side;
+ * the single fields are the weaker side as typed (older records, or a paste with one number per test).
+ */
 export interface ArmMeasures {
-  /** Knee-to-wall, cm */
+  /** The Lunge: knee-to-wall, big toe to wall, cm (weaker side) */
   ankleCm?: number;
-  /** Single-leg heel raises, full range, steady tempo, capped count */
+  ankleCmL?: number;
+  ankleCmR?: number;
+  /** The Wall: single-leg heel raises, 60 bpm, full height, clean reps (weaker side) */
   calfReps?: number;
-  /** Eyes-closed single-leg stance, seconds */
+  calfRepsL?: number;
+  calfRepsR?: number;
+  /** The Landing: furthest hop-and-stick rung held 2 of 3 tries, cm (weaker side). 0 = below the first rung. */
+  hopCm?: number;
+  hopCmL?: number;
+  hopCmR?: number;
+  /** Legacy (before Nov 2026): eyes-closed single-leg stance, seconds, and the old level-5 hop gate. */
   storkSec?: number;
   hopStickBothLegs?: boolean;
+  /** Staff initials who checked the numbers. */
+  verifiedBy?: string;
 }
 
 export interface HistoryEntry {

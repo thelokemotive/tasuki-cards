@@ -270,6 +270,20 @@ The coach asked for more pull in the build (with the research synthesis on youth
 **With Winter Mode.** Winter top-ups (a Forms report of a session) still never feed a rating. A treadmill run sent with a photo of the console and approved by a coach is a different record: of 5 km of effort or more it feeds END (the coach's decision, 18 Nov 2026). Both keep the weekly streak.
 
 
+## THE ARMOURY: the ARM battery rebuilt, and an entry grid (18 Nov 2026)
+
+Full rulebook and reasons: `docs/ARMOURY.md`. Poster prompts: `docs/ARMOURY-DESIGN-PROMPTS.md`.
+
+- **Balance plate is now tested by The Landing**, a single-leg hop-and-stick ladder (rungs 80 / 95 / 110 / 125 / 140 cm, 2 clean 3-second sticks out of 3 to clear a rung). The eyes-closed Stork is no longer scored: too noisy, a third of pupils locked at level 1, and it gated the hop-and-stick away from almost everyone. Internally the plate keeps the key `balance` (no data migration); pupils see "Landing".
+- **The Wall: levels 20 / 25 / 30 / 35 / 40 reps** (was 10–30): flat-floor 60 bpm heel raises put about half of teenagers at a 30 cap. A book on the wall replaces the Squire's floating palm.
+- **The Lunge: level 1 at 6 cm** (was 5). Levels stay 2 cm apart, wider than the test's measurement error.
+- **Both legs are stored** (`ankleCmL/R`, `calfRepsL/R`, `hopCmL/R`); the engine takes the weaker leg, and a plate needs both legs to count. The old single weaker-side fields and the stork rule still work for older records. PBs are on the weaker leg.
+- **Config version `armoury-2026-11`** is added once to an existing store with the new thresholds; earlier versions keep theirs. `preArmouryRules()` reproduces the old thresholds (the older tests use it).
+- **The Armoury page** (`#/armoury`): the whole group in one grid, both legs per plate, live level and card ARM, flags for a missing leg or an odd number, saves one "The Armoury" test event. The draft survives a refresh. "Print score sheet" prints the same grid with names filled in (A4 landscape).
+- **Paste lines** take `lunge 9.5/11 wall 24/27 landing 95/110 by FL` (left/right, optional checker's initials). Old words still parse.
+- **Not changed:** the ARM formula, the 12-month best-per-plate window, the lock below level 1, the avatar unlock values. Armour Glow stays at config 85, which on the lookup first happens at 89 (13 levels); posters say 89.
+- **Not built (on purpose):** a fourth "Brakes" plate (peer-judged knee position is unreliable and it breaks the 35-minute budget), height normalisation (raw numbers are kept so it can be added without retesting), age-grading of ARM.
+
 ## Open questions for the coach
 
 1. Surge sanity gate: minimum of 3 legs with a baseline per event and distance (see above). Is that right?

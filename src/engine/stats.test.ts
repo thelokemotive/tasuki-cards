@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import type { Athlete, Course, Performance, TasukiEvent } from '../types';
-import { DEFAULT_CONFIG, cloneConfig, preEvidenceRules, type Config } from './config';
+import { DEFAULT_CONFIG, cloneConfig, preEvidenceRules, type Config, preArmouryRules } from './config';
 import { makeLookup } from './perf';
 import type { OvrValue, RaceStat } from './types';
 import { STAT_KEYS } from './types';
 import { computeAthleteRatings, navReferencePace, tierFor } from './stats';
 
 // The spec's worked examples use the original rules; the November 2026 rules are tested in evidence.test.ts.
-const cfg = preEvidenceRules(DEFAULT_CONFIG);
+const cfg = preArmouryRules(preEvidenceRules(DEFAULT_CONFIG));
 const AS_OF = '2026-10-22';
 
 function athlete(over: Partial<Athlete> = {}): Athlete {
@@ -234,7 +234,7 @@ describe('ARM', () => {
     expect(r.arm.missing).toEqual(['calf', 'balance']);
     expect(r.stats.ARM.locked).toBe(true);
     expect(r.stats.ARM.value).toBeUndefined();
-    expect(r.stats.ARM.unlockHelp).toContain('calf and balance');
+    expect(r.stats.ARM.unlockHelp).toContain('calf and landing');
     const none = rate(coach, []);
     expect(none.stats.ARM.unlockHint).toBe('Test all three');
   });
@@ -255,13 +255,13 @@ describe('ARM', () => {
     const r = rate(coach, [perf({ kind: 'arm', arm: { ankleCm: 3 } })]);
     expect(r.arm.missing).toEqual(['ankle', 'calf', 'balance']);
     expect(r.stats.ARM.unlockHint).toBe('Finish ARM tests');
-    expect(r.stats.ARM.unlockHelp).toBe('Test calf and balance, and reach level 1 in ankle (5 cm knee-to-wall), to unlock ARM (tests from the last 12 months count).');
+    expect(r.stats.ARM.unlockHelp).toBe('Test calf and landing, and reach level 1 in ankle (5 cm knee-to-wall), to unlock ARM (tests from the last 12 months count).');
   });
 
   it('tests older than the 12-month window: locked, saying when the last test was', () => {
     const r = rate(coach, [old]); // 2025-09-01: 13 months old
     expect(r.stats.ARM).toMatchObject({ locked: true, unlockHint: 'Retest all three' });
-    expect(r.stats.ARM.unlockHelp).toBe('The last ARM test (1 Sep 2025) is over 12 months old: retest ankle, calf and balance to unlock ARM.');
+    expect(r.stats.ARM.unlockHelp).toBe('The last ARM test (1 Sep 2025) is over 12 months old: retest the Lunge, the Wall and the Landing to unlock ARM.');
   });
 
   it('window boundary: a test exactly 12 months old is out; 11 whole months is in', () => {

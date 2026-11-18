@@ -6,7 +6,7 @@ import type { Performance, Sex } from '../types';
 import type { Config } from './config';
 import type { AthleteDerived } from './derive';
 import type { PerfScore, RatingKey, StatKey, StatValue } from './types';
-import { ARM_DOMAINS, armLevelsFromTest } from './arm';
+import { ARM_DOMAINS, ARM_PLATE_NAME, armLevelsFromTest, armMeasuresText, armWeaker } from './arm';
 import { formatLongDate, formatShortDate } from './dates';
 import { displayName } from './display';
 import { formatPace, formatTime } from './format';
@@ -88,8 +88,7 @@ function placeOf(ctx: PerfContext): string {
 function resultText(p: Performance): string {
   if (p.kind === 'bleep') return p.bleepLaps != null ? `${p.bleepLaps} laps` : '';
   if (p.kind === 'arm') {
-    const a = p.arm ?? {};
-    return [a.ankleCm != null && `ankle ${a.ankleCm} cm`, a.calfReps != null && `calf ${a.calfReps}`, a.storkSec != null && `stork ${a.storkSec} s`].filter(Boolean).join(', ');
+    return armMeasuresText(p.arm, ', ');
   }
   return p.timeSec != null ? formatTime(p.timeSec) : '';
 }
@@ -233,7 +232,7 @@ function pathwayText(key: StatKey, config: Config): string {
     case 'NAV':
       return 'NAV compares the time on a nav course with a prediction from the runner’s own pace.';
     case 'ARM':
-      return `ARM uses the best level in each of ankle, calf and balance from tests in the last ${config.arm.windowMonths} months, so it never falls on a bad retest.`;
+      return `ARM uses the best level in each plate (ankle, calf, landing), weaker leg, from tests in the last ${config.arm.windowMonths} months, so it never falls on a bad retest.`;
   }
 }
 
@@ -242,15 +241,25 @@ function armWorking(d: AthleteDerived, items: Item[], stat: StatValue, config: C
   const levels = d.ratings.arm;
   const parts: string[] = [];
   for (const dom of ARM_DOMAINS) {
+    const plate = ARM_PLATE_NAME[dom].toLowerCase();
     const lvl = levels[dom];
     if (lvl == null) {
-      parts.push(`${dom}: not tested`);
+      parts.push(`${plate}: not tested`);
       continue;
     }
     const src = items.find((i) => used.has(i.perf.id) && armLevelsFromTest(i.perf.arm, config)[dom] === lvl);
     const m = src?.perf.arm;
-    const measure = dom === 'ankle' ? m?.ankleCm != null && `${m.ankleCm} cm` : dom === 'calf' ? m?.calfReps != null && `${m.calfReps} heel raises` : m?.storkSec != null && `${m.storkSec} s${lvl === 5 ? ' + hop-and-stick' : ''}`;
-    parts.push(`${dom} level ${lvl}${measure ? ` (${measure}${src ? `, ${formatShortDate(src.perf.date)}` : ''})` : ''}`);
+    const wk = armWeaker(m);
+    const leg = wk.weakerLeg[dom] ? `, ${wk.weakerLeg[dom] === 'L' ? 'left' : 'right'} leg` : '';
+    const measure =
+      dom === 'ankle'
+        ? wk.ankle != null && `${wk.ankle} cm${leg}`
+        : dom === 'calf'
+          ? wk.calf != null && `${wk.calf} heel raises${leg}`
+          : wk.hop != null
+            ? `hop-and-stick ${wk.hop} cm${leg}`
+            : m?.storkSec != null && `${m.storkSec} s stork${lvl === 5 ? ' + hop-and-stick' : ''}`;
+    parts.push(`${plate} level ${lvl}${measure ? ` (${measure}${src ? `, ${formatShortDate(src.perf.date)}` : ''})` : ''}`);
   }
   const out = [`${w.name}'s best levels: ${parts.join('; ')}.`];
   if (!stat.locked && levels.ankle != null && levels.calf != null && levels.balance != null) {

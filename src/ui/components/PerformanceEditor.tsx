@@ -213,20 +213,37 @@ export function PerformanceEditor({ perf, onClose }: { perf: Performance; onClos
           )}
           {kind === 'arm' && (
             <>
-              <Field label="Ankle, knee-to-wall (cm)">
-                <input className="input" type="number" step="0.5" value={p.arm?.ankleCm ?? ''} onChange={(e) => set('arm', { ...p.arm, ankleCm: numOrUndef(e.target.value) })} />
-              </Field>
-              <Field label="Calf raises (reps)">
-                <input className="input" type="number" value={p.arm?.calfReps ?? ''} onChange={(e) => set('arm', { ...p.arm, calfReps: numOrUndef(e.target.value) })} />
-              </Field>
-              <Field label="Stork, eyes closed (s)">
-                <input className="input" type="number" value={p.arm?.storkSec ?? ''} onChange={(e) => set('arm', { ...p.arm, storkSec: numOrUndef(e.target.value) })} />
-              </Field>
-              <Field label="Hop and stick, both legs">
-                <label className="check">
-                  <input type="checkbox" checked={!!p.arm?.hopStickBothLegs} onChange={(e) => set('arm', { ...p.arm, hopStickBothLegs: e.target.checked })} /> Passed
-                </label>
-              </Field>
+              {(
+                [
+                  ['ankleCm', 'The Lunge (cm)'],
+                  ['calfReps', 'The Wall (reps)'],
+                  ['hopCm', 'The Landing (cm)'],
+                ] as const
+              ).flatMap(([f, label]) =>
+                (['L', 'R'] as const).map((side) => (
+                  <Field key={f + side} label={`${label}, ${side === 'L' ? 'left' : 'right'}`}>
+                    <input className="input" type="number" step="0.5" value={p.arm?.[`${f}${side}`] ?? ''} onChange={(e) => set('arm', { ...p.arm, [`${f}${side}`]: numOrUndef(e.target.value) })} />
+                  </Field>
+                )),
+              )}
+              {(p.arm?.ankleCm != null || p.arm?.calfReps != null || p.arm?.hopCm != null || p.arm?.storkSec != null) && (
+                <>
+                  <Field label="Weaker side only (older record): Lunge cm" hint="Used only when a plate has no left/right numbers.">
+                    <input className="input" type="number" step="0.5" value={p.arm?.ankleCm ?? ''} onChange={(e) => set('arm', { ...p.arm, ankleCm: numOrUndef(e.target.value) })} />
+                  </Field>
+                  <Field label="Weaker side only: Wall reps">
+                    <input className="input" type="number" value={p.arm?.calfReps ?? ''} onChange={(e) => set('arm', { ...p.arm, calfReps: numOrUndef(e.target.value) })} />
+                  </Field>
+                  <Field label="Stork, eyes closed (s), older tests">
+                    <input className="input" type="number" value={p.arm?.storkSec ?? ''} onChange={(e) => set('arm', { ...p.arm, storkSec: numOrUndef(e.target.value) })} />
+                  </Field>
+                  <Field label="Old hop gate, both legs">
+                    <label className="check">
+                      <input type="checkbox" checked={!!p.arm?.hopStickBothLegs} onChange={(e) => set('arm', { ...p.arm, hopStickBothLegs: e.target.checked })} /> Passed
+                    </label>
+                  </Field>
+                </>
+              )}
             </>
           )}
         </div>

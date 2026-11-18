@@ -5,7 +5,7 @@ import type { Config } from './config';
 import type { ArmLevels, AthleteRatings, OvrValue, PerfScore, RaceStat, RatingKey, StatBasis, StatEvidence, StatKey, StatValue, Tier } from './types';
 import { STAT_KEYS } from './types';
 import { ageOnDate } from './age';
-import { ARM_DOMAINS, armLevelsFromTest, type ArmDomain } from './arm';
+import { ARM_DOMAINS, ARM_PLATE_NAME, armLevelsFromTest, type ArmDomain } from './arm';
 import { formatLongDate, formatShortDate, isISODate, monthsBetween } from './dates';
 import { formatKm, formatTime } from './format';
 import { byDate, counts, isOfficialRace, raceCaps, resolveContext, type Lookup, type PerfContext } from './perf';
@@ -81,7 +81,7 @@ function defaultLock(key: RatingKey, config: Config): Lock {
     case 'NAV':
       return { hint: 'Complete a nav', help: 'Complete a navigation course (verified) to unlock NAV.' };
     case 'ARM':
-      return { hint: 'Test all three', help: `Test ankle, calf and balance to unlock ARM (tests from the last ${config.arm.windowMonths} months count).` };
+      return { hint: 'Test all three', help: `Test the Lunge, the Wall and the Landing to unlock ARM (tests from the last ${config.arm.windowMonths} months count).` };
     case 'RACE':
       return { hint: 'Race to unlock', help: 'Run a verified race or relay leg at an official event (with a time and distance) to unlock RACE. parkruns count for SPD and END, and have their own badges.' };
   }
@@ -206,7 +206,7 @@ function armLevel1(d: ArmDomain, config: Config): string {
   const a = config.arm;
   if (d === 'ankle') return `ankle (${a.ankleCm[0]} cm knee-to-wall)`;
   if (d === 'calf') return `calf (${a.calfReps[0]} heel raises)`;
-  return `balance (${a.storkSec[0]} s eyes-closed stance)`;
+  return `landing (hop-and-stick ${a.hopCm[0]} cm)`;
 }
 
 /** Lock for ARM when some domains have no level: untested domains, and domains measured below L1. */
@@ -219,7 +219,7 @@ function armLock(levels: ArmLevels, entries: Entry[], config: Config, asOf: ISOD
     const older = entries.filter((e) => e.perf.kind === 'arm' && e.ps.feeds.includes('ARM') && e.ps.monthsOld >= config.arm.windowMonths);
     const last = older[older.length - 1];
     if (last) {
-      return { hint: 'Retest all three', help: `The last ARM test (${formatLongDate(last.perf.date)}) is over ${config.arm.windowMonths} months old: retest ankle, calf and balance to unlock ARM.` };
+      return { hint: 'Retest all three', help: `The last ARM test (${formatLongDate(last.perf.date)}) is over ${config.arm.windowMonths} months old: retest the Lunge, the Wall and the Landing to unlock ARM.` };
     }
     return lockFor('ARM', entries, config, asOf);
   }
@@ -227,8 +227,9 @@ function armLock(levels: ArmLevels, entries: Entry[], config: Config, asOf: ISOD
   if (untested.length === 0) {
     return { hint: 'Reach level 1', help: `${reach[0].toUpperCase()}${reach.slice(1)} to unlock ARM (${win}).` };
   }
-  const test = `Test ${listWords(untested)}`;
-  const hint = below.length ? 'Finish ARM tests' : untested.length === 1 ? `Test ${untested[0]}` : 'Finish ARM tests';
+  const plates = untested.map((d) => ARM_PLATE_NAME[d].toLowerCase());
+  const test = `Test ${listWords(plates)}`;
+  const hint = below.length ? 'Finish ARM tests' : untested.length === 1 ? `Test ${plates[0]}` : 'Finish ARM tests';
   return { hint, help: below.length ? `${test}, and ${reach}, to unlock ARM (${win}).` : `${test} to unlock ARM (${win}).` };
 }
 

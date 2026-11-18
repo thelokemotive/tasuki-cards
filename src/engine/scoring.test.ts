@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Athlete, Course, Performance } from '../types';
-import { DEFAULT_CONFIG, cloneConfig, preEvidenceRules, type Config } from './config';
+import { DEFAULT_CONFIG, cloneConfig, preEvidenceRules, type Config, preArmouryRules } from './config';
 import { makeLookup, resolveContext } from './perf';
 import { standardTime } from './standards';
 import { armLevelsFromTest } from './arm';
@@ -22,7 +22,7 @@ import {
 } from './scoring';
 
 // The spec's worked examples use the original rules; the November 2026 rules are tested in evidence.test.ts.
-const cfg = preEvidenceRules(DEFAULT_CONFIG);
+const cfg = preArmouryRules(preEvidenceRules(DEFAULT_CONFIG));
 const AS_OF = '2026-10-22';
 
 function athlete(over: Partial<Athlete> = {}): Athlete {

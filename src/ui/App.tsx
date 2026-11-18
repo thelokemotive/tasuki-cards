@@ -13,6 +13,7 @@ import { formatLongDate } from '../engine/dates';
 import { BrandMark } from './components/BrandMark';
 import { HomePage } from './pages/HomePage';
 import { QuickEntryPage } from './pages/QuickEntryPage';
+import { ArmouryPage } from './pages/ArmouryPage';
 import { PastePage } from './pages/PastePage';
 import { RosterPage } from './pages/RosterPage';
 import { AthletePage } from './pages/AthletePage';
@@ -40,6 +41,7 @@ const NAV: (NavItem | 'sep')[] = [
   { page: 'home', to: '/', label: 'Home', icon: '⌂' },
   { page: 'entry', to: '/entry', label: 'Quick Entry', icon: '＋' },
   { page: 'paste', to: '/paste', label: 'Paste & Match', icon: '⇣' },
+  { page: 'armoury', to: '/armoury', label: 'The Armoury', icon: '鎧' },
   'sep',
   { page: 'roster', to: '/roster', label: 'Roster', icon: '☰' },
   { page: 'squad', to: '/squad', label: 'Squad', icon: '▦' },
@@ -58,6 +60,7 @@ const TITLES: Record<string, string> = {
   home: 'Home',
   entry: 'Quick Entry',
   paste: 'Paste & Match',
+  armoury: 'The Armoury',
   roster: 'Roster',
   squad: 'Squad',
   scenes: 'Scenes',
@@ -96,6 +99,8 @@ function renderPage(route: Route): ReactNode {
       return <HomePage />;
     case 'entry':
       return <QuickEntryPage />;
+    case 'armoury':
+      return <ArmouryPage />;
     case 'paste':
       return <PastePage />;
     case 'roster':

@@ -1,0 +1,38 @@
+/* THE ARMOURY grid. Plate colours: ankle teal, calf amber, landing violet (always with a label, never alone). */
+.armoury { --p-ankle: #e3f2f1; --p-calf: #fbefd9; --p-balance: #ece6f7; }
+.arm-toolbar { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: end; }
+.arm-toolbar label { display: grid; gap: 4px; font-size: 0.85rem; color: var(--ink-2); }
+.arm-init { width: 6em; text-transform: uppercase; }
+.arm-add { min-width: 220px; flex: 1 1 220px; }
+.arm-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.arm-grid { border-collapse: collapse; width: 100%; min-width: 880px; font-size: 0.92rem; }
+.arm-grid th, .arm-grid td { border-bottom: 1px solid var(--line); padding: 4px 4px; text-align: center; vertical-align: middle; }
+.arm-grid thead th { font-weight: 700; font-size: 0.8rem; }
+.arm-grid .arm-name { text-align: left; white-space: nowrap; position: sticky; left: 0; background: var(--surface); z-index: 1; }
+.arm-grid .plate-ankle { background: var(--p-ankle); }
+.arm-grid .plate-calf { background: var(--p-calf); }
+.arm-grid .plate-balance { background: var(--p-balance); }
+.arm-cell { width: 4.6em; min-height: 40px; text-align: center; padding: 4px; font-size: 1rem; }
+select.arm-cell { width: 6.2em; }
+.arm-grid td.weaker .arm-cell { outline: 2px solid var(--shu); font-weight: 700; }
+.arm-lv { min-width: 2.6em; }
+.lv { display: inline-block; min-width: 2.2em; padding: 2px 4px; border-radius: 6px; font-weight: 800; font-size: 0.8rem; color: #fff; }
+.lv0 { background: var(--ink-3); }
+.lv1, .lv2 { background: var(--bronze); }
+.lv3, .lv4 { background: var(--silver); color: var(--ink); }
+.lv5 { background: var(--gold); color: var(--ink); }
+.arm-total { min-width: 7.5em; }
+.arm-total strong { font-size: 1.3rem; }
+.arm-note { color: var(--warn); max-width: 14em; margin: 2px auto 0; }
+.arm-save { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; margin-top: 12px; }
+.arm-ladder .table th[scope='row'] { text-align: left; }
+.print-only { display: none; }
+@media print {
+  .print-only { display: block; }
+  @page { size: A4 landscape; margin: 10mm; }
+  .arm-print h2 { margin: 0 0 4px; font-size: 16pt; }
+  .arm-print-table { width: 100%; border-collapse: collapse; margin: 6px 0 10px; }
+  .arm-print-table th, .arm-print-table td { border: 1px solid #000; padding: 6px 4px; font-size: 11pt; height: 9mm; }
+  .arm-print-table td:first-child { width: 28%; }
+  .arm-print-table tr { break-inside: avoid; }
+}

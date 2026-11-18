@@ -70,8 +70,8 @@ describe('computePersonalBests (spec 7)', () => {
       ['dist:5.00', '5 km', 1500],
       ['dist:5.20', '5.2 km', 1400],
       ['bleep', 'Bleep test', 53],
-      ['arm:ankle', 'Ankle (knee-to-wall)', 11],
-      ['arm:calf', 'Calf raises', 18],
+      ['arm:ankle', 'The Lunge (weaker leg)', 11],
+      ['arm:calf', 'The Wall (weaker leg)', 18],
       ['arm:stork', 'Stork balance', 22],
     ]);
     expect(current.find((pb) => pb.key === 'bleep')?.measure).toBe('count');

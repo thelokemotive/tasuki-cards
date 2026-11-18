@@ -40,7 +40,8 @@ interface Draft {
   team: string;
   racedEarlier: boolean;
   laps: string;
-  arm: { ankle: string; calf: string; stork: string; hop: '' | 'yes' | 'no' };
+  /** Both legs per plate (THE ARMOURY): the app takes the weaker one. */
+  arm: ArmDraft;
   navErrors: string;
   routeKm: string;
   clean: boolean;
@@ -51,6 +52,9 @@ interface Draft {
 }
 
 const n = (s: string) => (s.trim() === '' ? undefined : Number(s));
+
+interface ArmDraft { ankleL: string; ankleR: string; calfL: string; calfR: string; hopL: string; hopR: string }
+const EMPTY_ARM: ArmDraft = { ankleL: '', ankleR: '', calfL: '', calfR: '', hopL: '', hopR: '' };
 
 export function QuickEntryPage() {
   const { snapshot, derived, commit, today, asOf, config } = useData();
@@ -73,7 +77,7 @@ export function QuickEntryPage() {
     team: '',
     racedEarlier: false,
     laps: '',
-    arm: { ankle: '', calf: '', stork: '', hop: '' },
+    arm: EMPTY_ARM,
     navErrors: '0',
     routeKm: '',
     clean: true,
@@ -107,7 +111,7 @@ export function QuickEntryPage() {
       if (!dist && !course) return 'Enter the distance (or choose a course)';
     }
     if (d.kind === 'bleep' && !(n(d.laps)! > 0)) return 'Enter the laps';
-    if (d.kind === 'arm' && !d.arm.ankle && !d.arm.calf && !d.arm.stork) return 'Enter at least one ARM measure';
+    if (d.kind === 'arm' && !Object.values(d.arm).some((v) => v.trim())) return 'Enter at least one ARM measure (both legs)';
     return null;
   })();
 
@@ -123,7 +127,9 @@ export function QuickEntryPage() {
       newEvent = { id: 'draft-event', name: d.newEventName.trim(), date: d.date, kind: EVENT_KIND[d.kind], official: true, ...(course ? { courseId: course.id } : {}), ...(dist && !course ? { distanceKm: dist } : {}), ...(climb && !course ? { climbM: climb } : {}) };
     }
     const arm: ArmMeasures | undefined =
-      d.kind === 'arm' ? { ankleCm: n(d.arm.ankle), calfReps: n(d.arm.calf), storkSec: n(d.arm.stork), ...(d.arm.hop ? { hopStickBothLegs: d.arm.hop === 'yes' } : {}) } : undefined;
+      d.kind === 'arm'
+        ? { ankleCmL: n(d.arm.ankleL), ankleCmR: n(d.arm.ankleR), calfRepsL: n(d.arm.calfL), calfRepsR: n(d.arm.calfR), hopCmL: n(d.arm.hopL), hopCmR: n(d.arm.hopR) }
+        : undefined;
     if (arm) for (const k of Object.keys(arm) as (keyof ArmMeasures)[]) if (arm[k] === undefined) delete arm[k];
     const perf: Performance = makePerformance(
       {
@@ -173,7 +179,7 @@ export function QuickEntryPage() {
     await commit(real);
     const a = snapshot.athletes.find((x) => x.id === d.athleteId);
     toast(`Saved for ${a ? fullName(a) : 'athlete'}${preview?.[0] ? `: ${preview[0].text}` : ''}`, 'ok');
-    setD((x) => ({ ...x, athleteId: null, time: '', laps: '', place: '', arm: { ankle: '', calf: '', stork: '', hop: '' }, navErrors: '0', leg: '', racedEarlier: false, eventId: eventId ?? x.eventId, newEventName: '' }));
+    setD((x) => ({ ...x, athleteId: null, time: '', laps: '', place: '', arm: EMPTY_ARM, navErrors: '0', leg: '', racedEarlier: false, eventId: eventId ?? x.eventId, newEventName: '' }));
   };
 
   return (
@@ -301,23 +307,40 @@ export function QuickEntryPage() {
                   </Field>
                 )}
                 {d.kind === 'arm' && (
-                  <div className="grid-2">
-                    <Field label="Ankle: knee-to-wall, weaker side (cm)">
-                      <input className="input" type="number" step="0.5" value={d.arm.ankle} onChange={(e) => set('arm', { ...d.arm, ankle: e.target.value })} />
-                    </Field>
-                    <Field label="Calf: single-leg heel raises, weaker side">
-                      <input className="input" type="number" value={d.arm.calf} onChange={(e) => set('arm', { ...d.arm, calf: e.target.value })} />
-                    </Field>
-                    <Field label="Balance: eyes-closed stork, weaker side (s)">
-                      <input className="input" type="number" value={d.arm.stork} onChange={(e) => set('arm', { ...d.arm, stork: e.target.value })} />
-                    </Field>
-                    <Field label="Hop and stick, both legs">
-                      <select className="select" value={d.arm.hop} onChange={(e) => set('arm', { ...d.arm, hop: e.target.value as Draft['arm']['hop'] })}>
-                        <option value="">not tested</option>
-                        <option value="yes">passed</option>
-                        <option value="no">not passed</option>
-                      </select>
-                    </Field>
+                  <div className="stack">
+                    <p className="small muted">
+                      Both legs: the weaker one sets the level. A whole group is quicker in <Link to="/armoury">The Armoury</Link>.
+                    </p>
+                    {(
+                      [
+                        ['ankle', 'The Lunge: knee-to-wall (cm)', '0.5'],
+                        ['calf', 'The Wall: heel raises at 60 bpm (reps)', '1'],
+                      ] as const
+                    ).map(([k, label, step]) => (
+                      <div className="grid-2" key={k}>
+                        <Field label={`${label}, left`}>
+                          <input className="input" type="number" step={step} value={d.arm[`${k}L`]} onChange={(e) => set('arm', { ...d.arm, [`${k}L`]: e.target.value })} />
+                        </Field>
+                        <Field label="right">
+                          <input className="input" type="number" step={step} value={d.arm[`${k}R`]} onChange={(e) => set('arm', { ...d.arm, [`${k}R`]: e.target.value })} />
+                        </Field>
+                      </div>
+                    ))}
+                    <div className="grid-2">
+                      {(['L', 'R'] as const).map((side) => (
+                        <Field key={side} label={side === 'L' ? 'The Landing: furthest rung stuck (cm), left' : 'right'}>
+                          <select className="select" value={d.arm[`hop${side}`]} onChange={(e) => set('arm', { ...d.arm, [`hop${side}`]: e.target.value })}>
+                            <option value="">not tested</option>
+                            <option value="0">below {config.arm.hopCm[0]}</option>
+                            {config.arm.hopCm.map((c) => (
+                              <option key={c} value={c}>
+                                {c} cm
+                              </option>
+                            ))}
+                          </select>
+                        </Field>
+                      ))}
+                    </div>
                   </div>
                 )}
                 {d.kind === 'nav' && (

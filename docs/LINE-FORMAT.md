@@ -15,7 +15,7 @@ Aiko Testfield 16:15
 # test: bleep | 2026-11-10
 Ben Sampleton 64 laps
 # test: arm | 2026-11-10
-Aiko Testfield ankle 11 calf 18 stork 22 hop yes
+Aiko Testfield lunge 9.5/11 wall 24/27 landing 95/110 by FL
 # participation: saturday_run | 2026-11-07
 Aiko Testfield, Ben Sampleton
 # event: Chiang Mai Trail 64K | 2026-12-20 | race | 64 km | climb 2800 m
@@ -34,7 +34,7 @@ Coach Example 9:45:00
 |---|---|
 | `# event: <name> \| <date> \| <kind> \| …` | kind is one of `race`, `relay_leg` (or `relay`), `parkrun`, `long_run`, `circuit`, `climb`, `descent`, `nav`, `treadmill`. Optional fields: `<n> km` (distance), `climb <n> m`, `place <p>/<n>` (place and field size), `field <n>` (field size), `course <course name>`, `unofficial`. |
 | `# test: bleep \| <date>` | 20 m shuttle run; result lines give laps. |
-| `# test: arm \| <date>` | ARM (Armour) tests; result lines give ankle / calf / stork / hop. |
+| `# test: arm \| <date>` | ARM (Armour) tests; result lines give lunge / wall / landing, left/right. |
 | `# test: nav \| <date> \| course <course name> \| <n> km` | Navigation test; `<n> km` is the effective route distance. |
 | `# participation: saturday_run \| <date>` | Names only (comma-separated, or one per line). Also `freeze` (a streak freeze applied by the coach). |
 
@@ -56,7 +56,7 @@ Coach Example 9:45:00
 - Descents: add `not clean` if the run was not a clean run (it is stored but never scored).
 - Navigation: add `errors <n>` (control errors) and optionally `variant <x>` and `route <n> km`.
 - Bleep test lines: `<name> <laps> laps` (or just the number).
-- ARM lines: any of `ankle <cm>`, `calf <reps>`, `stork <seconds>`, `hop yes|no`, in any order. Everything is measured on the weaker side.
+- ARM lines (The Armoury): `lunge <L>/<R>` (cm), `wall <L>/<R>` (reps), `landing <L>/<R>` (furthest hop-and-stick rung, cm; 0 = below the first rung), in any order, left leg first. The app takes the weaker leg. Optional `by <initials>` records who checked the numbers. One number instead of a pair is read as the weaker side. The old words still work: `ankle`, `calf`, `hop <cm>`, `stork <seconds>`, `hop yes|no` (the pre-Armoury stork gate). For a whole group, The Armoury page is quicker than typing lines.
 
 ### Names
 

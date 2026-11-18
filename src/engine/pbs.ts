@@ -1,6 +1,7 @@
 // Personal bests (spec 7), In-Form (spec 3.10) and course records (spec 3.13 / 6).
 // Only live, verified performances count. PBs and records are raw measurements, never ratings.
 import type { Athlete, Course, ISODate, Performance, PerfKind } from '../types';
+import { armWeaker } from './arm';
 import type { Config } from './config';
 import type { CourseRecord, InFormEntry, PerfScore, PersonalBest, RatingKey } from './types';
 import { YEAR_BANDS } from './types';
@@ -16,10 +17,12 @@ const DISTANCE_KINDS: PerfKind[] = ['race', 'parkrun', 'long_run'];
 /** A performance's own distance within this of the course distance still counts as that course. */
 const SAME_COURSE_KM = 0.005;
 
+// Weaker-leg values (the number that sets the level), so a PB is a real step for the plate.
 const ARM_MEASURES = [
-  { key: 'arm:ankle', field: 'ankleCm', label: 'Ankle (knee-to-wall)', unit: ['cm', 'cm'] },
-  { key: 'arm:calf', field: 'calfReps', label: 'Calf raises', unit: ['rep', 'reps'] },
-  { key: 'arm:stork', field: 'storkSec', label: 'Stork balance', unit: ['s', 's'] },
+  { key: 'arm:ankle', field: 'ankle', label: 'The Lunge (weaker leg)', unit: ['cm', 'cm'] },
+  { key: 'arm:calf', field: 'calf', label: 'The Wall (weaker leg)', unit: ['rep', 'reps'] },
+  { key: 'arm:hop', field: 'hop', label: 'The Landing (weaker leg)', unit: ['cm', 'cm'] },
+  { key: 'arm:stork', field: 'stork', label: 'Stork balance', unit: ['s', 's'] },
 ] as const;
 
 const STAT_NAMES: Record<RatingKey, string> = {
@@ -64,8 +67,9 @@ function pbEntries(p: Performance, lookup: Lookup): PbEntry[] {
   }
   if (p.kind === 'arm') {
     const out: PbEntry[] = [];
+    const w = armWeaker(p.arm);
     ARM_MEASURES.forEach((m, i) => {
-      const v = p.arm?.[m.field];
+      const v = w[m.field];
       if (v != null && Number.isFinite(v) && v >= 0) out.push({ key: m.key, label: m.label, measure: 'count', value: v, sort: [3, i] });
     });
     return out;
