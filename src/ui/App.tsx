@@ -24,6 +24,7 @@ import { ProjectorPage } from './pages/ProjectorPage';
 import { HandicapPage } from './pages/HandicapPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { ScenesPage } from './pages/ScenesPage';
+import { WinterPage } from './pages/WinterPage';
 import { SquadPage } from './pages/SquadPage';
 import { YamaScene } from './art/YamaScene';
 import { HelpPage } from './pages/HelpPage';
@@ -47,6 +48,7 @@ const NAV: (NavItem | 'sep')[] = [
   { page: 'cards', to: '/cards', label: 'Cards & Print', icon: '▣' },
   { page: 'boards', to: '/boards', label: 'Boards', icon: '≡' },
   { page: 'handicap', to: '/handicap', label: 'Handicap Start', icon: '⏱' },
+  { page: 'winter', to: '/winter', label: 'Winter Mode', icon: '❄' },
   'sep',
   { page: 'settings', to: '/settings', label: 'Settings', icon: '⚙' },
   { page: 'help', to: '/help', label: 'Help', icon: '?' },
@@ -118,6 +120,8 @@ function renderPage(route: Route): ReactNode {
       return <ScenesPage />;
     case 'squad':
       return <SquadPage />;
+    case 'winter':
+      return <WinterPage />;
     default:
       return <HomePage />;
   }

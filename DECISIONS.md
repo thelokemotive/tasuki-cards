@@ -211,6 +211,34 @@ The review pack (`docs/REVIEW-BRIEF.md`) went to three outside models. Each clai
 6. **Long Ducker place score**: linear, and a Y9 is ranked against Y11s with no age allowance.
 7. **GPX intake, Japanese interface, phone layout.**
 
+## Winter Mode (17 Nov 2026)
+
+The coach asked for a light, science-backed way to keep the squad (and himself) fit over the holidays and the snow season, borrowing Duolingo's streak habits without encouraging overtraining. Built in `src/engine/winter.ts`, `src/engine/parse/topUps.ts`, `src/ui/pages/WinterPage.tsx`; constants in `config.winter`; the winter weeks in `calendar.winter`.
+
+- **One rule for everyone ("Rule of 2")**: a winter week is kept with 2 sessions, at least one a run of 15+ minutes; one armour or gym session can be the other. Staff: 3. Maintenance research (Hickson; Spiering et al. 2021) says fitness holds on much less volume if some intensity stays, so the only bonus is the ⚡ for race-pace surges or strides; volume earns nothing.
+- **Weekly, capped, asymmetric**: daily streaks reward junk miles; extra sessions earn nothing; a kept holiday week adds to the main streak while a missed one never breaks it. One rest pass per winter is used automatically (Duolingo's equipped freeze); a coach freeze also holds a winter week. In term-time snow weeks a missed week counts as missed, as before.
+- **Ski days do not count.** Pupils ski anyway, so it would reward nothing new, and ski boots take the running impact away from calves and Achilles, which is why the "ski-boot antidote" (pogo hops, calf raises) counts instead.
+- **No "Frost Shield" on card stats.** One outside suggestion was a shield against winter stat decay. Stats do not decay until 6 months without a result (`freshness.decayGraceMonths`), so a winter costs nothing; a shield would sell protection against a threat that does not exist. Ski days do not feed DSC either: skiing is not descent running.
+- **Top-ups never feed ratings, PBs or predictions.** They are self-reported, and treadmill speeds are uncalibrated (the belt can be several % off; 1% incline is the usual match to outdoor running, Jones & Doust 1996). The spring time trial is the honest test. Race pace comes the other way: the runner's realistic 5K target becomes a treadmill speed for surges.
+- **Evidence for a session**: a Microsoft Form restricted to school accounts with names recorded (identity from the school sign-in), with an optional photo of the treadmill screen. A live camera feed was considered and not built: it needs pupil logins (pending safeguarding sign-off), would film other people in a gym, and a still photo of the screen proves the same thing.
+- **Load nudges, not locks.** First week back after 14+ days: runs of 20 minutes, easy. A week with more than 1.5× the previous four weeks' average (and over 60 minutes): ease off. Soreness 4+: armour instead of a run. Coach to-do: soreness 6+, or over 240 running minutes in seven days. The thresholds are deliberately generous: the acute:chronic workload ratio is disputed as an injury predictor (Impellizzeri et al. 2020), and the "15% weekly jump = 50% more injuries" figure quoted in one suggestion could not be traced to youth data, so the app gives plain advice and claims no risk numbers.
+- **Privacy**: soreness, notes and the soreness, pain and volume nudges are left out of the pupils' website copy (health information).
+- **House Frost Cup** ranks houses by the share of weeks kept, so nobody is ranked last on their own (the outside motivation review: no public bottom-half rankings).
+- **Strava**: we do not compete with it as a GPS logger. Strava is for 13+ (16+ in some places), its maps show where children run, and it has no school team, cards or coach. Tasuki is the team layer: a Strava or watch screenshot is accepted as the photo like a treadmill screen.
+
+### Second outside spec (Gemini "maintenance engine"), checked against the code
+
+Taken:
+- **Sessions count on separate days.** Two runs (or a run and armour) on the same day are one session, so a week cannot be saved by cramming on Sunday. Dates carry no clock time, so "different day" stands in for the suggested 36 hours.
+- **A thin fortnight is a break.** The first-week-back advice now also fires when there were under 20 running minutes in the 14 days before this week, not only after 14 days with no run at all.
+- **Where it is sore.** The form asks; heel or knee soreness of 4+ in Y7–Y10 goes straight to the coach with no session suggested (Sever's and Osgood–Schlatter are common at these ages and need a person, not an app). Elsewhere, 4–5 is still an armour swap.
+- **Session cards** (`src/engine/winterSessions.ts`): easy run, sharp run, treadmill surges, ski-boot antidote, sore-legs armour, staff tempo. Each runner's page shows the one that fits their week, with their own treadmill speeds.
+
+Not taken:
+- **Readiness decay on card stats** (−1.5 a missed week on END/SPD, −2 on ARM). The numbers have no source, a winter costs nothing in the real ratings (decay starts at 6 months), and the motivation review the coach shared says downward card moves drive pupils away. The flame, the week strip and the first-week-back advice already say "you have not been running".
+- **EWMA acute:chronic ratio with a 15% spike rule.** Still the disputed ratio, and at one or two runs a week the exponential averages swing on a single run; `max(4 km, 1.15 × chronic)` would warn a pupil who simply did the Rule of 2 after a quiet week. The plain rule (1.5× the previous four weeks and over 60 minutes) stays.
+- **Snow weeks demanding exactly one run plus one antidote.** Two runs also give the impact the antidote replaces; the snow-week suggestion already steers to the antidote.
+- **sRPE, heart rate, GPX/FIT, XP and NAV quizzes.** The spec assumes these exist; they do not. Heart rate is also not collected from under-16s (the privacy review).
 ## Treadmill runs from a photo, and engagement (18 Nov 2026)
 
 The coach asked for more pull in the build (with the research synthesis on youth gamification as the guide) and whether treadmill progress could be logged from a phone photo instead of Microsoft Forms.
@@ -239,6 +267,9 @@ The coach asked for more pull in the build (with the research synthesis on youth
 
 **Version history.** The rules arrive as one config version, "A new stat never lowers OVR; treadmill sessions keep the weekly streak, and long ones feed END", created once on load (`engagementMigration`). Earlier versions are read with both off, so their ratings are reproduced; either can be switched off in Settings → Scoring (new section: Treadmill logs).
 
+**With Winter Mode.** Winter top-ups (a Forms report of a session) still never feed a rating. A treadmill run sent with a photo of the console and approved by a coach is a different record: of 5 km of effort or more it feeds END (the coach's decision, 18 Nov 2026). Both keep the weekly streak.
+
+
 ## Open questions for the coach
 
 1. Surge sanity gate: minimum of 3 legs with a baseline per event and distance (see above). Is that right?
@@ -247,5 +278,6 @@ The coach asked for more pull in the build (with the research synthesis on youth
 4. Bleep "laps" are 20 m shuttles, and the norms still need checking against Tomkinson et al. 2017.
 5. ~~Year groups do not roll over automatically in September.~~ They do now (16 Nov 2026).
 6. Evidence-weighted OVR makes Gold harder to reach on few results. Keep Gold at 75, or lower it a little?
-7. Treadmill logging is on and long treadmill runs feed END (18 Nov 2026). The DSL note (decision 4 in `docs/SAFEGUARDING-NOTE.md`) still asks for their agreement.
-8. A new stat joins the OVR at its second result. Is 2 right, or would you rather 3?
+7. Winter Mode: is 2 sessions (one a run) the right weekly bar for Y7–8 as well as Y12–13? Should the Tuesday gym count as a run when there are no treadmill surges?
+8. Treadmill logging is on and long treadmill runs feed END (18 Nov 2026). The DSL note (decision 4 in `docs/SAFEGUARDING-NOTE.md`) still asks for their agreement.
+9. A new stat joins the OVR at its second result. Is 2 right, or would you rather 3?

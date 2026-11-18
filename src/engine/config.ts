@@ -196,6 +196,38 @@ export interface Config {
     days: number;
   };
 
+  /** Winter Mode (top-up sessions over the holidays and the snow season). See src/engine/winter.ts. */
+  winter: {
+    /** Sessions a pupil needs in a winter week, at least one of them a run (outdoors or treadmill). */
+    sessionsPerWeek: number;
+    /** The same for staff (the coach's own maintenance target). */
+    staffSessionsPerWeek: number;
+    /** A session shorter than this does not count (armour: armourMinMinutes). */
+    minRunMinutes: number;
+    armourMinMinutes: number;
+    /** Weeks the app lets slide per winter without breaking the flame (Duolingo's freeze, equipped in advance). */
+    restPasses: number;
+    /** A kept winter week counts as a streak week in the main streak (missed holiday weeks still never break it). */
+    countsTowardStreak: boolean;
+    /** Weeks kept, as a share of winter weeks so far, to be "spring ready". */
+    springReadyShare: number;
+    /** No run for this many days: the first week back is easy, at most firstBackMinutes a session. */
+    returnAfterDays: number;
+    firstBackMinutes: number;
+    /** This week's running minutes above spikeRatio × the average of the previous 4 weeks (and above spikeMinMinutes): ease off. */
+    spikeRatio: number;
+    spikeMinMinutes: number;
+    /** Running minutes in one week above this (pupils) is flagged to the coach. */
+    weeklyMinutesFlag: number;
+    /** Soreness at or above this: the next session should be armour, not a run. At or above painFlag: tell the coach. */
+    sorenessSwap: number;
+    painFlag: number;
+    /** Soreness at or above sorenessSwap in the heel or knee goes to the coach for these year groups (growth plates). */
+    growthYears: string[];
+    /** Treadmill incline (%) that makes belt pace roughly match outdoor pace (Jones & Doust 1996). */
+    treadmillInclinePct: number;
+  };
+
   streak: {
     milestones: number[];
     /** Freezes allowed per half-term. */
@@ -389,6 +421,25 @@ export const DEFAULT_CONFIG: Config = {
   streak: { milestones: [4, 8, 12, 20], freezesPerHalfTerm: 1, treadmillCounts: true },
 
   treadmill: { feedsEnd: true, kmMilestones: [10, 25, 50, 100, 200], minKm: 1, maxSpeedKmh: 22, maxInclinePct: 15, maxDaysOld: 14 },
+
+  winter: {
+    sessionsPerWeek: 2,
+    staffSessionsPerWeek: 3,
+    minRunMinutes: 15,
+    armourMinMinutes: 10,
+    restPasses: 1,
+    countsTowardStreak: true,
+    springReadyShare: 0.75,
+    returnAfterDays: 14,
+    firstBackMinutes: 20,
+    spikeRatio: 1.5,
+    spikeMinMinutes: 60,
+    weeklyMinutesFlag: 240,
+    sorenessSwap: 4,
+    painFlag: 6,
+    growthYears: ['Y7', 'Y8', 'Y9', 'Y10'],
+    treadmillInclinePct: 1,
+  },
 
   surge: {
     exponent: 1.1,

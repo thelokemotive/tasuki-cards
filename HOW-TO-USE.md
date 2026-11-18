@@ -48,6 +48,22 @@ Drag the Green Long Ducker workbook (one sheet per house: Year, names and Positi
 
 **Courses and predictions.** The three Long Ducker courses (Prep 3.0 km +148.5 m, Senior 3.54 km +526 m, Sixth Form 4.50 km +658 m) are added automatically and every Long Ducker race is linked to its course. Each athlete page shows a **predicted Long Ducker time** (from the Next 5K, scaled to distance plus climb) and where that puts them among the squad. **Climb (CLB) from a place:** a Long Ducker place with no time counts for the climb rating, from where the runner finished in their whole-school race: 80 for first in the school down to 40 for last (60 mid-field). It never reaches Icon level; a timed climb that scores higher counts instead. Races with fewer than 5 finishers are not scored this way. Our runners are matched and their place and the field size are saved; everyone else is counted, not stored. Each athlete page then shows **Compared with the school** (top % and the change since last year), and the event page shows where our runners finished in the field.
 
+## 4b. Winter Mode (holidays and the snow season)
+
+**Winter Mode** (❄ in the menu). Add the winter weeks once: the Christmas holiday (kind *Holiday*) and the snow season (kind *Snow season*). From then on:
+
+- **The rule for everyone**: 2 sessions a week on different days, at least one a run of 15+ minutes (outdoors, treadmill, parkrun, Circuit). One armour session (10 minutes of calf raises, pogo hops, ankle work) or gym session can be the other. Staff need 3. Ski days are logged but do not count. Extra sessions earn nothing.
+- **The ⚡**: a week with race-pace surges or strides. Every runner's page shows their spring 5K target as a **treadmill speed** for surges and for easy running; **Treadmill paces** on the Winter page lists the whole squad to print for the gym.
+- **Pupils log sessions** with a Microsoft Form (the questions are under **Setting up the form** on the Winter page; set it to school accounts only with names recorded). They can attach a photo of the treadmill screen. Each week: Responses → Open in Excel, copy everything, paste into **Paste the top-up form**, **Add**. Pasting the same responses twice is harmless.
+- **Tuesday gym**: tick who came and **Record gym**. With *treadmill surges* ticked it counts as a sharp run.
+- **What it does for them**: a kept week lights the 🔥 and counts in the main streak; a missed holiday week never breaks the streak. One rest pass per winter is used automatically; for illness or injury use **Apply freeze…**.
+- **What it tells you**: **For the coach** lists soreness of 6/10 or more and anyone running more than 4 hours a week. Pupils see gentler nudges (first week back: short and easy; a big jump: ease off; soreness 4+: do armour instead). Soreness and notes are never in the pupils' website copy.
+- **House Frost Cup**: the share of weeks kept by each house's pupils.
+- **Session cards**: six ready-made sessions on the Winter page to print; each runner's page shows the one for their week with their own treadmill speeds.
+- **Sore heel or knee** (Y7–Y10, 4/10 or more) goes to **For the coach** with no session suggested.
+
+Top-ups never change a rating, a PB or the 5K prediction (treadmills are not calibrated). The spring time trial shows whether the winter worked.
+
 ## 5. The fun bits (Yama)
 
 - **The Silly Lab**: athlete page → Edit avatar. Hats, faces, mouths, things to hold, running buddies, feet, backs and trails, or **🎲 Surprise me**. Some items are earned (the crown for Gold, the halo for an 8-week streak, rocket boots for SPD 80+).

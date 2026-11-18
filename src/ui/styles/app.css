@@ -319,3 +319,29 @@ table.table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
   .btn-sm { min-height: 32px; }
 }
 @media print { .acct { display: none !important; } }
+
+/* Winter Mode */
+.winter-head { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+.winter-flame { display: flex; align-items: baseline; gap: 6px; }
+.winter-flame strong { font-size: 28px; }
+.winter-strip { display: flex; flex-wrap: wrap; gap: 3px; }
+.winter-wk { display: inline-flex; align-items: center; justify-content: center; min-width: 24px; height: 24px; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--line); font-size: 13px; }
+.winter-wk sup { font-size: 9px; margin-left: -2px; }
+.winter-kept { background: var(--shu-soft); border-color: var(--shu); }
+.winter-rest { background: var(--ai-soft); }
+.winter-missed { color: var(--ink-3); }
+.winter-current { border-style: dashed; }
+.winter-next { margin: 0; font-weight: 600; }
+.winter-flag { margin: 0; padding: 6px 10px; border-radius: 6px; background: var(--warn-soft); color: var(--warn); font-size: 14px; }
+.winter-flag-pain { background: var(--err-soft); color: var(--err); }
+.winter-pace { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.winter-pace > div { display: flex; flex-direction: column; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+.winter-pace strong { font-size: 20px; }
+.winter-ticks { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 4px 12px; margin: 10px 0; }
+td .winter-strip { flex-wrap: nowrap; }
+.winter-sessions { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+.winter-session { border: 1px solid var(--line); border-left: 4px solid var(--sky); border-radius: 8px; padding: 8px 12px; background: var(--surface); }
+.winter-session-head { display: flex; flex-direction: column; }
+.winter-session ol { margin: 6px 0 0; padding-left: 18px; }
+@media print { .winter-session { break-inside: avoid; } }
+.winter-next-cell { min-width: 260px; }
