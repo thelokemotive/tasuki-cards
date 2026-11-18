@@ -12,7 +12,7 @@ import type { DataSnapshot } from '../../../types';
 import { ourSchoolNames } from '../../../engine/parse/newAthletes';
 
 export function DataTab() {
-  const { fullSnapshot: snapshot, commit, replaceAll, today, asOf, setAsOf, persistent } = useData();
+  const { fullSnapshot: snapshot, commit, replaceAll, today, asOf, setAsOf, persistent, store } = useData();
   const toast = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
   const [pending, setPending] = useState<{ snap: DataSnapshot; name: string } | null>(null);
@@ -47,8 +47,36 @@ export function DataTab() {
     toast('Demo data cleared', 'ok');
   };
 
+  const stored = (() => {
+    const s = snapshot;
+    const live = s.performances.filter((p) => !p.deleted);
+    const school = s.athletes.filter((a) => a.squad === false).length;
+    const dates = live.map((p) => p.date).sort();
+    return [
+      ['Where', persistent ? (store.kind === 'cloud' ? 'the shared school database (website)' : 'this browser on this device (laptop file)') : 'memory only: NOT saved'],
+      ['Athletes', `${s.athletes.length} (${s.athletes.length - school} squad, ${school} whole-school runners, ${s.athletes.filter((a) => !a.active).length} inactive, ${s.athletes.filter((a) => a.demo).length} demo)`],
+      ['Results', `${live.length}${dates.length ? `, from ${formatLongDate(dates[0])} to ${formatLongDate(dates[dates.length - 1])}` : ''} (${s.performances.length - live.length} deleted, kept in history)`],
+      ['Events', String(s.events.length)],
+      ['Courses', String(s.courses.length)],
+      ['Results not shown on squad pages', `${live.filter((p) => s.athletes.find((a) => a.id === p.athleteId)?.squad === false).length} (they belong to whole-school runners)`],
+    ];
+  })();
+
   return (
     <div className="stack">
+      <Panel title="What is stored">
+        <p className="small muted">Everything saved, including whole-school runners, inactive athletes and deleted results, which the other pages leave out.</p>
+        <table className="table">
+          <tbody>
+            {stored.map(([k, v]) => (
+              <tr key={k}>
+                <th style={{ width: '32%' }}>{k}</th>
+                <td>{v}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Panel>
       <Panel title="Backup">
         <p>
           <strong>Export everything</strong> saves the roster, aliases, results (with their correction history), events, courses, calendar, every config version, achievements and avatars as one .json file. It includes dates of birth: keep it private and never print it.
