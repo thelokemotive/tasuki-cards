@@ -270,6 +270,20 @@ The coach asked for more pull in the build (with the research synthesis on youth
 **With Winter Mode.** Winter top-ups (a Forms report of a session) still never feed a rating. A treadmill run sent with a photo of the console and approved by a coach is a different record: of 5 km of effort or more it feeds END (the coach's decision, 18 Nov 2026). Both keep the weekly streak.
 
 
+## ARM for Season 0: both legs, Hop & Freeze, plate levels (18 Nov 2026)
+
+The coach's Season 0 protocol (Nov 2026): the Lunge (ankle), the Wall (calf, 60 bpm, stopped at 40), the Stork (eyes closed, best of 3, stopped at 30) and Hop & Freeze (80 / 100 / 120 / 140 cm ladder, everyone does it), each leg recorded.
+
+- **Each leg's raw result is stored** (`ArmMeasures.left` / `right`: `ankleCm`, `calfReps`, `storkSec`, `hopLineCm`). The engine works out the weaker side (`armEffective` in `src/engine/arm.ts`); the coach never does. Levels, PBs, badges and the "Why?" working all use it, and the working names the weaker leg.
+- **Old records still count.** A test saved before this holds one value per measure, already the weaker side, and a hop yes/no. Those are read as before. In a mixed record, per-leg values win measure by measure. A correction can add per-leg values to an old test; the old fields stay visible in the editor until cleared.
+- **One leg only:** that leg is used (better than losing the result; the entry form shows both columns, so this should be rare).
+- **Hop:** "yes" when the furthest line frozen is at least `arm.hopGateCm` (120) on **both** legs. "No" as soon as either recorded leg is short of it. One leg at 120+ and the other not recorded is not yet a yes. Balance L5 = Stork level 4 on the weaker leg + hop yes, in the same test, as before.
+- **Thresholds:** new default config is calf `[15, 20, 25, 30, 35]` reps and stork `[3, 6, 10, 15]` s; ankle is unchanged and the ARM formula is unchanged (levels added 3→40 … 15→99). Existing stores keep their stored thresholds: the coach changes them in **Settings → Scoring → ARM** before entering results, which makes a new config version so earlier ratings can be reproduced. A stored version from before this reads `hopGateCm` as 120 (it has no per-leg hop lines, so this changes nothing).
+- **Line format:** `Name ankle 9.5/11 calf 22/25 stork 6/9 hop 100/120` (left/right). The old `ankle 11 calf 18 stork 22 hop yes` is still read. A lone `hop 120` is refused (it cannot say both legs); a line not on the ladder (e.g. 110) is accepted with a warning.
+- **Plate levels next to ARM** on the card (`74 A1·C4·B5`), the athlete page stats table and the line under it, so the number never hides the profile. `0` = tested but below level 1; `–` = not tested.
+- **ARM spread** (Settings → Scoring → ARM): for each plate, how many active pupils (staff and inactive athletes left out) sit below L1 and at L1–L5, plus tested and not tested, using each pupil's best level in the window. A plate where more than a third of the tested pupils are at L5 or below L1 is marked "review thresholds". With unsaved threshold changes a second table shows the spread they would give, so the one Season 0 adjustment can be checked before it is applied.
+- **Demo data:** the first screening stays in the old single-value format, the retest is per leg, so both paths are exercised.
+
 ## Open questions for the coach
 
 1. Surge sanity gate: minimum of 3 legs with a baseline per event and distance (see above). Is that right?
@@ -281,3 +295,4 @@ The coach asked for more pull in the build (with the research synthesis on youth
 7. Winter Mode: is 2 sessions (one a run) the right weekly bar for Y7–8 as well as Y12–13? Should the Tuesday gym count as a run when there are no treadmill surges?
 8. Treadmill logging is on and long treadmill runs feed END (18 Nov 2026). The DSL note (decision 4 in `docs/SAFEGUARDING-NOTE.md`) still asks for their agreement.
 9. A new stat joins the OVR at its second result. Is 2 right, or would you rather 3?
+10. ARM: when only one leg is recorded for a test, that leg is used. Would you rather it counted as not tested until both legs are in?

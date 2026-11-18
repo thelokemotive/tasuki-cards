@@ -1,5 +1,6 @@
 // View model for a trading card, built from derived data. The card component only renders this.
 // DOB and coach-only notes are never part of a card.
+import { armPlates } from '../../engine/arm';
 import { formatTime } from '../../engine/format';
 import type { Avatar, YearGroup } from '../../types';
 import type { AthleteDerived } from '../../engine/derive';
@@ -19,6 +20,8 @@ export interface CardStat {
   date?: string;
   provisional: boolean;
   shielded: boolean;
+  /** ARM only: the three plate levels, e.g. 'A3·C4·B2', so the number never hides the profile. */
+  plates?: string;
 }
 
 export interface CardData {
@@ -89,6 +92,7 @@ export function buildCardData(d: AthleteDerived): CardData {
         date: s.basis?.date ? formatShortDate(s.basis.date) : undefined,
         provisional: s.provisional,
         shielded: s.shielded,
+        ...(k === 'ARM' && !s.locked ? { plates: armPlates(r.arm).replace(/ · /g, '·') } : {}),
       };
     }),
     streak: d.streak.currentStreak,

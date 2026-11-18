@@ -1,6 +1,8 @@
 // Quick Entry (spec 4.1): one phone-friendly screen with a live preview before saving.
 import './quickEntry.css';
 import { useDeferredValue, useEffect, useMemo, useState } from 'react';
+import { ArmLegsInput, tidyArm } from '../components/ArmLegsInput';
+import { armHasSides } from '../../engine/arm';
 import type { ArmMeasures, Performance, PerfKind, TasukiEvent } from '../../types';
 import { PERF_KINDS } from '../../types';
 import { Field, PageHeader, Panel, newId } from '../components/common';
@@ -40,7 +42,7 @@ interface Draft {
   team: string;
   racedEarlier: boolean;
   laps: string;
-  arm: { ankle: string; calf: string; stork: string; hop: '' | 'yes' | 'no' };
+  arm: ArmMeasures;
   navErrors: string;
   routeKm: string;
   clean: boolean;
@@ -73,7 +75,7 @@ export function QuickEntryPage() {
     team: '',
     racedEarlier: false,
     laps: '',
-    arm: { ankle: '', calf: '', stork: '', hop: '' },
+    arm: {},
     navErrors: '0',
     routeKm: '',
     clean: true,
@@ -107,7 +109,7 @@ export function QuickEntryPage() {
       if (!dist && !course) return 'Enter the distance (or choose a course)';
     }
     if (d.kind === 'bleep' && !(n(d.laps)! > 0)) return 'Enter the laps';
-    if (d.kind === 'arm' && !d.arm.ankle && !d.arm.calf && !d.arm.stork) return 'Enter at least one ARM measure';
+    if (d.kind === 'arm' && !armHasSides(d.arm)) return 'Enter at least one ARM result';
     return null;
   })();
 
@@ -122,9 +124,7 @@ export function QuickEntryPage() {
     if (!d.eventId && d.newEventName.trim()) {
       newEvent = { id: 'draft-event', name: d.newEventName.trim(), date: d.date, kind: EVENT_KIND[d.kind], official: true, ...(course ? { courseId: course.id } : {}), ...(dist && !course ? { distanceKm: dist } : {}), ...(climb && !course ? { climbM: climb } : {}) };
     }
-    const arm: ArmMeasures | undefined =
-      d.kind === 'arm' ? { ankleCm: n(d.arm.ankle), calfReps: n(d.arm.calf), storkSec: n(d.arm.stork), ...(d.arm.hop ? { hopStickBothLegs: d.arm.hop === 'yes' } : {}) } : undefined;
-    if (arm) for (const k of Object.keys(arm) as (keyof ArmMeasures)[]) if (arm[k] === undefined) delete arm[k];
+    const arm: ArmMeasures | undefined = d.kind === 'arm' ? tidyArm(d.arm) : undefined;
     const perf: Performance = makePerformance(
       {
         athleteId: d.athleteId,
@@ -173,7 +173,7 @@ export function QuickEntryPage() {
     await commit(real);
     const a = snapshot.athletes.find((x) => x.id === d.athleteId);
     toast(`Saved for ${a ? fullName(a) : 'athlete'}${preview?.[0] ? `: ${preview[0].text}` : ''}`, 'ok');
-    setD((x) => ({ ...x, athleteId: null, time: '', laps: '', place: '', arm: { ankle: '', calf: '', stork: '', hop: '' }, navErrors: '0', leg: '', racedEarlier: false, eventId: eventId ?? x.eventId, newEventName: '' }));
+    setD((x) => ({ ...x, athleteId: null, time: '', laps: '', place: '', arm: {}, navErrors: '0', leg: '', racedEarlier: false, eventId: eventId ?? x.eventId, newEventName: '' }));
   };
 
   return (
@@ -300,26 +300,7 @@ export function QuickEntryPage() {
                     <input className="input qe-time" type="number" value={d.laps} onChange={(e) => set('laps', e.target.value)} />
                   </Field>
                 )}
-                {d.kind === 'arm' && (
-                  <div className="grid-2">
-                    <Field label="Ankle: knee-to-wall, weaker side (cm)">
-                      <input className="input" type="number" step="0.5" value={d.arm.ankle} onChange={(e) => set('arm', { ...d.arm, ankle: e.target.value })} />
-                    </Field>
-                    <Field label="Calf: single-leg heel raises, weaker side">
-                      <input className="input" type="number" value={d.arm.calf} onChange={(e) => set('arm', { ...d.arm, calf: e.target.value })} />
-                    </Field>
-                    <Field label="Balance: eyes-closed stork, weaker side (s)">
-                      <input className="input" type="number" value={d.arm.stork} onChange={(e) => set('arm', { ...d.arm, stork: e.target.value })} />
-                    </Field>
-                    <Field label="Hop and stick, both legs">
-                      <select className="select" value={d.arm.hop} onChange={(e) => set('arm', { ...d.arm, hop: e.target.value as Draft['arm']['hop'] })}>
-                        <option value="">not tested</option>
-                        <option value="yes">passed</option>
-                        <option value="no">not passed</option>
-                      </select>
-                    </Field>
-                  </div>
-                )}
+                {d.kind === 'arm' && <ArmLegsInput value={d.arm} config={config} onChange={(v) => set('arm', v)} />}
                 {d.kind === 'nav' && (
                   <div className="grid-2">
                     <Field label="Control errors">

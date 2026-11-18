@@ -9,6 +9,7 @@ import { deriveAll, diffRatings } from '../../../engine/derive';
 import { fullName } from '../../../engine/display';
 import { AGE_GRADE_SOURCE } from '../../../engine/standards';
 import { BLEEP_PERCENTILES } from '../../../engine/config';
+import { ArmSpreadPanel } from './ArmSpread';
 
 type Path = (string | number)[];
 
@@ -71,6 +72,10 @@ const HELP: Record<string, string> = {
   'spd.raceMaxKmEff': 'A verified race, relay leg or parkrun of up to this effective distance (km) also feeds SPD.',
   'clb.raceMinClimbM': 'A verified race or long run needs at least this much climb (m) to feed CLB…',
   'clb.raceMinClimbPerKm': '…and at least this many metres of climb per km.',
+  'arm.ankleCm': 'The Lunge: toe-to-wall cm for levels 1–5 (weaker leg, best of 3).',
+  'arm.calfReps': 'The Wall: heel raises to 60 bpm for levels 1–5 (weaker leg, stopped at 40).',
+  'arm.storkSec': 'The Stork: eyes-closed seconds for levels 1–4 (weaker leg, best of 3, stopped at 30). Level 5 = level 4 + hop yes.',
+  'arm.hopGateCm': 'Hop & Freeze is “yes” when the furthest line frozen is at least this (cm) on both legs.',
 };
 
 const human = (k: string) => k.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase()).replace(/\bAg\b/, 'AG').replace(/ M$/, ' (men)').replace(/ F$/, ' (women)');
@@ -236,7 +241,7 @@ export function ScoringTab() {
     const after = deriveAll(snapshot, asOf, { ...draft, version: config.version + 1 });
     const changes = diffRatings(derived, after);
     const athletes = new Set(changes.map((c) => c.athleteId));
-    return { changes, athletes: athletes.size };
+    return { changes, athletes: athletes.size, after };
   }, [dirty, draft, snapshot, asOf, config.version, derived]);
 
   const apply = async () => {
@@ -278,6 +283,8 @@ export function ScoringTab() {
         </div>
         <Section key={open} draft={draft} setDraft={setDraft} section={open} />
       </Panel>
+
+      {open === 'arm' && <ArmSpreadPanel now={derived} after={impact && JSON.stringify(draft.arm) !== JSON.stringify(config.arm) ? impact.after : undefined} />}
 
       <Panel title="Impact preview">
         {!dirty ? (

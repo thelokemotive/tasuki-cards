@@ -135,8 +135,10 @@ export interface Config {
     /** Minimum value for levels 1..5. */
     ankleCm: [number, number, number, number, number];
     calfReps: [number, number, number, number, number];
-    /** Levels 1..4 (seconds). Level 5 = level-4 threshold and hop-and-stick passed on both legs. */
+    /** Levels 1..4 (seconds). Level 5 = level-4 threshold and Hop & Freeze passed on both legs. */
     storkSec: [number, number, number, number];
+    /** Hop & Freeze counts as passed when the furthest line frozen is at least this (cm) on both legs. */
+    hopGateCm: number;
     windowMonths: number;
     provisional: boolean;
   };
@@ -401,8 +403,9 @@ export const DEFAULT_CONFIG: Config = {
 
   arm: {
     ankleCm: [5, 8, 10, 12, 14],
-    calfReps: [10, 15, 20, 25, 30],
-    storkSec: [5, 10, 20, 30],
+    calfReps: [15, 20, 25, 30, 35],
+    storkSec: [3, 6, 10, 15],
+    hopGateCm: 120,
     windowMonths: 12,
     provisional: false,
   },

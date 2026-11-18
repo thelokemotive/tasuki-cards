@@ -5,6 +5,7 @@ import { PERF_KINDS } from '../../types';
 import { Field, Modal } from './common';
 import { useToast } from './Toast';
 import { useData } from '../data/DataContext';
+import { ArmLegsInput, tidyArm } from './ArmLegsInput';
 import { correctPerformance, deletePerformance, restorePerformance, type PerformancePatch } from '../../engine/corrections';
 import { formatTime } from '../../engine/format';
 import { parseTime } from '../../engine/time';
@@ -35,7 +36,7 @@ function show(v: unknown): string {
 }
 
 export function PerformanceEditor({ perf, onClose }: { perf: Performance; onClose: () => void }) {
-  const { commit, snapshot } = useData();
+  const { commit, snapshot, config } = useData();
   const toast = useToast();
   const by = snapshot.meta.coachName || 'Coach';
   const [p, setP] = useState<Performance>(perf);
@@ -213,20 +214,27 @@ export function PerformanceEditor({ perf, onClose }: { perf: Performance; onClos
           )}
           {kind === 'arm' && (
             <>
-              <Field label="Ankle, knee-to-wall (cm)">
-                <input className="input" type="number" step="0.5" value={p.arm?.ankleCm ?? ''} onChange={(e) => set('arm', { ...p.arm, ankleCm: numOrUndef(e.target.value) })} />
-              </Field>
-              <Field label="Calf raises (reps)">
-                <input className="input" type="number" value={p.arm?.calfReps ?? ''} onChange={(e) => set('arm', { ...p.arm, calfReps: numOrUndef(e.target.value) })} />
-              </Field>
-              <Field label="Stork, eyes closed (s)">
-                <input className="input" type="number" value={p.arm?.storkSec ?? ''} onChange={(e) => set('arm', { ...p.arm, storkSec: numOrUndef(e.target.value) })} />
-              </Field>
-              <Field label="Hop and stick, both legs">
-                <label className="check">
-                  <input type="checkbox" checked={!!p.arm?.hopStickBothLegs} onChange={(e) => set('arm', { ...p.arm, hopStickBothLegs: e.target.checked })} /> Passed
-                </label>
-              </Field>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <ArmLegsInput value={p.arm} config={config} onChange={(a) => set('arm', tidyArm(a))} />
+              </div>
+              {(p.arm?.ankleCm != null || p.arm?.calfReps != null || p.arm?.storkSec != null || p.arm?.hopStickBothLegs != null) && (
+                <>
+                  <Field label="Older record: ankle, weaker side (cm)">
+                    <input className="input" type="number" step="0.5" value={p.arm?.ankleCm ?? ''} onChange={(e) => set('arm', tidyArm({ ...p.arm, ankleCm: numOrUndef(e.target.value) }))} />
+                  </Field>
+                  <Field label="Older record: calf, weaker side (reps)">
+                    <input className="input" type="number" value={p.arm?.calfReps ?? ''} onChange={(e) => set('arm', tidyArm({ ...p.arm, calfReps: numOrUndef(e.target.value) }))} />
+                  </Field>
+                  <Field label="Older record: stork, weaker side (s)">
+                    <input className="input" type="number" value={p.arm?.storkSec ?? ''} onChange={(e) => set('arm', tidyArm({ ...p.arm, storkSec: numOrUndef(e.target.value) }))} />
+                  </Field>
+                  <Field label="Older record: hop and stick, both legs">
+                    <label className="check">
+                      <input type="checkbox" checked={!!p.arm?.hopStickBothLegs} onChange={(e) => set('arm', tidyArm({ ...p.arm, hopStickBothLegs: e.target.checked }))} /> Passed
+                    </label>
+                  </Field>
+                </>
+              )}
             </>
           )}
         </div>

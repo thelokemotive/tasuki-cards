@@ -3,6 +3,8 @@
 // and leaves an empty app (the seeded Campus Circuit and config stay: they are not demo data).
 // Deterministic: the same `today` always gives the same data (seeded generator, no Math.random).
 import type {
+  ArmMeasures,
+  ArmSide,
   Athlete,
   Calendar,
   Course,
@@ -26,6 +28,7 @@ import { counts, makeLookup, resolveContext } from '../engine/perf';
 import { isCircuitPerf } from '../engine/streak';
 import { predictLegTime } from '../engine/surge';
 import { formatTime } from '../engine/format';
+import { armResultText } from '../engine/arm';
 import { defaultAvatar, hashString, KIT_COLOURS } from '../engine/avatarDefaults';
 
 /** The seeded course (spec 2). Not demo data: it stays when demo data is cleared. */
@@ -459,10 +462,20 @@ export function buildDemoData(today: ISODate): DemoData {
       const prev = armBase.get(r.a.id);
       const m = prev
         ? { ankle: prev.ankle + Math.round(draws[1] * 3) / 2, calf: prev.calf + Math.floor(draws[2] * 5), stork: prev.stork + Math.floor(draws[3] * 7), hop: prev.hop || draws[4] < 0.3 }
-        : { ankle: Math.round((5 + draws[1] * 9) * 2) / 2, calf: 10 + Math.floor(draws[2] * 22), stork: 4 + Math.floor(draws[3] * 32), hop: draws[4] < 0.45 };
+        : { ankle: Math.round((5 + draws[1] * 9) * 2) / 2, calf: 13 + Math.floor(draws[2] * 24), stork: 2 + Math.floor(draws[3] * 16), hop: draws[4] < 0.45 };
       armBase.set(r.a.id, m);
-      const arm = r.spec.partialArm ? { ankleCm: m.ankle, storkSec: m.stork, hopStickBothLegs: m.hop } : { ankleCm: m.ankle, calfReps: m.calf, storkSec: m.stork, hopStickBothLegs: m.hop };
-      addPerf(r, { eventId: ev.id, date, kind: 'arm', arm, rawInput: `${r.name} ankle ${m.ankle}${r.spec.partialArm ? '' : ` calf ${m.calf}`} stork ${m.stork} hop ${m.hop ? 'yes' : 'no'}${i === 0 ? '' : ' (retest)'}` });
+      if (i === 0) {
+        // The first screening is in the older format: one weaker-side value per test and hop yes/no.
+        const arm = r.spec.partialArm ? { ankleCm: m.ankle, storkSec: m.stork, hopStickBothLegs: m.hop } : { ankleCm: m.ankle, calfReps: m.calf, storkSec: m.stork, hopStickBothLegs: m.hop };
+        addPerf(r, { eventId: ev.id, date, kind: 'arm', arm, rawInput: `${r.name} ankle ${m.ankle}${r.spec.partialArm ? '' : ` calf ${m.calf}`} stork ${m.stork} hop ${m.hop ? 'yes' : 'no'}` });
+        continue;
+      }
+      // The retest records each leg (Season 0 protocol); the weaker leg carries the measured value.
+      const weak: ArmSide = { ankleCm: m.ankle, ...(r.spec.partialArm ? {} : { calfReps: m.calf }), storkSec: m.stork, hopLineCm: m.hop ? 120 : 100 };
+      const strong: ArmSide = { ankleCm: m.ankle + 1, ...(r.spec.partialArm ? {} : { calfReps: m.calf + 3 }), storkSec: m.stork + 2, hopLineCm: m.hop ? 140 : 120 };
+      const [left, right] = draws[0] < 0.4 ? [weak, strong] : [strong, weak];
+      const arm: ArmMeasures = { left, right };
+      addPerf(r, { eventId: ev.id, date, kind: 'arm', arm, rawInput: `${r.name} ${armResultText(arm, ' ').replace(/ cm| s/g, '')} (retest)` });
     }
   }
 

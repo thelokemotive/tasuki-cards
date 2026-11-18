@@ -78,6 +78,20 @@ Aiko Testfield, Ben Sampleton
 Coach Example 9:45:00`;
 
 describe('Tasuki line format (spec 4.3)', () => {
+  it('ARM per leg: "ankle 9.5/11 calf 22/25 stork 6/9 hop 100/120" (left/right)', () => {
+    const r = parseLineFormat('# test: arm | 2026-11-20\nAiko Testfield ankle 9.5/11 calf 22/25 stork 6/9 hop 100/120\nBen Sampleton ankle 8 / 8.5, calf 30/28, stork 15/12, hop 0/80', { today: '2026-11-20', config: DEFAULT_CONFIG }).rows;
+    expect(r[0]).toMatchObject({ name: 'Aiko Testfield', errors: [], warnings: [], arm: { left: { ankleCm: 9.5, calfReps: 22, storkSec: 6, hopLineCm: 100 }, right: { ankleCm: 11, calfReps: 25, storkSec: 9, hopLineCm: 120 } } });
+    expect(r[0].arm).not.toHaveProperty('ankleCm');
+    expect(r[1]).toMatchObject({ name: 'Ben Sampleton', errors: [], arm: { left: { ankleCm: 8, calfReps: 30, storkSec: 15, hopLineCm: 0 }, right: { ankleCm: 8.5, calfReps: 28, storkSec: 12, hopLineCm: 80 } } });
+  });
+
+  it('ARM: old single values and per-leg values can mix; a lone hop number or a hop line off the ladder is flagged', () => {
+    const rows = parseLineFormat('# test: arm | 2026-11-20\nAiko Testfield ankle 11 calf 22/25 hop yes\nBen Sampleton stork 6/9 hop 120\nHana M hop 110/120', { today: '2026-11-20', config: DEFAULT_CONFIG }).rows;
+    expect(rows[0]).toMatchObject({ errors: [], arm: { ankleCm: 11, hopStickBothLegs: true, left: { calfReps: 22 }, right: { calfReps: 25 } } });
+    expect(rows[1].errors[0]).toMatch(/Hop needs the furthest line frozen on each leg/);
+    expect(rows[2].warnings).toContain('Hop line 110 cm is not on the ladder (80 / 100 / 120 / 140)');
+  });
+
   const p = parseLineFormat(LINE_EXAMPLE, { today: TODAY, config: cfg });
 
   it('reads every header', () => {
