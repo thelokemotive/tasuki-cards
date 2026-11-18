@@ -6,9 +6,10 @@ import type { Badge, BadgeKind, CourseRecord, StreakResult, SurgeResult } from '
 import { ARM_DOMAINS, armLevelsFromTest, type ArmDomain } from './arm';
 import { weekMonday } from './dates';
 import { byDate, counts, raceCapPerfs, resolveContext, TIMED_KINDS, type Lookup } from './perf';
+import { treadmillBadges } from './treadmill/session';
 
 /** Order badges are listed in (the spec's order); the card row re-sorts by prestige. */
-const KIND_ORDER: BadgeKind[] = ['caps', 'parkrun', 'distance', 'mountain', 'streak', 'arm', 'surge', 'record', 'expedition', 'custom'];
+const KIND_ORDER: BadgeKind[] = ['caps', 'parkrun', 'distance', 'mountain', 'streak', 'treadmill', 'arm', 'surge', 'record', 'expedition', 'custom'];
 
 const ARM_LABEL: Record<ArmDomain, string> = { ankle: 'Ankle', calf: 'Calf', balance: 'Balance' };
 
@@ -94,6 +95,8 @@ export function computeBadges(input: {
     if (input.streak.bestStreak >= m) badges.push({ key: `streak-${m}`, kind: 'streak', label: `${m}-week streak`, icon: '🔥', date: reachedAt.get(m), count: m });
   }
 
+  badges.push(...treadmillBadges(mine, athlete.id, asOf, config));
+
   const armBest = new Map<ArmDomain, { level: number; p: Performance }>();
   for (const p of mine.filter((q) => q.kind === 'arm')) {
     const levels = armLevelsFromTest(p.arm, config);
@@ -140,7 +143,8 @@ export function computeBadges(input: {
 /**
  * Prestige for the card's badge row (higher first): course record 100, Surge gold 90, expedition 80,
  * Mountain 75, Surge bronze 65, custom 60, streak 50 + weeks, caps 40 + count (max 20),
- * ARM 30 + 4 × level, parkruns 30 + count (max 10), distance 35 + 15 per step up the ladder.
+ * ARM 30 + 4 × level, parkruns 30 + count (max 10), treadmill km club 30 + km ÷ 10 (max 20),
+ * distance 35 + 15 per step up the ladder.
  * `distanceStep` is the badge's position among the distance badges as computeBadges lists them
  * (up the config.badges.distances ladder, then ultra), so first 5K < 10K < half < marathon < ultra.
  */
@@ -164,6 +168,8 @@ function prestige(b: Badge, distanceStep: number): number {
       return 30 + 4 * (b.count ?? 0);
     case 'parkrun':
       return 30 + Math.min(b.count ?? 0, 10);
+    case 'treadmill':
+      return 30 + Math.min((b.count ?? 0) / 10, 20);
     case 'distance':
       return 35 + 15 * distanceStep;
   }

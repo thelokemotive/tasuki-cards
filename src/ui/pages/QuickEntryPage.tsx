@@ -12,15 +12,17 @@ import { KIND_LABEL } from '../components/PerformanceEditor';
 import { makePerformance } from '../../engine/corrections';
 import { parseTime, paceWarning } from '../../engine/time';
 import { effectiveDistance } from '../../engine/perf';
-import { formatKm } from '../../engine/format';
 import { isISODate, isoWeek } from '../../engine/dates';
 import { fullName } from '../../engine/display';
 import { previewChanges } from '../data/preview';
 import type { Changes } from '../../store/changes';
+import { formatKm, formatTime } from '../../engine/format';
+import { treadmillClimbM } from '../../engine/treadmill/session';
+import { TreadmillPhotoButton } from '../treadmill/TreadmillPhotoButton';
 
-const TIMED: PerfKind[] = ['race', 'relay_leg', 'parkrun', 'long_run', 'circuit', 'climb', 'descent', 'nav'];
+const TIMED: PerfKind[] = ['race', 'relay_leg', 'parkrun', 'long_run', 'circuit', 'climb', 'descent', 'nav', 'treadmill'];
 const COURSE_KIND: Partial<Record<PerfKind, string>> = { circuit: 'circuit', climb: 'climb', descent: 'descent', nav: 'nav' };
-const EVENT_KIND: Record<PerfKind, TasukiEvent['kind']> = { race: 'race', relay_leg: 'relay', parkrun: 'parkrun', long_run: 'session', circuit: 'time_trial', climb: 'time_trial', descent: 'time_trial', nav: 'test', bleep: 'test', arm: 'test' };
+const EVENT_KIND: Record<PerfKind, TasukiEvent['kind']> = { race: 'race', relay_leg: 'relay', parkrun: 'parkrun', long_run: 'session', circuit: 'time_trial', climb: 'time_trial', descent: 'time_trial', nav: 'test', bleep: 'test', arm: 'test', treadmill: 'session' };
 
 interface Draft {
   athleteId: string | null;
@@ -44,6 +46,8 @@ interface Draft {
   clean: boolean;
   verified: boolean;
   saturdayRun: boolean;
+  /** Treadmill: incline from the console (the climb is worked out from it). */
+  incline: string;
 }
 
 const n = (s: string) => (s.trim() === '' ? undefined : Number(s));
@@ -75,6 +79,7 @@ export function QuickEntryPage() {
     clean: true,
     verified: true,
     saturdayRun: false,
+    incline: '',
   }));
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => setD((x) => ({ ...x, [k]: v }));
   useEffect(() => {
@@ -140,6 +145,7 @@ export function QuickEntryPage() {
         navErrors: d.kind === 'nav' ? n(d.navErrors) ?? 0 : undefined,
         routeKmEff: d.kind === 'nav' ? n(d.routeKm) : undefined,
         cleanRun: d.kind === 'descent' ? d.clean : undefined,
+        inclinePct: d.kind === 'treadmill' ? n(d.incline) : undefined,
         verified: d.verified,
         source: 'coach',
         rawInput: `Quick Entry: ${d.time || d.laps || ''}`.trim(),
@@ -232,6 +238,19 @@ export function QuickEntryPage() {
                   <Field label="New event name">
                     <input className="input" value={d.newEventName} onChange={(e) => set('newEventName', e.target.value)} placeholder="e.g. Hachimantai XC" />
                   </Field>
+                )}
+                {d.kind === 'treadmill' && (
+                  <TreadmillPhotoButton
+                    onRead={(r) =>
+                      setD((x) => ({
+                        ...x,
+                        time: r.timeSec != null ? formatTime(r.timeSec) : x.time,
+                        distanceKm: r.distanceKm != null ? r.distanceKm.toFixed(3) : x.distanceKm,
+                        incline: r.inclinePct != null ? String(r.inclinePct) : x.incline,
+                        climbM: r.distanceKm != null ? String(treadmillClimbM(r.distanceKm, r.inclinePct)) : x.climbM,
+                      }))
+                    }
+                  />
                 )}
                 {TIMED.includes(d.kind) && (
                   <>

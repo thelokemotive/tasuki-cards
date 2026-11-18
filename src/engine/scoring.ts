@@ -41,6 +41,7 @@ export const UNSCORED = {
   noAge: "age or sex unknown (check the athlete's year group, date of birth and sex)",
   badNavErrors: 'nav errors must be a whole number of 0 or more',
   unknownKind: 'unknown result kind',
+  treadmill: 'treadmill session: counts for the streak and the treadmill log, not ratings',
 } as const;
 
 /** A usable measurement: a finite number above zero (rejects NaN, Infinity and blanks). */
@@ -372,6 +373,8 @@ export function scorePerformance(ctx: PerfContext, athlete: Athlete, config: Con
       const ag = std / p.timeSec;
       return scored(runScoreFromAG(ag, config), agProvisional, { ageGrade: ag, standardSec: std });
     }
+    case 'treadmill':
+      return unscored(UNSCORED.treadmill);
     default:
       return unscored(UNSCORED.unknownKind);
   }

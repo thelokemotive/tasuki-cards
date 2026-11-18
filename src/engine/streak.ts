@@ -19,7 +19,8 @@ export function halfTermOfWeek(week: ISOWeek, halfTerms: HalfTerm[]): HalfTerm |
 
 /**
  * Streak for one athlete as of `asOf`.
- * - A week counts if it has a verified, live Circuit performance or a stored 'saturday_run' participation.
+ * - A week counts if it has a verified, live Circuit performance or a stored 'saturday_run' participation,
+ *   or (config.streak.treadmillCounts) a verified treadmill session.
  * - Holiday weeks (calendar.holidayWeeks) neither count nor break; a verified parkrun or long run in one
  *   sets holidayBonus (a flame) without changing the count.
  * - A 'freeze' participation holds an otherwise-missed week (state 'frozen'). Only
@@ -47,6 +48,7 @@ export function computeStreak(input: {
   const bonusWeeks = new Set<ISOWeek>();
   for (const p of mine) {
     if (isCircuitPerf(p, lookup)) activeWeeks.add(isoWeek(p.date));
+    if (p.kind === 'treadmill' && config.streak.treadmillCounts) activeWeeks.add(isoWeek(p.date));
     if (p.kind === 'parkrun' || p.kind === 'long_run') bonusWeeks.add(isoWeek(p.date));
   }
   const freezeWeeks = new Set<ISOWeek>();

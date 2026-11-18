@@ -74,7 +74,7 @@ export default function CloudGate({ children }: { children: ReactNode }) {
   if (phase.at === 'viewer' && cloud && phase.data) {
     const { email, data } = phase;
     return (
-      <AccountContext.Provider value={{ email, isOwner: false, viewer: true, coaches: [], saveCoaches: async () => undefined, pupilView: true, setPupilView: async () => undefined, signOut: cloud.signOut }}>
+      <AccountContext.Provider value={{ email, isOwner: false, viewer: true, coaches: [], saveCoaches: async () => undefined, pupilView: true, setPupilView: async () => undefined, signOut: cloud.signOut, treadmill: cloud.treadmill }}>
         <DataProvider key={email} storeOverride={new ViewOnlyStore(data.snapshot)} derivedOverride={data.derived}>
           {children}
         </DataProvider>
@@ -99,6 +99,7 @@ export default function CloudGate({ children }: { children: ReactNode }) {
           pupilView: access.pupilView,
           setPupilView: (on) => save({ ...access, pupilView: on }),
           signOut: cloud.signOut,
+          treadmill: cloud.treadmill,
         }}
       >
         <DataProvider key={email} storeOverride={cloud.store}>

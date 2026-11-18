@@ -417,12 +417,32 @@ export function ovrFrom(stats: Record<StatKey, StatValue>, config: Config): OvrV
   }
   // A stat with no evidence record (built by hand in a test or a preview) counts as one result.
   const one: StatEvidence = { results: 1, weight: 1, confidence: 1 / (1 + ev.halfResults) };
-  const evs = open.map((s) => ({ v: s.value as number, e: s.evidence && s.evidence.weight > 0 ? s.evidence : one }));
-  const c = evs.reduce((a, x) => a + x.e.confidence, 0);
-  const average = evs.reduce((a, x) => a + x.e.confidence * x.v, 0) / c;
-  const n = evs.reduce((a, x) => a + x.e.weight, 0);
-  const proven = n / (n + ev.ovrHalfResults);
-  const value = roundScore(ev.priorScore + proven * (average - ev.priorScore));
+  const evs = STAT_KEYS.filter((k) => !stats[k].locked && stats[k].value != null).map((k) => ({ k, v: stats[k].value as number, e: stats[k].evidence && stats[k].evidence!.weight > 0 ? stats[k].evidence! : one }));
+  const caseFor = (xs: typeof evs) => {
+    const average = xs.reduce((a, x) => a + x.e.confidence * x.v, 0) / xs.reduce((a, x) => a + x.e.confidence, 0);
+    const n = xs.reduce((a, x) => a + x.e.weight, 0);
+    const proven = n / (n + ev.ovrHalfResults);
+    return { xs, average, proven, raw: ev.priorScore + proven * (average - ev.priorScore) };
+  };
+  let chosen = caseFor(evs);
+  if (config.ovr.newStatNeverCosts) {
+    // Established stats always count. Each new stat (fewer than newStatResults results) counts only if the
+    // OVR is higher with it: every choice of new stats is weighed and the best one kept. A newly unlocked stat
+    // only adds choices, so unlocking can never lower the OVR.
+    const established = evs.filter((x) => x.e.results >= config.ovr.newStatResults);
+    const fresh = evs.filter((x) => x.e.results < config.ovr.newStatResults);
+    for (let mask = 0; mask < 1 << fresh.length; mask++) {
+      const sub = [...established, ...fresh.filter((_, i) => mask & (1 << i))];
+      if (!sub.length) continue;
+      const c = caseFor(sub);
+      if (c.raw > chosen.raw + 1e-9 || (Math.abs(c.raw - chosen.raw) <= 1e-9 && sub.length > chosen.xs.length)) chosen = c;
+    }
+    // Keep the six stats in their usual order.
+    chosen = { ...chosen, xs: evs.filter((x) => chosen.xs.includes(x)) };
+  }
+  const { average, proven } = chosen;
+  const counted = chosen.xs.length < evs.length ? chosen.xs.map((x) => x.k) : undefined;
+  const value = roundScore(chosen.raw);
   return {
     value,
     unlocked,
@@ -431,7 +451,8 @@ export function ovrFrom(stats: Record<StatKey, StatValue>, config: Config): OvrV
     proven,
     evidence: proven < ev.estimateBelow ? 'estimate' : proven < ev.provenFrom ? 'building' : 'proven',
     average,
-    results: evs.reduce((a, x) => a + x.e.results, 0),
+    results: chosen.xs.reduce((a, x) => a + x.e.results, 0),
+    ...(counted ? { counted } : {}),
   };
 }
 

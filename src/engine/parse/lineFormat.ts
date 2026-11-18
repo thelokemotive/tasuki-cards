@@ -24,6 +24,7 @@ const EVENT_KINDS: Record<string, PerfKind> = {
   climb: 'climb',
   descent: 'descent',
   nav: 'nav',
+  treadmill: 'treadmill',
 };
 const TEST_KINDS: Record<string, PerfKind> = { bleep: 'bleep', arm: 'arm', nav: 'nav' };
 const TEST_NAMES: Record<string, string> = { bleep: 'Bleep test', arm: 'ARM tests', nav: 'Navigation test' };

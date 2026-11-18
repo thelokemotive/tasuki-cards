@@ -4,6 +4,7 @@ import { initializeApp, type FirebaseOptions } from 'firebase/app';
 import { getAuth, OAuthProvider, onAuthStateChanged, signInWithPopup, signInWithRedirect, signOut, type User } from 'firebase/auth';
 import {
   collection,
+  deleteDoc,
   deleteField,
   doc,
   getDoc,
@@ -12,7 +13,11 @@ import {
   onSnapshot,
   persistentLocalCache,
   persistentMultipleTabManager,
+  query,
+  serverTimestamp,
   setDoc,
+  Timestamp,
+  where,
   writeBatch,
   type Firestore,
   type QuerySnapshot,
@@ -22,10 +27,12 @@ import type { AppMeta, Calendar, DataSnapshot } from '../types';
 import { emptySnapshot, type Store, type TableMap, type TableName } from '../store/Store';
 import type { Changes } from '../store/changes';
 import { changesToPatches, docsToSnapshot, META_DOC, snapshotToDocs } from './codec';
-import { SCHOOL_TENANT } from '../ui/cloud/account';
+import { SCHOOL_TENANT, type TreadmillCloud, type TreadmillLog } from '../ui/cloud/account';
 
 const SQUAD = 'squad';
 const PUBLIC = 'public';
+/** Pupils' treadmill logs waiting for a coach (firestore.rules checks every field). */
+const INBOX = 'inbox';
 /** Firestore documents hold at most 1 MiB; the compressed copy is split into parts below that. */
 const PART_BYTES = 900_000;
 
@@ -54,7 +61,18 @@ export interface Cloud {
   publishPublic(json: string): Promise<void>;
   /** Everyone at school: the view-only copy, or null if none has been published yet. */
   loadPublic(): Promise<string | null | 'closed'>;
+  treadmill: TreadmillCloud;
   store: Store;
+}
+
+function toLog(id: string, d: Record<string, unknown>): TreadmillLog {
+  const { photo, at, ...rest } = d;
+  return {
+    ...(rest as Omit<TreadmillLog, 'id' | 'photo' | 'at'>),
+    id,
+    ...(photo instanceof Bytes ? { photo: photo.toUint8Array() } : {}),
+    ...(at instanceof Timestamp ? { at: at.toDate().toISOString() } : {}),
+  };
 }
 
 async function loadConfig(): Promise<FirebaseOptions> {
@@ -176,6 +194,39 @@ export async function connect(): Promise<Cloud> {
         at += b.length;
       }
       return gunzip(all);
+    },
+    treadmill: {
+      async isOpen() {
+        try {
+          return (await getDoc(doc(db, PUBLIC, 'settings'))).data()?.treadmillLogs === true;
+        } catch {
+          return false;
+        }
+      },
+      setOpen: (on) => setDoc(doc(db, PUBLIC, 'settings'), { treadmillLogs: on }, { merge: true }),
+      async submit(log) {
+        const u = auth.currentUser;
+        if (!u) throw new Error('not signed in');
+        // Who sent it comes from the sign-in itself; the rules accept only these exact values.
+        const claims = (await u.getIdTokenResult()).claims;
+        const id = `${u.uid}_${Date.now()}`;
+        const data: Record<string, unknown> = { ...log, uid: u.uid, at: serverTimestamp() };
+        if (typeof claims.email === 'string') data.email = claims.email;
+        if (typeof claims.name === 'string') data.name = claims.name;
+        if (log.photo) data.photo = Bytes.fromUint8Array(log.photo);
+        for (const k of Object.keys(data)) if (data[k] === undefined) delete data[k];
+        await setDoc(doc(db, INBOX, id), data);
+      },
+      async mine() {
+        const u = auth.currentUser;
+        if (!u) return [];
+        const snap = await getDocs(query(collection(db, INBOX), where('uid', '==', u.uid)));
+        return snap.docs.map((d) => toLog(d.id, d.data()));
+      },
+      watchInbox(cb) {
+        return onSnapshot(collection(db, INBOX), (snap) => cb(snap.docs.map((d) => toLog(d.id, d.data()))), () => cb([]));
+      },
+      remove: (id) => deleteDoc(doc(db, INBOX, id)),
     },
     store: new FirestoreStore(db),
   };

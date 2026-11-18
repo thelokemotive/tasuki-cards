@@ -19,6 +19,7 @@ Open **`TASUKI-CARDS-OPEN-ME.html`** (in this folder) by double-clicking it. It 
 - **Holiday results from students** (Microsoft/Google Forms): export the responses as CSV and paste them in. They arrive *unverified* and count only once you tick them (the athlete page has **Verify**).
 - **Mistakes**: on the athlete or event page, click **Edit** on a result, correct it, and give a reason. Everything recalculates, and the history is kept. Delete also needs a reason and can be undone.
 - **Streak freeze**: athlete page → **Apply freeze…** (one per half-term).
+- **This week** (top of every pupil's sheet): their streak and what keeps it going this week, their treadmill km and the next km club, and any new stat that will join their OVR. Nothing on it compares them with anyone else.
 - **Expedition badges**: athlete page → **Add achievement…** (tick everyone who went).
 
 ## 3. Next 5K
@@ -28,6 +29,16 @@ Every athlete page has **Next 5K**: a predicted time today with a 90% range, a *
 ## 4a. parkrun
 
 parkrun has no download. Open the results page for the week, press **Ctrl+A** then **Ctrl+C**, and paste into **Paste & Match**. The event name, date and every finisher are read (it also works on a translated page and on a phone: select all, copy). Our runners are matched by name; everyone else only counts towards the field size. Check the date shown at the top of the review before saving. Juniors who are not on the roster are flagged "one of ours?": a pupil whose parkrun name is in kanji appears like this the first time. Choose them in the Athlete column and that spelling is remembered from then on (or add the kanji name under **Edit details → Aliases** beforehand).
+
+## 4b. Treadmill runs (photo of the console)
+
+Pupils log treadmill runs themselves on the website: **Log a run** (📷) → pick their card once → **Photo of the console** before pressing Stop. The phone reads the four green readouts (distance, time, incline, speed) itself; the pupil checks them, says how hard it felt, and taps **Send to my coach**. Only a small crop of the green numbers is sent, never the rest of the photo.
+
+- **Turn it on** (head coach): account chip, top right → tick **Treadmill logging open**. It is off until you do, and closing the pupil view closes it too.
+- **Approve**: runs waiting appear on **Home** under **Treadmill runs to check**, with the photo, the numbers, who sent it (their school sign-in) and anything worth a look (typed rather than photographed, a number changed after reading, under 1 km, a sign-in that has sent runs for another card, a duplicate). **Approve** saves it; **Turn down** removes it. The photo is deleted either way. With several clean runs waiting, **Approve the N with nothing to check** does them all.
+- **What a treadmill run counts for**: the weekly streak (like a Circuit run), the **treadmill km club** badges (10, 25, 50, 100, 200 km) and the pupil's "This week" panel. It never changes a rating: belts differ and the photo cannot show who ran.
+- **Yourself**: **Quick Entry** → What: **Treadmill** → **📷 Read a treadmill photo** fills in the time, distance and climb (this works in the offline file too).
+- Microsoft Forms still works for anything else (holiday runs): nothing about it has changed.
 
 ## 4. Whole-school races (Green Long Ducker)
 

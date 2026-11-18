@@ -7,6 +7,49 @@ export const SCHOOL_TENANT = '41ec83bc-a7bf-44b7-ad13-22e010566373';
 /** The head coach: always allowed in, and the only account that can change the coach list. Mirrored in firestore.rules. */
 export const OWNER_EMAIL = 'floke@harrowappi.jp';
 
+/** A treadmill run a pupil has sent for the coach to check (the website's `inbox` collection). */
+export interface TreadmillLog {
+  id: string;
+  /** Who sent it, from the school sign-in (never typed by the pupil). */
+  uid: string;
+  email?: string;
+  name?: string;
+  /** The card the pupil chose as theirs. */
+  athleteId: string;
+  date: string;
+  distanceKm: number;
+  timeSec: number;
+  inclinePct?: number;
+  speedKmh?: number;
+  effort?: number;
+  /** 'photo': read from a photo of the console; 'typed': no usable photo. */
+  read: 'photo' | 'typed';
+  /** The pupil changed a number the photo gave. */
+  edited?: boolean;
+  /** Checks to look at (short, too fast for the display, …). */
+  flags?: string[];
+  /** JPEG of the console display only. Deleted with the log once the coach has decided. */
+  photo?: Uint8Array;
+  at?: string;
+}
+
+export type NewTreadmillLog = Omit<TreadmillLog, 'id' | 'uid' | 'email' | 'name' | 'at'>;
+
+export interface TreadmillCloud {
+  /** Whether the head coach has opened treadmill logging (off until then; everyone at school can read it). */
+  isOpen(): Promise<boolean>;
+  /** Head coach only. */
+  setOpen(on: boolean): Promise<void>;
+  /** Pupils: send a log to the coach. */
+  submit(log: NewTreadmillLog): Promise<void>;
+  /** Pupils: their own logs still waiting for the coach. */
+  mine(): Promise<TreadmillLog[]>;
+  /** Coaches: every waiting log, live. */
+  watchInbox(cb: (logs: TreadmillLog[]) => void): () => void;
+  /** Coaches (approved or turned down) and pupils (withdrawn). */
+  remove(id: string): Promise<void>;
+}
+
 export interface Account {
   email: string;
   isOwner: boolean;
@@ -18,6 +61,8 @@ export interface Account {
   pupilView: boolean;
   setPupilView: (on: boolean) => Promise<void>;
   signOut: () => Promise<void>;
+  /** Treadmill logs (the website only). */
+  treadmill?: TreadmillCloud;
 }
 
 export const AccountContext = createContext<Account | null>(null);

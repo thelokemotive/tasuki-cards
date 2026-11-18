@@ -12,6 +12,7 @@ import { deriveAll } from '../../engine/derive';
 import { CAMPS, coachToDos, currentWindow, houseCup, levelUps, setupChecklist, TIER_ORDER } from '../../engine/coach';
 import { KIND_LABEL } from '../components/PerformanceEditor';
 import { YamaScene, moodFor } from '../art/YamaScene';
+import { TreadmillInbox } from '../treadmill/TreadmillInbox';
 
 function greeting(now: Date): { jp: string; en: string } {
   const h = now.getHours();
@@ -141,6 +142,7 @@ export function HomePage() {
           </Link>
         </div>
       </Hero>
+      <TreadmillInbox />
 
       <div className="home-tiles">
         <Link className="tile" to="/boards?board=inform">

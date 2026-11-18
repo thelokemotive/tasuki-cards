@@ -204,12 +204,40 @@ The review pack (`docs/REVIEW-BRIEF.md`) went to three outside models. Each clai
 
 **Open, in the order I would take them**
 1. **Bleep scores are too high for this school.** The audit puts the average Japanese pupil at about the 81st to 94th percentile of the international table, so an ordinary bleep test gives END in the high 80s to 90s, far above what the same pupil's 5 km would score. Re-anchor the bleep rating to the Japanese national means and SDs (the same survey already used for "Compared with Japan").
-2. **Unlocking a weak stat can lower OVR** (two strong stats, then a first ARM test at 55). Needs a rule that a new stat never costs points.
+2. ~~**Unlocking a weak stat can lower OVR**~~ Done 18 Nov 2026: a new stat never lowers OVR (above).
 3. **Armour thresholds**: the audit says ankle level 5 (14 cm) rewards hypermobility and the calf-raise levels are about one level too easy. Review with the coach before changing.
 4. **Standards below the mile for the youngest**: the world-record curve asks more of an 11-year-old over 400 m than the age-11 record. Needs youth track standards.
 5. **Website offline on the hill**: no service worker, so a cold start with no signal fails.
 6. **Long Ducker place score**: linear, and a Y9 is ranked against Y11s with no age allowance.
 7. **GPX intake, Japanese interface, phone layout.**
+
+## Treadmill runs from a photo, and engagement (18 Nov 2026)
+
+The coach asked for more pull in the build (with the research synthesis on youth gamification as the guide) and whether treadmill progress could be logged from a phone photo instead of Microsoft Forms.
+
+**Reading the treadmill console** (`src/engine/treadmill/read.ts`)
+- The school's treadmills show four seven-segment LED readouts: distance (km, 3 decimals) and time (min:sec) on top, incline (%) and speed (km/h) below. They are bright, saturated and one colour on a black panel, which makes them easy to read without any OCR library or network: keep the pixels of the display's own hue (thresholds from the photo's exposure, with Otsu's method separating segments from their glow; blown-out white cores kept when their colour surrounds them), group them into readouts, straighten the italic slant, and read each digit from which of its seven segments are lit.
+- **Decimal points are not read.** On this console they blur into the next digit; the readouts have a fixed number of decimals, so distance is digits ÷ 1000 and incline and speed digits ÷ 10. A colon is found from its small round dots and only helps name the time readout. Readouts are named by position (two rows of two, found even with the phone tilted), and a colon always means time.
+- Tested on the coach's own photo (`fixtures/`, 800 × 450): right at every size from 360 to 2,000 px wide, tilted ±8°, with perspective, at half and 1.4× exposure, blurred, sharpened and saved as a JPEG at quality 25 (19 variants checked while building; the fixture and drawn consoles with every digit, sharp separate segments, blur, upright red digits and small digits are in `read.test.ts`).
+- It is a reader for **this console**. Another model with a different layout reads the digits but may name them wrongly; the pupil checks every number before sending, and the coach sees the photo.
+- **Why not Forms, or AI reading the photo?** Forms is kept for everything else, but typing four numbers from memory is the boring part, and the photo makes cheating harder and checking quicker. Sending photos to an AI service would put pupils' pictures with a third party; reading on the phone needs no network, no key and no agreement.
+
+**Treadmill sessions** (`PerfKind 'treadmill'`, `src/engine/treadmill/session.ts`)
+- **Habit, not ratings.** A treadmill session never feeds SPD, END or any rating (belts differ, the rails can be held, and the photo cannot show who ran). It keeps the weekly streak going like a Circuit run (`streak.treadmillCounts`), earns the **treadmill km club** badges by total verified km (`treadmill.kmMilestones`: 10, 25, 50, 100, 200), and fills the pupil's "This week" panel. Incline is kept and turned into climb (5 km at 1% = 50 m). "How hard did it feel" is the pupil's own 1–10 (no heart rate: the research note's advice for under-16s); it is stored for the coach and not yet used anywhere.
+- Checks: refused if the average is over 22 km/h, over 50 km, dated in the future or more than 14 days ago; flagged for the coach if under 1 km, the display speed is over 22 km/h, the incline is over 15%, or the average and the display speed are far apart.
+
+**Pupils send, coaches approve** (website only)
+- Pupils: **Log a run** (📷) in the pupil view. They choose their card once (remembered on the phone), take the photo, check the numbers, say how hard it felt, and send. Only a JPEG crop of the display (≤ 140 kB) is sent. They see their own runs waiting and can withdraw them.
+- Coaches: **Home → Treadmill runs to check**, with the crop, the numbers, the sender's school sign-in and anything to look at: typed rather than photographed, a number changed after reading, a sign-in that has sent runs for another card before, a card whose runs came from another sign-in before, a duplicate. **Approve** saves a verified treadmill session (the coach has seen the photo) and remembers the sign-in on the athlete (`schoolAccounts`, coach-only, never published); the inbox record and its photo are then deleted.
+- **Database rules** (`firestore.rules`, `match /inbox`): any school Microsoft account may create a log only while the pupil view is open **and** the head coach has opened treadmill logging (`public/settings.treadmillLogs`, off by default, owner only). Every field is checked: the sender's uid, email and name must be the sign-in's own; the id must start with their uid; numbers in range; photo bytes ≤ 150,000; server time. No updates. Pupils read and delete only their own; coaches read and delete all. 34 checks on the Firestore emulator pass (`scripts/rules-test/`, needs Java).
+- **The offline single file** has no inbox (it never touches the network); there the coach can use **Quick Entry → Treadmill → Read a treadmill photo**.
+
+**A new stat never lowers OVR** (open item 2 below, `ovr.newStatNeverCosts`, `ovr.newStatResults`)
+- A stat with fewer than `newStatResults` (2) results is new: it counts in the OVR only if the OVR is higher with it. Every choice of new stats is weighed and the best kept; established stats always count. Unlocking a stat only adds choices, so it can never lower the OVR. The coach's example (two strong stats, then a first ARM test at 55) now keeps its OVR; the ARM stat joins at its second result, or sooner if it would lift the OVR. "Why?" on OVR and the pupil's "This week" panel say which new stat is waiting and roughly the value at which it joins.
+- **Not taken: "count only the stats that help".** Tried first and measured on the demo squad: a regular's OVR collapsed onto their best stat (+3 on average, 20 of 26 runners changed, four tier promotions), because rarely-tested stats (ARM is screened twice a year) would stay optional for ever. With the second-result rule, 11 of 26 demo runners gain 1 to 5 points and no tier changes.
+- **The research note's other suggestions, and why most were not built:** the 50–99 concave curve, never-dropping stats and an OWA "core plus versatility" OVR would each re-base every rating the squad already has; the 30-pupil micro-leagues need a far bigger squad; kudos and friend streaks need pupils writing about each other, which the safeguarding note rules out. Already in the app: Growth Shield, In-Form (never negative), streak freezes, house cup on effort, climbers, the summit ladder and development focus, top-10-only ability boards.
+
+**Version history.** Both rules arrive as one config version, "A new stat never lowers OVR; treadmill sessions keep the weekly streak", created once on load (`engagementMigration`). Earlier versions are read with both off, so their ratings are reproduced; either can be switched off in Settings → Scoring (new section: Treadmill logs).
 
 ## Open questions for the coach
 
@@ -219,3 +247,5 @@ The review pack (`docs/REVIEW-BRIEF.md`) went to three outside models. Each clai
 4. Bleep "laps" are 20 m shuttles, and the norms still need checking against Tomkinson et al. 2017.
 5. ~~Year groups do not roll over automatically in September.~~ They do now (16 Nov 2026).
 6. Evidence-weighted OVR makes Gold harder to reach on few results. Keep Gold at 75, or lower it a little?
+7. Treadmill logging: turn it on once the DSL has agreed (decision 4 in `docs/SAFEGUARDING-NOTE.md`). Should a treadmill session ever feed END (say a verified 5 km at 1% incline or more)? Off for now.
+8. A new stat joins the OVR at its second result. Is 2 right, or would you rather 3?
