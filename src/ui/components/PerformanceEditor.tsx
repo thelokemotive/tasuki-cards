@@ -21,9 +21,10 @@ export const KIND_LABEL: Record<PerfKind, string> = {
   bleep: 'Bleep test',
   nav: 'Navigation',
   arm: 'ARM tests',
+  treadmill: 'Treadmill',
 };
 
-const TIMED: PerfKind[] = ['race', 'relay_leg', 'parkrun', 'long_run', 'circuit', 'climb', 'descent', 'nav'];
+const TIMED: PerfKind[] = ['race', 'relay_leg', 'parkrun', 'long_run', 'circuit', 'climb', 'descent', 'nav', 'treadmill'];
 
 const numOrUndef = (s: string) => (s.trim() === '' ? undefined : Number(s));
 

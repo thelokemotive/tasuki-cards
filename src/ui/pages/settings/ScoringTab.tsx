@@ -29,6 +29,7 @@ const SECTION_LABELS: Record<string, string> = {
   tiers: 'Tiers (3.10)',
   inForm: 'In-Form (3.10)',
   streak: 'Streaks (3.11)',
+  treadmill: 'Treadmill logs',
   surge: 'Tasuki Surge (3.12)',
   handicap: 'Handicap start (3.14)',
   badges: 'Badges (3.13)',
@@ -40,6 +41,13 @@ const SECTION_LABELS: Record<string, string> = {
 
 const HELP: Record<string, string> = {
   'ageGrade.subMile': 'How standards are set below 1 mile, where the road tables stop.',
+  'ovr.newStatNeverCosts': 'On: a stat with fewer than “new stat results” results counts in the OVR only when it lifts it, so a first try is never a loss.',
+  'ovr.newStatResults': 'Results after which a stat always counts in the OVR (2 = only a first try is optional).',
+  'streak.treadmillCounts': 'A verified treadmill session keeps the week in the streak, like a Circuit run.',
+  'treadmill.kmMilestones': 'Treadmill km club badges, by total verified treadmill km.',
+  'treadmill.minKm': 'Logs shorter than this are flagged for the coach (still sent).',
+  'treadmill.maxSpeedKmh': 'An average faster than this is refused; a display speed above it is flagged.',
+  'treadmill.maxDaysOld': 'Pupils can log runs up to this many days old.',
   'ovr.evidence.enabled': 'On: OVR = prior + proven × (average − prior). Off: the plain average of the unlocked stats.',
   'ovr.evidence.priorScore': 'Where an OVR starts before there is evidence (50 ≈ a 40% age grade).',
   'ovr.evidence.halfResults': 'Results at which one stat is half proven (its weight in the average).',

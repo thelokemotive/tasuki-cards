@@ -174,6 +174,14 @@ export interface Config {
       estimateBelow: number;
       provenFrom: number;
     };
+    /**
+     * Unlocking a stat never lowers OVR. A new stat (fewer than newStatResults results behind it) counts in
+     * the OVR only when it lifts it; once it has newStatResults results it is part of the runner's profile
+     * and always counts, like every established stat. So a first nav run or a first ARM test is never a loss.
+     * Off: every unlocked stat counts from its first result.
+     */
+    newStatNeverCosts: boolean;
+    newStatResults: number;
   };
 
   tiers: {
@@ -192,6 +200,24 @@ export interface Config {
     milestones: number[];
     /** Freezes allowed per half-term. */
     freezesPerHalfTerm: number;
+    /** A verified treadmill session keeps the week's streak going, like a Circuit run. */
+    treadmillCounts: boolean;
+  };
+
+  treadmill: {
+    /**
+     * A verified treadmill run at least end.longRunMinKmEff of effort (distance + incline as climb) feeds END,
+     * age-graded like a long run. Shorter sessions keep the streak and count for the km club only.
+     */
+    feedsEnd: boolean;
+    /** Treadmill km club badges: total verified treadmill km. */
+    kmMilestones: number[];
+    /** A log is flagged (not refused) outside these. */
+    minKm: number;
+    maxSpeedKmh: number;
+    maxInclinePct: number;
+    /** Logs dated more than this many days ago are refused on the pupil page. */
+    maxDaysOld: number;
   };
 
   surge: {
@@ -352,13 +378,17 @@ export const DEFAULT_CONFIG: Config = {
   ovr: {
     minUnlocked: 2,
     evidence: { enabled: true, priorScore: 50, halfResults: 1.5, ovrHalfResults: 1.5, placeOnlyWeight: 0.5, unofficialWeight: 0.75, shortEffortKm: 1, shortEffortWeight: 0.5, olderThanMonths: 12, olderWeight: 0.5, estimateBelow: 0.5, provenFrom: 0.75 },
+    newStatNeverCosts: true,
+    newStatResults: 2,
   },
 
   tiers: { silverMin: 65, goldMin: 75, goldMinCaps: 1, iconMinCaps: 3, iconMinRace: 85 },
 
   inForm: { days: 7 },
 
-  streak: { milestones: [4, 8, 12, 20], freezesPerHalfTerm: 1 },
+  streak: { milestones: [4, 8, 12, 20], freezesPerHalfTerm: 1, treadmillCounts: true },
+
+  treadmill: { feedsEnd: true, kmMilestones: [10, 25, 50, 100, 200], minKm: 1, maxSpeedKmh: 22, maxInclinePct: 15, maxDaysOld: 14 },
 
   surge: {
     exponent: 1.1,
@@ -471,12 +501,36 @@ export function evidenceMigration(configs: Config[] | undefined, createdAt: stri
  * (withDefaults would otherwise fill the new keys with today's defaults.)
  */
 function legacyRules(c: Partial<Config>): Partial<Config> {
-  if (c.ovr?.evidence && c.ageGrade?.subMile) return c;
+  // Versions from before the engagement rules (Nov 2026) are read with them off, likewise.
+  const engaged: Partial<Config> =
+    c.ovr && c.ovr.newStatNeverCosts === undefined
+      ? { ...c, ovr: { ...c.ovr, newStatNeverCosts: false }, streak: { ...(c.streak as Config['streak']), treadmillCounts: c.streak?.treadmillCounts ?? false }, treadmill: { ...DEFAULT_CONFIG.treadmill, ...c.treadmill, feedsEnd: c.treadmill?.feedsEnd ?? false } }
+      : c;
+  if (engaged.ovr?.evidence && engaged.ageGrade?.subMile) return engaged;
   return {
-    ...c,
-    ageGrade: { ...(c.ageGrade as Config['ageGrade']), subMile: c.ageGrade?.subMile ?? 'extrapolate' },
-    ovr: { ...(c.ovr as Config['ovr']), evidence: c.ovr?.evidence ?? { ...DEFAULT_CONFIG.ovr.evidence, enabled: false } },
+    ...engaged,
+    ageGrade: { ...(engaged.ageGrade as Config['ageGrade']), subMile: engaged.ageGrade?.subMile ?? 'extrapolate' },
+    ovr: { ...(engaged.ovr as Config['ovr']), evidence: engaged.ovr?.evidence ?? { ...DEFAULT_CONFIG.ovr.evidence, enabled: false } },
   };
+}
+
+/** Marks the version that brought in "a new stat never lowers OVR" and treadmill sessions in streaks. */
+export const ENGAGEMENT_MIGRATION = 'engagement-2026-11';
+export const ENGAGEMENT_NOTE = 'A new stat never lowers OVR; treadmill sessions keep the weekly streak, and long ones feed END';
+
+/** One-off, as evidenceMigration: switches both rules on in a new version, once, for a store made before them. */
+export function engagementMigration(configs: Config[] | undefined, createdAt: string): Config | undefined {
+  if (!configs || configs.length === 0) return undefined;
+  if (configs.some((c) => c.migration === ENGAGEMENT_MIGRATION)) return undefined;
+  const on = (c: Config) => c.ovr.newStatNeverCosts && c.streak.treadmillCounts && c.treadmill.feedsEnd;
+  const first = withDefaults(configs.reduce((a, b) => (b.version < a.version ? b : a)));
+  const cur = currentConfig(configs);
+  if (on(first) || on(cur)) return undefined;
+  const draft = cloneConfig(cur);
+  draft.ovr.newStatNeverCosts = true;
+  draft.streak.treadmillCounts = true;
+  draft.treadmill.feedsEnd = true;
+  return { ...nextConfigVersion(cur, draft, createdAt, ENGAGEMENT_NOTE), migration: ENGAGEMENT_MIGRATION };
 }
 
 /** The rules as they were before November 2026 (plain-average OVR, mile–5 km slope below the mile). */
