@@ -30,6 +30,10 @@ import { ArmourPage } from './pages/ArmourPage';
 import { SquadPage } from './pages/SquadPage';
 import { YamaScene } from './art/YamaScene';
 import { HelpPage } from './pages/HelpPage';
+import { TrailPage } from './pupil/TrailPage';
+import { SquadHub } from './pupil/SquadHub';
+import { PreviewProvider, PupilPreview, usePreview } from './pupil/PupilPreview';
+import { useMyCard } from './pupil/local';
 
 interface NavItem {
   page: string;
@@ -47,6 +51,7 @@ const NAV: (NavItem | 'sep')[] = [
   { page: 'roster', to: '/roster', label: 'Roster', icon: '☰' },
   { page: 'squad', to: '/squad', label: 'Squad', icon: '▦' },
   { page: 'events', to: '/events', label: 'Events', icon: '⚑' },
+  { page: 'pupil', to: '/pupil', label: 'Pupil app', icon: '📱' },
   'sep',
   { page: 'cards', to: '/cards', label: 'Cards & Print', icon: '▣' },
   { page: 'boards', to: '/boards', label: 'Boards', icon: '≡' },
@@ -76,25 +81,48 @@ const TITLES: Record<string, string> = {
   help: 'Help',
 };
 
-// Everyone at school who is not a coach: view only (their card and sheet, the boards, the projector).
+// Everyone at school who is not a coach: view only. The pupil app: their Trail, their card, logging a
+// treadmill run, the squad and the boards (Kemonomichi, Nov 2026).
 const VIEWER_NAV: NavItem[] = [
-  { page: 'home', to: '/', label: 'Cards', icon: '▣' },
+  { page: 'home', to: '/', label: 'Trail', icon: '⛰' },
+  { page: 'card', to: '/card', label: 'My card', icon: '▣' },
   { page: 'log', to: '/log', label: 'Log a run', icon: '📷' },
+  { page: 'squad', to: '/squad', label: 'Squad', icon: '🐒' },
   { page: 'boards', to: '/boards', label: 'Boards', icon: '≡' },
-  { page: 'armour', to: '/armour', label: 'Armour', icon: '🛡' },
 ];
+
+const VIEWER_TITLES: Record<string, string> = { home: 'Trail', card: 'My card', log: 'Log a run', squad: 'Squad', cards: 'Cards', boards: 'Boards', armour: 'Armour', athlete: 'Card' };
 
 function ToShare({ id }: { id: string }) {
   useEffect(() => navigate(`/athlete/${id}/share`), [id]);
   return null;
 }
 
+function MyCard() {
+  const [me] = useMyCard();
+  const { derived } = useData();
+  if (me && derived.athletes.has(me)) return <ToShare id={me} />;
+  return <TrailPage />;
+}
+
 function renderViewerPage(route: Route): ReactNode {
   if (route.page === 'boards') return <BoardsPage />;
   if (route.page === 'log') return <LogRunPage />;
   if (route.page === 'armour') return <ArmourPage />;
+  if (route.page === 'card') return <MyCard />;
+  if (route.page === 'squad') return <SquadHub />;
+  if (route.page === 'cards') return <ViewerHome />;
   if (route.page === 'athlete' && route.params[0]) return route.params[1] === 'share' ? <AthletePage /> : <ToShare id={route.params[0]} />;
-  return <ViewerHome />;
+  return <TrailPage />;
+}
+
+function StartPreview() {
+  const { start } = usePreview();
+  useEffect(() => {
+    start();
+    navigate('/');
+  }, [start]);
+  return null;
 }
 
 function renderPage(route: Route): ReactNode {
@@ -133,6 +161,8 @@ function renderPage(route: Route): ReactNode {
       return <ArmouryPage />;
     case 'armour':
       return <ArmourPage />;
+    case 'pupil':
+      return <StartPreview />;
     default:
       return <HomePage />;
   }
@@ -198,13 +228,28 @@ function Banners() {
 function Shell() {
   const route = useRoute();
   const data = useData();
-  const viewer = useAccount()?.viewer ?? false;
+  const account = useAccount();
+  const viewer = account?.viewer ?? false;
+  const preview = usePreview();
+  const [me] = useMyCard();
   if (route.page === 'projector') return <ProjectorPage />;
   const nav = viewer ? VIEWER_NAV : NAV;
-  const activePage = route.page === 'athlete' ? 'roster' : route.page === 'event' ? 'events' : route.page;
+  const activePage = viewer
+    ? route.page === 'athlete'
+      ? route.params[0] === me
+        ? 'card'
+        : 'squad'
+      : route.page === 'cards' || route.page === 'armour'
+        ? 'squad'
+        : route.page
+    : route.page === 'athlete'
+      ? 'roster'
+      : route.page === 'event'
+        ? 'events'
+        : route.page;
   return (
-    <div className="shell">
-      <nav className="nav no-print" aria-label="Main">
+    <div className={`shell ${viewer ? 'shell-pupil' : ''}`}>
+      <nav className={`nav no-print ${viewer ? 'nav-pupil' : ''}`} aria-label="Main">
         <Link to="/" className="nav-brand">
           <BrandMark />
           <span className="nav-brand-text">
@@ -216,7 +261,7 @@ function Shell() {
           n === 'sep' ? (
             <div key={i} className="nav-sep" />
           ) : (
-            <Link key={n.page} to={n.to} className={`nav-link ${activePage === n.page ? 'active' : ''}`}>
+            <Link key={n.page} to={n.to} className={`nav-link nav-${n.page} ${activePage === n.page ? 'active' : ''}`}>
               <span className="nav-ico" aria-hidden="true">
                 {n.icon}
               </span>
@@ -232,14 +277,22 @@ function Shell() {
       </nav>
       <div className="main">
         <header className="topbar no-print">
-          <div className="topbar-title">{TITLES[route.page] ?? 'Tasuki Cards'}</div>
+          <div className="topbar-title">{(viewer ? VIEWER_TITLES[route.page] : TITLES[route.page]) ?? 'Tasuki Cards'}</div>
           {data.asOf !== data.today && (
             <span className="asof-chip" title="Ratings are being computed for a different date (Settings → As-of date)">
               As of {formatLongDate(data.asOf)}
             </span>
           )}
-          {viewer ? <span className="view-chip">View only</span> : <SaveIndicator />}
-          <AccountMenu />
+          {account?.preview ? (
+            <button className="btn btn-sm preview-exit" onClick={preview.stop}>
+              Pupil preview · Exit
+            </button>
+          ) : viewer ? (
+            <span className="view-chip">View only</span>
+          ) : (
+            <SaveIndicator />
+          )}
+          {!account?.preview && <AccountMenu />}
         </header>
         <Banners />
         <main className="content">{data.ready ? (viewer ? renderViewerPage(route) : renderPage(route)) : <p className="muted">Loading…</p>}</main>
@@ -248,20 +301,30 @@ function Shell() {
   );
 }
 
+function Previewable() {
+  return (
+    <PupilPreview>
+      <Shell />
+    </PupilPreview>
+  );
+}
+
 export function App() {
   return (
     <ToastProvider>
-      {CloudGate ? (
-        <Suspense fallback={null}>
-          <CloudGate>
-            <Shell />
-          </CloudGate>
-        </Suspense>
-      ) : (
-        <DataProvider>
-          <Shell />
-        </DataProvider>
-      )}
+      <PreviewProvider>
+        {CloudGate ? (
+          <Suspense fallback={null}>
+            <CloudGate>
+              <Previewable />
+            </CloudGate>
+          </Suspense>
+        ) : (
+          <DataProvider>
+            <Previewable />
+          </DataProvider>
+        )}
+      </PreviewProvider>
     </ToastProvider>
   );
 }

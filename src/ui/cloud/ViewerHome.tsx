@@ -9,7 +9,7 @@ import { displayName } from '../../engine/display';
 import { YEAR_GROUPS, type YearGroup } from '../../types';
 import { formatLongDate } from '../../engine/dates';
 
-export function ViewerHome() {
+export function ViewerHome({ title = 'Find your card' }: { title?: string }) {
   const { derived } = useData();
   const [q, setQ] = useState('');
   const [band, setBand] = useState<YearGroup | 'all'>('all');
@@ -21,7 +21,7 @@ export function ViewerHome() {
   const shown = all.filter((d) => (band === 'all' || d.athlete.yearGroup === band) && (!needle || displayName(d.athlete).toLowerCase().includes(needle)));
   return (
     <div className="stack">
-      <PageHeader title="Find your card" subtitle={`Harrow Appi Trail Running · ratings as of ${formatLongDate(derived.asOf)}`} actions={<Link className="btn btn-primary" to="/boards">Boards</Link>} />
+      <PageHeader title={title} subtitle={`Harrow Appi Trail Running · ratings as of ${formatLongDate(derived.asOf)}`} actions={<Link className="btn btn-primary" to="/boards">Boards</Link>} />
       <Panel>
         <div className="row" style={{ flexWrap: 'wrap', gap: 8 }}>
           <input className="input" style={{ flex: '1 1 200px' }} placeholder="Type your name" value={q} onChange={(e) => setQ(e.target.value)} aria-label="Search by name" />

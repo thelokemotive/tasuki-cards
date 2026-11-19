@@ -27,12 +27,14 @@ import type { AppMeta, Calendar, DataSnapshot } from '../types';
 import { emptySnapshot, type Store, type TableMap, type TableName } from '../store/Store';
 import type { Changes } from '../store/changes';
 import { changesToPatches, docsToSnapshot, META_DOC, snapshotToDocs } from './codec';
-import { SCHOOL_TENANT, type TreadmillCloud, type TreadmillLog } from '../ui/cloud/account';
+import { SCHOOL_TENANT, type RemindersCloud, type TreadmillCloud, type TreadmillLog } from '../ui/cloud/account';
 
 const SQUAD = 'squad';
 const PUBLIC = 'public';
 /** Pupils' treadmill logs waiting for a coach (firestore.rules checks every field). */
 const INBOX = 'inbox';
+/** Pupils' phones that asked for trail reminders (firestore.rules checks every field). */
+const REMINDERS = 'reminders';
 /** Firestore documents hold at most 1 MiB; the compressed copy is split into parts below that. */
 const PART_BYTES = 900_000;
 
@@ -62,6 +64,7 @@ export interface Cloud {
   /** Everyone at school: the view-only copy, or null if none has been published yet. */
   loadPublic(): Promise<string | null | 'closed'>;
   treadmill: TreadmillCloud;
+  reminders: RemindersCloud;
   store: Store;
 }
 
@@ -227,6 +230,44 @@ export async function connect(): Promise<Cloud> {
         return onSnapshot(collection(db, INBOX), (snap) => cb(snap.docs.map((d) => toLog(d.id, d.data()))), () => cb([]));
       },
       remove: (id) => deleteDoc(doc(db, INBOX, id)),
+    },
+    reminders: {
+      async settings() {
+        try {
+          const d = (await getDoc(doc(db, PUBLIC, 'settings'))).data();
+          return { open: d?.reminders === true, key: typeof d?.vapidKey === 'string' ? d.vapidKey : undefined };
+        } catch {
+          return { open: false };
+        }
+      },
+      setSettings: (x) => setDoc(doc(db, PUBLIC, 'settings'), { ...(x.open != null ? { reminders: x.open } : {}), ...(x.key ? { vapidKey: x.key } : {}) }, { merge: true }),
+      async mine(deviceId) {
+        const u = auth.currentUser;
+        if (!u) return null;
+        const d = await getDoc(doc(db, REMINDERS, `${u.uid}_${deviceId}`));
+        const x = d.data();
+        return x ? { athleteId: x.athleteId as string, prefs: x.prefs as { thursday: boolean; saturday: boolean; monday: boolean }, companion: x.companion as string | undefined } : null;
+      },
+      async save(deviceId, device, sub) {
+        const u = auth.currentUser;
+        if (!u) throw new Error('not signed in');
+        if (!sub.endpoint || !sub.keys?.p256dh || !sub.keys?.auth) throw new Error('this phone gave no push address');
+        const { thursday, saturday, monday } = device.prefs;
+        await setDoc(doc(db, REMINDERS, `${u.uid}_${deviceId}`), {
+          uid: u.uid,
+          athleteId: device.athleteId,
+          prefs: { thursday, saturday, monday },
+          ...(device.companion ? { companion: device.companion } : {}),
+          endpoint: sub.endpoint,
+          p256dh: sub.keys.p256dh,
+          auth: sub.keys.auth,
+          at: serverTimestamp(),
+        });
+      },
+      remove: async (deviceId) => {
+        const u = auth.currentUser;
+        if (u) await deleteDoc(doc(db, REMINDERS, `${u.uid}_${deviceId}`));
+      },
     },
     store: new FirestoreStore(db),
   };

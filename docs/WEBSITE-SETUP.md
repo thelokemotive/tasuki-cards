@@ -44,7 +44,22 @@ Tap your name (top right) → type their school emails → **Save coach list**. 
 
 ## On a phone or iPad
 
-Open the site in Safari or Chrome → Share → **Add to Home Screen**. The menu sits along the bottom; swipe it sideways for more. It keeps working with no signal: results entered on the hill sync when you are back online.
+Open the site in Safari or Chrome → Share → **Add to Home Screen** (Chrome on Android offers **Install**). It opens full screen like an app, with its own icon. The menu sits along the bottom; swipe it sideways for more. It keeps working with no signal: results entered on the hill sync when you are back online. Pupils get the same install card on their Trail.
+
+On an iPhone the Home Screen app keeps its own sign-in, so sign in once more inside it. If Microsoft sign-in does not finish there, ask school IT to add `https://tasuki-cards.web.app/__/auth/handler` as a second redirect URI on the app registration (see `docs/KEMONOMICHI-PLAN.md`, Next 1).
+
+To see what pupils see: menu → **Pupil app** (Exit at the top).
+
+## Trail reminders for pupils (optional, after the DSL agrees)
+
+Off until you switch them on. About ten minutes, once:
+
+1. **The service account.** Google Cloud console → IAM → find the `github-deploy` service account (from the step below) → Edit → **Add another role** → **Cloud Datastore User** → Save. The reminder job uses the same `FIREBASE_SERVICE_ACCOUNT_TASUKI_CARDS` secret as the deploy.
+2. **The keys.** On the website, tap your name → **Set up reminder keys (once)**. Copy the private key it shows into GitHub → repository Settings → Secrets and variables → Actions → New secret named `VAPID_PRIVATE_KEY`, then tap **I have saved it in GitHub**. (Making new keys later would switch everyone's reminders off until they turn them on again.)
+3. **Switch on.** Tick **Trail reminders** in the same menu. Pupils now see a "Trail reminders" card on their Trail and choose for themselves.
+4. **Check.** GitHub → Actions → **Trail reminders** → Run workflow (dry run ticked) shows how many phones would get one, without sending anything.
+
+The job runs on Thursday 17:07, Saturday 08:37 and Monday 07:37 (Japan time). Untick **Trail reminders** to stop them at once.
 
 ## Optional: publish automatically when `main` changes
 

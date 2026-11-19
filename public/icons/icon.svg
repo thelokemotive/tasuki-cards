@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Tasuki app icon: a snow-capped volcano at dawn, crossed by the vermilion tasuki sash. Full bleed, so it
+       also works as a maskable icon (everything that matters sits inside the central 80% circle). -->
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0d1533"/>
+      <stop offset="0.55" stop-color="#2c4a91"/>
+      <stop offset="1" stop-color="#f3a96f"/>
+    </linearGradient>
+    <linearGradient id="peak" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e9f0f9"/>
+      <stop offset="1" stop-color="#7f97c0"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#sky)"/>
+  <circle cx="352" cy="190" r="38" fill="#ffe7b0"/>
+  <g fill="#fff" opacity="0.85">
+    <circle cx="120" cy="120" r="3"/><circle cx="180" cy="86" r="2.4"/><circle cx="250" cy="130" r="2"/><circle cx="410" cy="110" r="2.6"/>
+  </g>
+  <path d="M40,420 C120,400 190,250 236,178 L250,170 L268,172 L282,180 C330,250 400,400 472,420 Z" fill="url(#peak)"/>
+  <path d="M236,178 L250,170 L268,172 L282,180 L306,222 L292,214 L282,232 L270,212 L258,236 L246,214 L232,234 L222,216 L208,226 Z" fill="#fff"/>
+  <path d="M282,180 C330,250 400,400 472,420 L330,420 C318,330 296,250 282,180 Z" fill="#5a6f99" opacity="0.35"/>
+  <path d="M0,470 C110,440 170,452 256,444 C350,436 420,446 512,430 L512,512 L0,512 Z" fill="#1d3a2c"/>
+  <path d="M0,500 C120,480 240,492 512,470 L512,512 L0,512 Z" fill="#12261d"/>
+  <path d="M-20,330 L330,-20 L420,-20 L-20,420 Z" fill="#d4442a"/>
+  <path d="M-20,420 L420,-20 L436,-20 L-20,436 Z" fill="#962a15" opacity="0.6"/>
+</svg>

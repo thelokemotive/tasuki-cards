@@ -17,6 +17,7 @@ Trading cards and leaderboards for Harrow International School Appi Japan Trail 
 - `src/engine/parse/`: Paste-and-Match (plus `newAthletes.ts`, the roster from pasted results, and `xlsx.ts`, the dependency-free .xlsx reader): the Tasuki line format (`docs/LINE-FORMAT.md`), results tables, Forms CSV, roster import, and the import plan (review, then one change set).
 - `src/store/`: persistence behind the `Store` interface (`dexieStore.ts` = IndexedDB via Dexie; `memoryStore.ts` for tests and as a fallback). Export and import live in `exportImport.ts`. A shared database can replace IndexedDB later by implementing `Store`.
 - `docs/YAMA-PLAN.md`: the Yama release (art, coaching, reveal, squad) and what comes next.
+- `docs/KEMONOMICHI-PLAN.md`: the pupil app (獣道 Kemonomichi, 19 Nov 2026): the Trail, spirit animals, the reveal, missions, the squad quest, the Home Screen app and reminders, the research behind them, and what to build next. `src/engine/trail.ts`, `moments.ts`, `spirits.ts`, `reminders.ts` (pure, tested); `src/ui/pupil/` (screens); `src/ui/art/Spirits.tsx` (the animals); `public/` (manifest, icons, service worker; website only); `scripts/reminders/` (the sender, run by `.github/workflows/reminders.yml`); `scripts/make-icons.mjs` (icons from `public/icons/icon.svg`).
 - `src/engine/coach.ts`: summit ladder, development focus, checklist and to-dos, level-ups, climbers, house cup. `src/ui/art/YamaScene.tsx`: the generated landscapes (gallery at `#/scenes`).
 - `src/ui/`: React screens. Every change goes through `commit(changes)` in `ui/data/DataContext.tsx`, which autosaves.
 - `src/demo/demoData.ts`: obviously fictional demo data (every record is tagged `demo: true`).
@@ -42,4 +43,4 @@ npm run check:print    # print acceptance check (after build:single; set CHROME=
 npm run convert-tables # rebuild the age-grade JSON from ../tasuki-cards-data
 ```
 
-Stage 2 hooks (not built): NAV butterfly course generator, termly report drafts, ekiden line-up advisor. Stage 3: the shared database and staff sign-in are built (`src/cloud/`); the student view and student logins are not, pending safeguarding sign-off. The data model already carries stable ids, aliases, display modes and per-record provenance for these.
+Stage 2 hooks (not built): NAV butterfly course generator, termly report drafts, ekiden line-up advisor. Stage 3: the shared database, staff sign-in and the pupil view are built (`src/cloud/`); the pupil app (Kemonomichi) runs on that view-only copy. The data model already carries stable ids, aliases, display modes and per-record provenance for these.

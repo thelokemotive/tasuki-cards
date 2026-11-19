@@ -1,0 +1,45 @@
+# Trail reminders: sends the week's web-push nudges to pupils who turned them on (scripts/reminders/send.ts).
+# Thursday 17:07, Saturday 08:37 and Monday 07:37, Japan time (the cron times below are UTC). Sends nothing
+# until the head coach has switched reminders on in the app, and needs two repository secrets:
+#   FIREBASE_SERVICE_ACCOUNT_TASUKI_CARDS  (the deploy service account, with the "Cloud Datastore User" role added)
+#   VAPID_PRIVATE_KEY                      (made in the app: account menu → Set up reminder keys)
+# See docs/WEBSITE-SETUP.md. Run it by hand from the Actions tab with a dry run to see what it would send.
+name: Trail reminders
+on:
+  schedule:
+    - cron: '7 8 * * 4'
+    - cron: '37 23 * * 5'
+    - cron: '37 22 * * 0'
+  workflow_dispatch:
+    inputs:
+      slot:
+        description: 'thursday, saturday or monday (empty: today’s)'
+        required: false
+        default: ''
+      dry_run:
+        description: 'Plan only, send nothing'
+        type: boolean
+        default: true
+permissions:
+  contents: read
+concurrency:
+  group: trail-reminders
+  cancel-in-progress: false
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --no-audit --no-fund
+        working-directory: scripts/reminders
+      - run: npx tsx send.ts
+        working-directory: scripts/reminders
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_TASUKI_CARDS }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          SLOT: ${{ inputs.slot }}
+          DRY_RUN: ${{ inputs.dry_run && '1' || '' }}

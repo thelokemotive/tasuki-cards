@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useToast } from '../components/Toast';
 import { OWNER_EMAIL, parseCoachEmails, useAccount } from './account';
+import { RemindersSetup } from './RemindersSetup';
 
 export function AccountMenu() {
   const account = useAccount();
@@ -65,6 +66,7 @@ export function AccountMenu() {
                   Treadmill logging open (pupils send runs with a photo of the console, for you to approve)
                 </label>
               )}
+              <RemindersSetup />
               <label className="acct-label" htmlFor="coach-list">
                 Other coaches (one school email per line)
               </label>
