@@ -43,7 +43,7 @@ const SECTION_LABELS: Record<string, string> = {
 const HELP: Record<string, string> = {
   'ageGrade.subMile': 'How standards are set below 1 mile, where the road tables stop.',
   'arm.plate3': 'Which test sets the third ARM plate. Season 0 replaced the stork with the Throne.',
-  'arm.calfRepCap': 'Heel raises are counted up to this many (the Wall stops at 40).',
+  'arm.calfRepCap': 'Heel raises are counted up to this many (the Wall stops there; the sheet should say the same).',
   'arm.throneSeatsCm': 'Seat heights for T1–T5 (cm). Stamped on every Throne record, so changing the kit later is visible.',
   'arm.interim.enabled': 'A test with no Throne result but both hops past the line gets an interim control level (provisional) until the first Throne test.',
   'arm.interim.level': 'The interim control level. Keep it at or below where most pupils start (T2), so it cannot beat a real Throne result.',

@@ -56,9 +56,9 @@ Coach Example 9:45:00
 - Descents: add `not clean` if the run was not a clean run (it is stored but never scored).
 - Navigation: add `errors <n>` (control errors) and optionally `variant <x>` and `route <n> km`.
 - Bleep test lines: `<name> <laps> laps` (or just the number).
-- ARM lines, left/right: `ankle 12/9` (the Lunge, cm), `calf 22/25` (the Wall, reps at 60 bpm, counted up to 40), `throne 3/2` (the Throne number passed, 0–5), in any order. `-` means not tested (`ankle 12/-`); one leg alone does not count until both are tested. A single number is the weaker side (`ankle 11`), as in lines written before Season 0.
+- ARM lines, left/right: `ankle 12/9` (the Lunge, cm), `calf 22/25` (the Wall, reps at 60 bpm, counted up to 100), `throne 3/2` (the Throne number passed, 0–5), in any order. `-` means not tested (`ankle 12/-`); one leg alone does not count until both are tested. A single number is the weaker side (`ankle 11`), as in lines written before Season 0.
 - Also recorded but not scored: `hop 215/185` (cm; under 5 is read as metres, so `hop 2.15/1.85` works), `pistol yes/no` (full pistol squat per leg: the No Throne badge), `stork 30/44` (seconds, before Season 0). `height 172` saves the pupil's height (coach only). The old `hop yes|no` still reads as hop-and-stick.
-- Calf is always reps. A timed calf test is converted before entry: at 60 bpm, 2 s = 1 rep, rounded down, capped at 40.
+- Calf is always reps. A timed calf test is converted before entry: at 60 bpm, 2 s = 1 rep, rounded down, capped at 100.
 
 ### Names
 

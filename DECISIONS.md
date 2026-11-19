@@ -336,6 +336,14 @@ Ahead of the first real ARM screening, and the coach's "THE THRONE v2.1" protoco
 **Not built now:** a QR code and share link for pupils (later, separately), and any change to the thresholds from the first results: they are reviewed once every group has been tested.
 
 
+## ARM after the first two groups (19 Nov 2026, afternoon)
+
+The Lower Sixth (Stork and hop, before the Throne) and the Fifth Form (the Throne, no hop) were screened on the same day.
+
+- **Calf rescaled: levels 15 · 25 · 35 · 50 · 70 reps, counted up to 100** (was 15–35, counted up to 40; `armCalfMigration`, one config version, "ARM calf rescaled after the first two groups"). The coach's call: many pupils did small bounces rather than full heel raises, so counts ran far past 40 and level 5 at 35 told nobody anything. The new scale spreads the first two groups across L0–L4 and leaves L5 as a real target. The sheet and the guide now say every rep goes to full height (head to the shelf) and tiny bounces do not count; without that, counts from different trios are not comparable, and the numbers should be reviewed again once reps are judged properly. A store whose calf numbers were edited by hand keeps them.
+- **The hop is not needed for the Fifth Form.** Since v2.1 the hop is never scored; it only gives pupils tested before the Throne an interim control level. The Fifth Form have real Throne results, which always count over an interim one. Their Throne levels sat around T2–T3 with a few higher, so the Lower Sixth's interim T2 is at or below the typical real result: no advantage. The fair fix is for the Lower Sixth to do the Throne (about 5 minutes each), which replaces the interim level.
+- **Prepared links for Paste & Match.** `#/paste?text=<line format>` opens Paste & Match with the box filled, so a block can be sent as one link: check the review, Approve. The text is removed from the address bar on arrival, and nothing is saved before Approve.
+
 ## Open questions for the coach
 
 1. Surge sanity gate: minimum of 3 legs with a baseline per event and distance (see above). Is that right?
