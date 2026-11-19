@@ -158,7 +158,17 @@ export interface Config {
      * real Throne result. It counts only while the test is under `months` old, and any Throne result in the
      * ARM window replaces it, up or down. A rating that uses it is marked provisional.
      */
-    interim: { enabled: boolean; level: number; hopCm: number; months: number };
+    interim: {
+      enabled: boolean;
+      level: number;
+      hopCm: number;
+      /**
+       * The hop ladder: each further distance (cm) the weaker leg reaches adds one level above `level`
+       * (default 160 → T3, 180 → T4). Never above T4: T5 needs the Throne itself. Empty = one flat level.
+       */
+      steps: number[];
+      months: number;
+    };
     windowMonths: number;
     provisional: boolean;
   };
@@ -432,7 +442,7 @@ export const DEFAULT_CONFIG: Config = {
     calfRepCap: 100,
     throneSeatsCm: [61, 51, 42, 30.5, 19.5],
     protocol: 'ARM-S0-v2',
-    interim: { enabled: true, level: 2, hopCm: 120, months: 6 },
+    interim: { enabled: true, level: 2, hopCm: 120, steps: [160, 180], months: 6 },
     windowMonths: 12,
     provisional: false,
   },
@@ -583,10 +593,12 @@ export function evidenceMigration(configs: Config[] | undefined, createdAt: stri
  */
 function legacyRules(stored: Partial<Config>): Partial<Config> {
   // Versions from before the race rule in the 5K prediction (18 Nov 2026) are read with it off.
-  const raced: Partial<Config> =
+  let raced: Partial<Config> =
     stored.predict?.raceOnlyRuledOutByLonger === undefined
       ? { ...stored, predict: { ...DEFAULT_PREDICT_VALUES, ...stored.predict, raceOnlyRuledOutByLonger: false } }
       : stored;
+  // Versions from before the hop ladder (19 Nov 2026, evening) give one flat interim level, as they did then.
+  if (raced.arm?.interim && (raced.arm.interim as Partial<Config['arm']['interim']>).steps === undefined) raced = { ...raced, arm: { ...raced.arm, interim: { ...raced.arm.interim, steps: [] } } };
   // Versions from before ARM Season 0 (19 Nov 2026) score the third plate from the stork, as they did then.
   const c: Partial<Config> = raced.arm && raced.arm.plate3 === undefined ? { ...raced, arm: { ...DEFAULT_CONFIG.arm, ...raced.arm, plate3: 'balance', interim: { ...DEFAULT_CONFIG.arm.interim, enabled: false } } } : raced;
   // Versions from before the engagement rules (Nov 2026) are read with them off, likewise.
@@ -676,6 +688,21 @@ export function armCalfMigration(configs: Config[] | undefined, createdAt: strin
   draft.arm.calfReps = [...DEFAULT_CONFIG.arm.calfReps];
   draft.arm.calfRepCap = DEFAULT_CONFIG.arm.calfRepCap;
   return { ...nextConfigVersion(cur, draft, createdAt, ARM_CALF_NOTE), migration: ARM_CALF_MIGRATION };
+}
+
+/** Marks the version that brought in the hop ladder for interim control levels. */
+export const ARM_LADDER_MIGRATION = 'arm-hop-ladder-2026-11';
+export const ARM_LADDER_NOTE = 'ARM interim control from the hop ladder (120 cm T2, 160 cm T3, 180 cm T4); L6 timed calf counted 1 s = 1 bounce';
+
+/** One-off: a Season 0 store with a flat interim level gets the hop ladder. A ladder edited by hand is kept. */
+export function armLadderMigration(configs: Config[] | undefined, createdAt: string): Config | undefined {
+  if (!configs || configs.length === 0) return undefined;
+  if (configs.some((c) => c.migration === ARM_LADDER_MIGRATION)) return undefined;
+  const cur = currentConfig(configs);
+  if (cur.arm.plate3 !== 'control' || cur.arm.interim.steps.length > 0) return undefined;
+  const draft = cloneConfig(cur);
+  draft.arm.interim.steps = [...DEFAULT_CONFIG.arm.interim.steps];
+  return { ...nextConfigVersion(cur, draft, createdAt, ARM_LADDER_NOTE), migration: ARM_LADDER_MIGRATION };
 }
 
 /** The ARM rules as they were before Season 0 (stork balance plate, calf 10–30). For tests and comparisons. */
