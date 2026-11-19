@@ -55,8 +55,9 @@ export interface WeakerSide {
 /** The weaker side of one measure: the lower leg when both are recorded, else the single (weaker-side) value. */
 export function weakerSide(arm: ArmMeasures | undefined, m: ArmMeasure): WeakerSide {
   if (!arm) return {};
-  const l = arm.left?.[m];
-  const r = arm.right?.[m];
+  // Hop lines stored by the 18 Nov 2026 build (hopLineCm) read as hop distances.
+  const l = m === 'hopCm' ? (arm.left?.hopCm ?? arm.left?.hopLineCm) : arm.left?.[m];
+  const r = m === 'hopCm' ? (arm.right?.hopCm ?? arm.right?.hopLineCm) : arm.right?.[m];
   if (finite(l) && finite(r)) return { value: Math.min(l, r), left: l, right: r, weaker: l < r ? 'L' : r < l ? 'R' : undefined };
   const single = arm[m];
   if (finite(single)) return { value: single };
@@ -81,9 +82,8 @@ export interface ArmTestDetail {
 
 /** Both legs' hops at or past the interim line. */
 function hopsPass(arm: ArmMeasures, cm: number): boolean {
-  const l = arm.left?.hopCm;
-  const r = arm.right?.hopCm;
-  return finite(l) && finite(r) && l >= cm && r >= cm;
+  const h = weakerSide(arm, 'hopCm');
+  return h.left != null && h.right != null && h.left >= cm && h.right >= cm;
 }
 
 /**
@@ -107,7 +107,10 @@ export function armTestDetail(arm: ArmMeasures | undefined, config: Config, opts
     out.control = weakerSide(arm, 'storkSec');
     let balance = levelFrom(out.control.value, a.storkSec);
     if (balance != null) {
-      if (balance === 4 && arm.hopStickBothLegs === true) balance = 5;
+      // Level 5 = level 4 + hop: per-leg hop lines past the gate on both legs (18 Nov 2026 build), else hop-and-stick yes.
+      const perLeg = out.hop.left != null || out.hop.right != null;
+      const hop = perLeg ? hopsPass(arm, finite(a.hopGateCm) ? a.hopGateCm : 120) : arm.hopStickBothLegs === true;
+      if (balance === 4 && hop) balance = 5;
       out.levels.control = balance;
     }
     return out;
@@ -197,3 +200,36 @@ export function armSummary(arm: ArmMeasures | undefined): string {
 }
 
 export type { ArmLeg };
+
+/** How many pupils sit at each level of one plate (Settings → Scoring → ARM spread, before and after a change). */
+export interface ArmPlateSpread {
+  below: number;
+  /** Index 0 = L1 … index 4 = L5. */
+  levels: [number, number, number, number, number];
+  untested: number;
+  /** Pupils with a result on this plate. */
+  tested: number;
+}
+
+export function armSpread(all: Partial<Record<ArmDomain, number>>[]): Record<ArmDomain, ArmPlateSpread> {
+  const out = {} as Record<ArmDomain, ArmPlateSpread>;
+  for (const d of ARM_DOMAINS) {
+    const s: ArmPlateSpread = { below: 0, levels: [0, 0, 0, 0, 0], untested: 0, tested: 0 };
+    for (const a of all) {
+      const l = a[d];
+      if (l == null) s.untested++;
+      else {
+        s.tested++;
+        if (l < 1) s.below++;
+        else s.levels[Math.min(5, l) - 1]++;
+      }
+    }
+    out[d] = s;
+  }
+  return out;
+}
+
+/** More than `share` of the tested pupils at L5 or below L1: the thresholds may need moving. */
+export function armSpreadSkewed(s: ArmPlateSpread, share = 1 / 3): boolean {
+  return s.tested > 0 && (s.below > s.tested * share || s.levels[4] > s.tested * share);
+}

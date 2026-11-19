@@ -78,6 +78,22 @@ Aiko Testfield, Ben Sampleton
 Coach Example 9:45:00`;
 
 describe('Tasuki line format (spec 4.3)', () => {
+  it('ARM per leg: "ankle 9.5/11 calf 22/25 stork 6/9 hop 100/120" (left/right)', () => {
+    const r = parseLineFormat('# test: arm | 2026-11-20\nAiko Testfield ankle 9.5/11 calf 22/25 stork 6/9 hop 100/120\nBen Sampleton ankle 8 / 8.5, calf 30/28, stork 15/12, hop 0/80', { today: '2026-11-20', config: DEFAULT_CONFIG }).rows;
+    expect(r[0]).toMatchObject({ name: 'Aiko Testfield', errors: [], arm: { left: { ankleCm: 9.5, calfReps: 22, storkSec: 6, hopCm: 100 }, right: { ankleCm: 11, calfReps: 25, storkSec: 9, hopCm: 120 } } });
+    // Since the Throne replaced the Stork (19 Nov 2026), the stork is kept but flagged as not counting.
+    expect(r[0].warnings).toEqual(['stork is kept but no longer counts (the Throne replaced it)']);
+    expect(r[0].arm).not.toHaveProperty('ankleCm');
+    expect(r[1]).toMatchObject({ name: 'Ben Sampleton', errors: [], arm: { left: { ankleCm: 8, calfReps: 30, storkSec: 15, hopCm: 0 }, right: { ankleCm: 8.5, calfReps: 28, storkSec: 12, hopCm: 80 } } });
+  });
+
+  it('ARM: old single values and per-leg values can mix; hop is a distance, so a lone number is the weaker side', () => {
+    const rows = parseLineFormat('# test: arm | 2026-11-20\nAiko Testfield ankle 11 calf 22/25 hop yes\nBen Sampleton stork 6/9 hop 120\nHana M hop 110/120', { today: '2026-11-20', config: DEFAULT_CONFIG }).rows;
+    expect(rows[0]).toMatchObject({ errors: [], arm: { ankleCm: 11, hopStickBothLegs: true, left: { calfReps: 22 }, right: { calfReps: 25 } } });
+    expect(rows[1]).toMatchObject({ errors: [], arm: { hopCm: 120, left: { storkSec: 6 }, right: { storkSec: 9 } } });
+    expect(rows[2]).toMatchObject({ errors: [], warnings: [], arm: { left: { hopCm: 110 }, right: { hopCm: 120 } } });
+  });
+
   const p = parseLineFormat(LINE_EXAMPLE, { today: TODAY, config: cfg });
 
   it('reads every header', () => {

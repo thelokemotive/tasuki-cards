@@ -138,6 +138,7 @@ export const PERF_KINDS: PerfKind[] = ['race', 'relay_leg', 'parkrun', 'long_run
 export type PerfSource = 'coach' | 'paste' | 'voice' | 'form';
 
 /** One leg's ARM results (Season 0 onwards). */
+/** One leg (also exported as ArmSide, its name in the 18 Nov 2026 build). */
 export interface ArmLeg {
   /** The Lunge: knee-to-wall, cm from the wall to the big toe. */
   ankleCm?: number;
@@ -151,7 +152,10 @@ export interface ArmLeg {
   storkSec?: number;
   /** Hop and freeze: distance landed and held on the same leg (cm). Recorded, not scored (except an interim CONTROL level). */
   hopCm?: number;
+  /** Hop & Freeze furthest line frozen (cm), as stored by the 18 Nov 2026 build; read like hopCm. */
+  hopLineCm?: number;
 }
+export type ArmSide = ArmLeg;
 
 /**
  * ARM test results. Per leg (`left`, `right`) from Season 0; the engine takes the weaker side. A single value

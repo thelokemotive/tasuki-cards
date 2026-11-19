@@ -143,6 +143,8 @@ export interface Config {
     plate3: 'control' | 'balance';
     /** Levels 1..4 (seconds) for the 'balance' plate. Level 5 = level-4 threshold and hop-and-stick on both legs. */
     storkSec: [number, number, number, number];
+    /** 'balance' plate only: Hop & Freeze passes when the line frozen is at least this (cm) on both legs (18 Nov 2026 build). */
+    hopGateCm: number;
     /** Heel raises are counted up to this many (the Wall stops at 40); more is counted as the cap. */
     calfRepCap: number;
     /** Throne seat heights (cm) for T1..T5. Stamped on every test so a change of kit is visible. */
@@ -425,6 +427,7 @@ export const DEFAULT_CONFIG: Config = {
     calfReps: [15, 20, 25, 30, 35],
     plate3: 'control',
     storkSec: [5, 10, 20, 30],
+    hopGateCm: 120,
     calfRepCap: 40,
     throneSeatsCm: [61, 51, 42, 30.5, 19.5],
     protocol: 'ARM-S0-v2',
@@ -578,8 +581,13 @@ export function evidenceMigration(configs: Config[] | undefined, createdAt: stri
  * (withDefaults would otherwise fill the new keys with today's defaults.)
  */
 function legacyRules(stored: Partial<Config>): Partial<Config> {
-  // Versions from before ARM Season 0 (Nov 2026) score the third plate from the stork, as they did then.
-  const c: Partial<Config> = stored.arm && stored.arm.plate3 === undefined ? { ...stored, arm: { ...DEFAULT_CONFIG.arm, ...stored.arm, plate3: 'balance', interim: { ...DEFAULT_CONFIG.arm.interim, enabled: false } } } : stored;
+  // Versions from before the race rule in the 5K prediction (18 Nov 2026) are read with it off.
+  const raced: Partial<Config> =
+    stored.predict?.raceOnlyRuledOutByLonger === undefined
+      ? { ...stored, predict: { ...DEFAULT_PREDICT_VALUES, ...stored.predict, raceOnlyRuledOutByLonger: false } }
+      : stored;
+  // Versions from before ARM Season 0 (19 Nov 2026) score the third plate from the stork, as they did then.
+  const c: Partial<Config> = raced.arm && raced.arm.plate3 === undefined ? { ...raced, arm: { ...DEFAULT_CONFIG.arm, ...raced.arm, plate3: 'balance', interim: { ...DEFAULT_CONFIG.arm.interim, enabled: false } } } : raced;
   // Versions from before the engagement rules (Nov 2026) are read with them off, likewise.
   const engaged: Partial<Config> =
     c.ovr && c.ovr.newStatNeverCosts === undefined
@@ -612,6 +620,23 @@ export function engagementMigration(configs: Config[] | undefined, createdAt: st
   return { ...nextConfigVersion(cur, draft, createdAt, ENGAGEMENT_NOTE), migration: ENGAGEMENT_MIGRATION };
 }
 
+/** Marks the version in which a short result can no longer rule out an official race in the 5K prediction. */
+export const RACE_ANCHOR_MIGRATION = 'race-anchor-2026-11';
+export const RACE_ANCHOR_NOTE = '5K prediction: only a result at least as long can mark an official race as not a full effort';
+
+/** One-off, as engagementMigration: switches the race rule on in a new version, once, for a store made before it. */
+export function raceAnchorMigration(configs: Config[] | undefined, createdAt: string): Config | undefined {
+  if (!configs || configs.length === 0) return undefined;
+  if (configs.some((c) => c.migration === RACE_ANCHOR_MIGRATION)) return undefined;
+  const on = (c: Config) => c.predict.raceOnlyRuledOutByLonger;
+  const first = withDefaults(configs.reduce((a, b) => (b.version < a.version ? b : a)));
+  const cur = currentConfig(configs);
+  if (on(first) || on(cur)) return undefined;
+  const draft = cloneConfig(cur);
+  draft.predict.raceOnlyRuledOutByLonger = true;
+  return { ...nextConfigVersion(cur, draft, createdAt, RACE_ANCHOR_NOTE), migration: RACE_ANCHOR_MIGRATION };
+}
+
 /** Marks the version that brought in ARM Season 0 (the Throne, calf levels one step harder). */
 export const ARM_S0_MIGRATION = 'arm-s0-2026-11';
 export const ARM_S0_NOTE = 'ARM Season 0: the Throne (CONTROL) replaces the Stork; calf levels 15–35 reps, counted up to 40';
@@ -636,6 +661,7 @@ export function armS0Migration(configs: Config[] | undefined, createdAt: string)
 export function preArmS0Rules(c: Config): Config {
   const out = cloneConfig(c);
   out.arm.calfReps = [10, 15, 20, 25, 30];
+  out.arm.storkSec = [5, 10, 20, 30];
   out.arm.plate3 = 'balance';
   out.arm.interim.enabled = false;
   return out;

@@ -32,6 +32,20 @@ describe('withSeed: first run and go-live migration on load', () => {
     expect(withSeed(first.snapshot, '2026-11-17T00:00:00.000Z').changes.put?.configs).toBeUndefined();
   });
 
+  it('a store from before the engagement and race-anchor rules gets both versions, in order, once', () => {
+    const v3 = { ...JSON.parse(JSON.stringify(DEFAULT_CONFIG)), version: 3 };
+    delete v3.ovr.newStatNeverCosts;
+    delete v3.predict.raceOnlyRuledOutByLonger;
+    const first = withSeed({ ...emptySnapshot(), configs: [v3] }, '2026-11-18T00:00:00.000Z');
+    expect(first.changes.put?.configs?.map((c) => [c.version, c.migration])).toEqual([
+      [4, 'engagement-2026-11'],
+      [5, 'race-anchor-2026-11'],
+    ]);
+    const cur = currentConfig(first.snapshot.configs);
+    expect(cur.ovr.newStatNeverCosts && cur.predict.raceOnlyRuledOutByLonger).toBe(true);
+    expect(withSeed(first.snapshot, '2026-11-19T00:00:00.000Z').changes.put?.configs).toBeUndefined();
+  });
+
   it('year groups recorded for last year move up on load (a Y9 from the 2025 Long Ducker is Y10 now)', () => {
     const a = { id: 'a', givenName: 'Ben', familyName: 'Sampleton', preferredName: 'Ben', aliases: [], sex: 'M' as const, yearGroup: 'Y9' as const, yearGroupYear: 2025, displayMode: 'full' as const, absoluteBoardOptOut: false, avatar: { seed: 1, skinTone: 0, hairStyle: 0, hairColour: 0, kitColour: 'academy-navy', accessory: 'none' as const }, active: true };
     const first = withSeed({ ...emptySnapshot(), athletes: [a] }, '2026-11-16T00:00:00.000Z');

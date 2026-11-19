@@ -239,3 +239,27 @@ describe('the Armour guide', () => {
     expect(a[2]).toMatchObject({ interim: true, next: 'Next: T3 · 42 cm' });
   });
 });
+
+describe('records and config versions from the 18 Nov 2026 build (Stork + Hop & Freeze gate)', () => {
+  const nov18 = (): Config => {
+    const c = JSON.parse(JSON.stringify(DEFAULT_CONFIG)) as Config;
+    delete (c.arm as Partial<Config['arm']>).plate3;
+    c.arm.storkSec = [3, 6, 10, 15];
+    c.arm.hopGateCm = 120;
+    return c;
+  };
+  it('hop lines (hopLineCm) read as hop distances', () => {
+    expect(weakerSide({ left: { hopLineCm: 120 }, right: { hopLineCm: 140 } }, 'hopCm')).toMatchObject({ value: 120, left: 120, right: 140 });
+    expect(armTestDetail({ left: { hopLineCm: 120 }, right: { hopLineCm: 140 } }, cfg)).toMatchObject({ interim: true, levels: { control: 2 } });
+  });
+  it('a version made with those defaults keeps its rule: balance L5 = stork L4 + hop lines past the gate on both legs', () => {
+    const v = withDefaults(nov18());
+    expect(v.arm.plate3).toBe('balance');
+    expect(armLevelsFromTest({ left: { storkSec: 20, hopLineCm: 120 }, right: { storkSec: 16, hopLineCm: 140 } }, v).control).toBe(5);
+    expect(armLevelsFromTest({ left: { storkSec: 20, hopLineCm: 100 }, right: { storkSec: 16, hopLineCm: 140 } }, v).control).toBe(4);
+  });
+  it('the Season 0 migration moves such a store to the Throne', () => {
+    const v2 = armS0Migration([nov18()], '2026-11-19T00:00:00.000Z')!;
+    expect(v2.arm).toMatchObject({ plate3: 'control', calfReps: [15, 20, 25, 30, 35] });
+  });
+});

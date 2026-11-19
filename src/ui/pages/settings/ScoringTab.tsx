@@ -9,6 +9,7 @@ import { deriveAll, diffRatings } from '../../../engine/derive';
 import { fullName } from '../../../engine/display';
 import { AGE_GRADE_SOURCE } from '../../../engine/standards';
 import { BLEEP_PERCENTILES } from '../../../engine/config';
+import { ArmSpreadPanel } from './ArmSpread';
 
 type Path = (string | number)[];
 
@@ -50,6 +51,7 @@ const HELP: Record<string, string> = {
   'arm.interim.months': 'The interim level stops counting after this many months without a Throne test.',
   'arm.storkSec': 'Only used when the third plate is Balance (config versions before Season 0).',
   'ovr.newStatNeverCosts': 'On: a stat with fewer than “new stat results” results counts in the OVR only when it lifts it, so a first try is never a loss.',
+  'predict.raceOnlyRuledOutByLonger': 'On: an official race is marked “not a full effort” only by a faster result at least as long, never by a short time trial.',
   'ovr.newStatResults': 'Results after which a stat always counts in the OVR (2 = only a first try is optional).',
   'streak.treadmillCounts': 'A verified treadmill session keeps the week in the streak, like a Circuit run.',
   'treadmill.kmMilestones': 'Treadmill km club badges, by total verified treadmill km.',
@@ -79,6 +81,9 @@ const HELP: Record<string, string> = {
   'spd.raceMaxKmEff': 'A verified race, relay leg or parkrun of up to this effective distance (km) also feeds SPD.',
   'clb.raceMinClimbM': 'A verified race or long run needs at least this much climb (m) to feed CLB…',
   'clb.raceMinClimbPerKm': '…and at least this many metres of climb per km.',
+  'arm.ankleCm': 'The Lunge: knee-to-wall cm for levels 1–5 (weaker leg, best of 3).',
+  'arm.calfReps': 'The Wall: heel raises to 60 bpm for levels 1–5 (weaker leg, counted up to the cap).',
+  'arm.hopGateCm': 'Balance plate only (config versions before the Throne): Hop & Freeze counts when the line frozen is at least this (cm) on both legs.',
 };
 
 const human = (k: string) => k.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase()).replace(/\bAg\b/, 'AG').replace(/ M$/, ' (men)').replace(/ F$/, ' (women)');
@@ -252,7 +257,7 @@ export function ScoringTab() {
     const after = deriveAll(snapshot, asOf, { ...draft, version: config.version + 1 });
     const changes = diffRatings(derived, after);
     const athletes = new Set(changes.map((c) => c.athleteId));
-    return { changes, athletes: athletes.size };
+    return { changes, athletes: athletes.size, after };
   }, [dirty, draft, snapshot, asOf, config.version, derived]);
 
   const apply = async () => {
@@ -294,6 +299,8 @@ export function ScoringTab() {
         </div>
         <Section key={open} draft={draft} setDraft={setDraft} section={open} />
       </Panel>
+
+      {open === 'arm' && <ArmSpreadPanel now={derived} after={impact && JSON.stringify(draft.arm) !== JSON.stringify(config.arm) ? impact.after : undefined} />}
 
       <Panel title="Impact preview">
         {!dirty ? (
