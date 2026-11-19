@@ -25,6 +25,8 @@ import { HandicapPage } from './pages/HandicapPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { ScenesPage } from './pages/ScenesPage';
 import { WinterPage } from './pages/WinterPage';
+import { ArmouryPage } from './pages/ArmouryPage';
+import { ArmourPage } from './pages/ArmourPage';
 import { SquadPage } from './pages/SquadPage';
 import { YamaScene } from './art/YamaScene';
 import { HelpPage } from './pages/HelpPage';
@@ -40,6 +42,7 @@ const NAV: (NavItem | 'sep')[] = [
   { page: 'home', to: '/', label: 'Home', icon: '⌂' },
   { page: 'entry', to: '/entry', label: 'Quick Entry', icon: '＋' },
   { page: 'paste', to: '/paste', label: 'Paste & Match', icon: '⇣' },
+  { page: 'armoury', to: '/armoury', label: 'Armoury (ARM)', icon: '🛡' },
   'sep',
   { page: 'roster', to: '/roster', label: 'Roster', icon: '☰' },
   { page: 'squad', to: '/squad', label: 'Squad', icon: '▦' },
@@ -58,6 +61,8 @@ const TITLES: Record<string, string> = {
   home: 'Home',
   entry: 'Quick Entry',
   paste: 'Paste & Match',
+  armoury: 'Armoury',
+  armour: 'Armour',
   roster: 'Roster',
   squad: 'Squad',
   scenes: 'Scenes',
@@ -76,6 +81,7 @@ const VIEWER_NAV: NavItem[] = [
   { page: 'home', to: '/', label: 'Cards', icon: '▣' },
   { page: 'log', to: '/log', label: 'Log a run', icon: '📷' },
   { page: 'boards', to: '/boards', label: 'Boards', icon: '≡' },
+  { page: 'armour', to: '/armour', label: 'Armour', icon: '🛡' },
 ];
 
 function ToShare({ id }: { id: string }) {
@@ -86,6 +92,7 @@ function ToShare({ id }: { id: string }) {
 function renderViewerPage(route: Route): ReactNode {
   if (route.page === 'boards') return <BoardsPage />;
   if (route.page === 'log') return <LogRunPage />;
+  if (route.page === 'armour') return <ArmourPage />;
   if (route.page === 'athlete' && route.params[0]) return route.params[1] === 'share' ? <AthletePage /> : <ToShare id={route.params[0]} />;
   return <ViewerHome />;
 }
@@ -122,6 +129,10 @@ function renderPage(route: Route): ReactNode {
       return <SquadPage />;
     case 'winter':
       return <WinterPage />;
+    case 'armoury':
+      return <ArmouryPage />;
+    case 'armour':
+      return <ArmourPage />;
     default:
       return <HomePage />;
   }

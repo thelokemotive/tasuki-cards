@@ -75,7 +75,7 @@ export function HelpPage() {
           <li><strong>CLB</strong>: climb courses{c.clb.allowRaces && <>, and any race or long run with at least {c.clb.raceMinClimbM} m of climb and {c.clb.raceMinClimbPerKm} m per km (a hill race), scored on its effective distance</>}.</li>
           <li><strong>DSC</strong>: descent courses, scored against the course benchmark. A descent that is not a clean run is kept but never scored.</li>
           <li><strong>NAV</strong>{c.nav.provisional && ' (provisional)'}: navigation time against a prediction from the runner&apos;s own best Circuit pace (or, with no Circuit, a race: a short one directly, any other scaled to the route by Riegel&apos;s formula), with {c.nav.penaltySecPerError} s per control error.</li>
-          <li><strong>ARM</strong>{c.arm.provisional && ' (provisional)'}: ankle, calf and balance tests, levels 1–5 each on the weaker leg (enter both legs; the app picks the weaker), using the best level in the last {c.arm.windowMonths} months, so ARM never falls on a bad retest. The card shows the three plate levels next to ARM, e.g. A3·C4·B2.</li>
+          <li><strong>ARM</strong>{c.arm.provisional && ' (provisional)'}: {c.arm.plate3 === 'control' ? 'the Lunge (ankle), the Wall (calf) and the Throne (control)' : 'ankle, calf and balance tests'}, levels 0–5 each on the weaker leg, using the best level in the last {c.arm.windowMonths} months, so ARM never falls on a bad retest. <Link to="/armour">What ARM is and why it matters</Link>.</li>
           <li>
             <strong>OVR</strong>:{' '}
             {c.ovr.evidence.enabled ? (

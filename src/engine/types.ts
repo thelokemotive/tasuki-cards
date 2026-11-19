@@ -90,9 +90,14 @@ export interface RaceStat extends StatValue {
 export interface ArmLevels {
   ankle?: number;
   calf?: number;
-  balance?: number;
-  /** Domains with no level yet: 'ankle' | 'calf' | 'balance'. */
-  missing: ('ankle' | 'calf' | 'balance')[];
+  /** The third plate: CONTROL (the Throne) from Season 0; balance (the stork) under older config versions. */
+  control?: number;
+  /** The CONTROL level is an interim one from the hop (no Throne result yet): the rating is provisional. */
+  controlInterim?: boolean;
+  /** 'A2 · C5 · T2': the plate levels as shown next to ARM on the card (absent when nothing is tested). */
+  plates?: string;
+  /** Plates with no level yet (untested, or measured below level 1). */
+  missing: ('ankle' | 'calf' | 'control')[];
 }
 
 export interface OvrValue {

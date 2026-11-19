@@ -2,7 +2,7 @@
 // — the only way pages change data. Every commit autosaves through the Store.
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { DataSnapshot, ISODate } from '../../types';
-import { currentConfig, DEFAULT_CONFIG, engagementMigration, evidenceMigration, goLiveMigration, raceAnchorMigration, type Config } from '../../engine/config';
+import { armS0Migration, currentConfig, DEFAULT_CONFIG, engagementMigration, evidenceMigration, goLiveMigration, raceAnchorMigration, type Config } from '../../engine/config';
 import { yearRollover } from '../../engine/display';
 import { todayTokyo } from '../../engine/dates';
 import { deriveAll, type Derived } from '../../engine/derive';
@@ -50,7 +50,7 @@ const Ctx = createContext<DataApi | null>(null);
 /**
  * First-run seed (the Campus Circuit course and config version 1), plus one-off migrations of stored
  * data (the go-live config version that removes the provisional markers; the evidence rules; the engagement rules;
- * the race rule in the 5K prediction; the year rollover).
+ * the race rule in the 5K prediction; ARM Season 0; the year rollover).
  */
 export function withSeed(s: DataSnapshot, now: string = new Date().toISOString()): { snapshot: DataSnapshot; changes: Changes } {
   const changes: Changes = { put: {} };
@@ -61,7 +61,9 @@ export function withSeed(s: DataSnapshot, now: string = new Date().toISOString()
     const sofar = [...s.configs, goLive, evidence].filter((c): c is Config => !!c);
     const engagement = engagementMigration(sofar, now);
     const raceAnchor = raceAnchorMigration(engagement ? [...sofar, engagement] : sofar, now);
-    const added = [goLive, evidence, engagement, raceAnchor].filter((c): c is Config => !!c);
+    const beforeArm = [...sofar, engagement, raceAnchor].filter((c): c is Config => !!c);
+    const armS0 = armS0Migration(beforeArm, now);
+    const added = [goLive, evidence, engagement, raceAnchor, armS0].filter((c): c is Config => !!c);
     if (added.length) changes.put!.configs = added;
   }
   if (s.courses.length === 0) changes.put!.courses = seedCourses();

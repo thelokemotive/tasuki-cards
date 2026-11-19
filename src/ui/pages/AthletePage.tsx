@@ -21,13 +21,14 @@ import { resolveContext } from '../../engine/perf';
 import type { AthleteDerived } from '../../engine/derive';
 import type { PerfScore, RatingKey } from '../../engine/types';
 import { ExplainModal, StudentSheet } from '../components/StatExplain';
+import { ArmPanel } from '../components/ArmPanel';
+import { armSummary } from '../../engine/arm';
 import { DevelopmentFocus, StatRadar, SummitLadder } from '../components/Mountain';
 import { NextFiveK } from '../components/NextFiveK';
 import { GldPanel } from '../components/GldPanel';
 import { WinterPanel } from '../components/WinterPanel';
 import { Placings } from '../components/Placings';
 import { paceOf } from '../../engine/explain';
-import { armPlates, armResultText } from '../../engine/arm';
 import { formatPace } from '../../engine/format';
 
 const SPARK_KEYS: RatingKey[] = ['RACE', 'SPD', 'END', 'CLB', 'DSC', 'NAV', 'ARM'];
@@ -82,7 +83,7 @@ function StreakCalendar({ d }: { d: AthleteDerived }) {
 function resultText(p: Performance): string {
   if (p.kind === 'bleep') return p.bleepLaps != null ? `${p.bleepLaps} laps` : '—';
   if (p.kind === 'arm') {
-    return armResultText(p.arm) || '—';
+    return armSummary(p.arm) || '—';
   }
   const t = p.timeSec != null ? formatTime(p.timeSec) : '—';
   const extra = [p.place && `${p.place}${p.fieldSize ? `/${p.fieldSize}` : ''}`, p.kind === 'nav' && p.navErrors != null && `${p.navErrors} err`, p.kind === 'descent' && p.cleanRun === false && 'not clean', p.legNumber && `leg ${p.legNumber}`].filter(Boolean);
@@ -121,9 +122,28 @@ export function AthletePage() {
         <div className="no-print">
           <Link to={`/athlete/${a.id}`}>← Back to {fullName(a)}</Link>
         </div>
+        <div className="panel no-print row" style={{ gap: 10, flexWrap: 'wrap', alignItems: 'center', padding: '10px 14px' }}>
+          <span aria-hidden>🛡</span>
+          <span className="small">
+            <strong>Your armour</strong>
+            {r.arm.plates ? ` · ARM ${r.stats.ARM.locked ? '🔒' : r.stats.ARM.value} · ${r.arm.plates}` : ' · not tested yet'}
+            {r.stats.ARM.locked && r.stats.ARM.unlockHint ? ` · ${r.stats.ARM.unlockHint}` : ''}
+          </span>
+          <button className="btn btn-sm" onClick={() => document.getElementById('your-armour')?.scrollIntoView({ behavior: 'smooth' })}>
+            What to work on
+          </button>
+          <Link className="btn btn-sm btn-ghost" to="/armour">
+            What is ARM?
+          </Link>
+        </div>
         <Panel>
           <StudentSheet d={d} />
         </Panel>
+        <div id="your-armour">
+          <Panel title="Your armour">
+            <ArmPanel d={d} config={derived.config} />
+          </Panel>
+        </div>
         {d.winter && (
           <Panel title="Winter Mode">
             <WinterPanel d={d} config={derived.config} coach={false} />
@@ -208,10 +228,11 @@ export function AthletePage() {
                         {s.locked ? <span className="lock" title={s.unlockHelp}>🔒</span> : <strong>{s.value}</strong>}
                         {!s.locked && s.provisional && <Prov />}
                         {s.shielded && <span className="pill pill-ai" title={`Growth Shield: best in 12 months was ${s.peak12m}`} style={{ marginLeft: 4 }}>shield</span>}
-                        {key === 'ARM' && r.arm.missing.length < 3 && (
-                          <span className="muted tiny" title="ARM plate levels: Ankle · Calf · Balance" style={{ marginLeft: 6, whiteSpace: 'nowrap' }}>
-                            {armPlates(r.arm)}
-                          </span>
+                        {key === 'ARM' && r.arm.plates && (
+                          <div className="tiny muted nowrap" title="Plate levels: ankle · calf · Throne (control)">
+                            {r.arm.plates}
+                            {r.arm.controlInterim ? '*' : ''}
+                          </div>
                         )}
                       </td>
                       <td className="small" onClick={(e) => e.stopPropagation()}>
@@ -263,11 +284,7 @@ export function AthletePage() {
             </table>
           </div>
           <p className="tiny muted">Click any stat for the working behind it: which result, the calculation, and why the other results did not count.</p>
-          {r.arm.missing.length < 3 && (
-            <p className="small muted">
-              ARM plates{r.arm.missing.length > 0 ? ' so far' : ''}: <strong className="num">{armPlates(r.arm)}</strong> (Ankle · Calf · Balance, weaker leg; 0 = below level 1).
-            </p>
-          )}
+          {r.arm.controlInterim && <p className="tiny muted">* ARM control level is interim (from the hop, before the Throne existed): the first Throne test replaces it.</p>}
         </Panel>
       </div>
 
@@ -280,6 +297,10 @@ export function AthletePage() {
           <Placings d={d} lookup={derived.lookup} />
         </Panel>
       </div>
+
+      <Panel title="Armour">
+        <ArmPanel d={d} config={derived.config} coach />
+      </Panel>
 
       <div className="athlete-mountain">
         <Panel title="The shape of a runner">

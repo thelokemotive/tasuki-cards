@@ -6,6 +6,7 @@ import { wholeSchoolToTable } from '../../engine/parse/wholeSchool';
 import type { PerfKind } from '../../types';
 import { PERF_KINDS } from '../../types';
 import { Field, PageHeader, Panel, Seg, newId } from '../components/common';
+import { armSummary } from '../../engine/arm';
 import { useToast } from '../components/Toast';
 import { useData } from '../data/DataContext';
 import { Link } from '../router';
@@ -18,7 +19,6 @@ import { academicYearOf } from '../../engine/dates';
 import type { ParseFormat } from '../../engine/parse/types';
 import { formatKm, formatTime } from '../../engine/format';
 import { fullName } from '../../engine/display';
-import { armResultText } from '../../engine/arm';
 import { formatLongDate } from '../../engine/dates';
 
 const STATUS_LABEL: Record<RowStatus, string> = { ready: 'Import', review: 'Check', skip: 'Skip', outsider: 'Outsider' };
@@ -26,7 +26,7 @@ const STATUS_LABEL: Record<RowStatus, string> = { ready: 'Import', review: 'Chec
 function resultCell(r: PlanRow): string {
   const raw = r.raw;
   if (raw.laps != null) return `${raw.laps} laps`;
-  if (raw.arm) return armResultText(raw.arm);
+  if (raw.arm) return armSummary(raw.arm) + (raw.heightCm ? ` · height ${raw.heightCm} cm` : '');
   if (r.kind === 'participation') return 'attended';
   if (raw.timeSec != null) return formatTime(raw.timeSec) + (raw.timeSec % 1 ? `.${Math.round((raw.timeSec % 1) * 10)}` : '');
   return '—';

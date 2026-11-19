@@ -64,6 +64,10 @@ export interface Athlete {
    */
   schoolAccounts?: string[];
   house?: string;
+  /** Coach-only: standing height in cm (to check ARM levels for a size bias). Never on cards, boards or the pupil copy. */
+  heightCm?: number;
+  /** The date heightCm was measured. */
+  heightMeasuredOn?: ISODate;
   avatar: Avatar;
   active: boolean;
   notes?: string;
@@ -133,34 +137,49 @@ export const PERF_KINDS: PerfKind[] = ['race', 'relay_leg', 'parkrun', 'long_run
 
 export type PerfSource = 'coach' | 'paste' | 'voice' | 'form';
 
-/** One leg's raw ARM results (Season 0 protocol, Nov 2026). */
-export interface ArmSide {
-  /** The Lunge: toe-to-wall, cm (best of 3) */
+/** One leg's ARM results (Season 0 onwards). */
+/** One leg (also exported as ArmSide, its name in the 18 Nov 2026 build). */
+export interface ArmLeg {
+  /** The Lunge: knee-to-wall, cm from the wall to the big toe. */
   ankleCm?: number;
-  /** The Wall: single-leg heel raises to 60 bpm, stopped at 40 */
+  /** The Wall: single-leg heel raises at 60 bpm (reps; the engine caps them at config.arm.calfRepCap). */
   calfReps?: number;
-  /** The Stork: eyes-closed single-leg stance, seconds (best of 3, stopped at 30) */
+  /** The Throne: the lowest seat passed with 3 clean one-leg squat taps, 0–5 (0 = cannot pass T1 yet). */
+  throne?: number;
+  /** Full pistol squat, 3 clean reps: the "No Throne" mastery badge. Never feeds ARM. */
+  pistol?: boolean;
+  /** Eyes-closed stork, seconds. Before Season 0 only; kept, but no longer feeds ARM. */
   storkSec?: number;
-  /** Hop & Freeze: furthest line frozen for 3 s (80 / 100 / 120 / 140 cm; 0 = none) */
+  /** Hop and freeze: distance landed and held on the same leg (cm). Recorded, not scored (except an interim CONTROL level). */
+  hopCm?: number;
+  /** Hop & Freeze furthest line frozen (cm), as stored by the 18 Nov 2026 build; read like hopCm. */
   hopLineCm?: number;
 }
+export type ArmSide = ArmLeg;
 
 /**
- * ARM results. New records keep each leg's raw result in `left` / `right`; the engine works out the weaker
- * side (arm.ts armEffective). Old records hold one value per measure, already the weaker side, plus a hop
- * yes/no: those still count, used where a measure has no per-leg value.
+ * ARM test results. Per leg (`left`, `right`) from Season 0; the engine takes the weaker side. A single value
+ * (the fields at the top level) is the weaker side, as in every record made before November 2026.
  */
 export interface ArmMeasures {
-  /** Knee-to-wall, cm (old single value: weaker side) */
+  /** Knee-to-wall, cm (weaker side) */
   ankleCm?: number;
-  /** Single-leg heel raises (old single value: weaker side) */
+  /** Single-leg heel raises, full range, steady tempo, capped count (weaker side) */
   calfReps?: number;
-  /** Eyes-closed single-leg stance, seconds (old single value: weaker side) */
+  /** Throne level passed, 0–5 (weaker leg) */
+  throne?: number;
+  /** Eyes-closed single-leg stance, seconds (weaker side). The balance plate before Season 0. */
   storkSec?: number;
-  /** Old hop-and-stick yes/no (both legs). Per-leg hop lines take precedence. */
+  /** Hop distance (cm, weaker leg). */
+  hopCm?: number;
+  /** Before Season 0: hop-and-stick passed on both legs (lifted balance L4 to L5). */
   hopStickBothLegs?: boolean;
-  left?: ArmSide;
-  right?: ArmSide;
+  left?: ArmLeg;
+  right?: ArmLeg;
+  /** The protocol the test followed, e.g. 'ARM-S0-v2' (stamped when saved). */
+  protocol?: string;
+  /** Throne seat heights (cm) for T1–T5 in force on the day, so a later change of kit cannot reinterpret it. */
+  throneSeatsCm?: number[];
 }
 
 export interface HistoryEntry {

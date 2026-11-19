@@ -42,6 +42,14 @@ const SECTION_LABELS: Record<string, string> = {
 
 const HELP: Record<string, string> = {
   'ageGrade.subMile': 'How standards are set below 1 mile, where the road tables stop.',
+  'arm.plate3': 'Which test sets the third ARM plate. Season 0 replaced the stork with the Throne.',
+  'arm.calfRepCap': 'Heel raises are counted up to this many (the Wall stops at 40).',
+  'arm.throneSeatsCm': 'Seat heights for T1–T5 (cm). Stamped on every Throne record, so changing the kit later is visible.',
+  'arm.interim.enabled': 'A test with no Throne result but both hops past the line gets an interim control level (provisional) until the first Throne test.',
+  'arm.interim.level': 'The interim control level. Keep it at or below where most pupils start (T2), so it cannot beat a real Throne result.',
+  'arm.interim.hopCm': 'Both legs must hop at least this far (cm) and hold the landing.',
+  'arm.interim.months': 'The interim level stops counting after this many months without a Throne test.',
+  'arm.storkSec': 'Only used when the third plate is Balance (config versions before Season 0).',
   'ovr.newStatNeverCosts': 'On: a stat with fewer than “new stat results” results counts in the OVR only when it lifts it, so a first try is never a loss.',
   'predict.raceOnlyRuledOutByLonger': 'On: an official race is marked “not a full effort” only by a faster result at least as long, never by a short time trial.',
   'ovr.newStatResults': 'Results after which a stat always counts in the OVR (2 = only a first try is optional).',
@@ -73,10 +81,9 @@ const HELP: Record<string, string> = {
   'spd.raceMaxKmEff': 'A verified race, relay leg or parkrun of up to this effective distance (km) also feeds SPD.',
   'clb.raceMinClimbM': 'A verified race or long run needs at least this much climb (m) to feed CLB…',
   'clb.raceMinClimbPerKm': '…and at least this many metres of climb per km.',
-  'arm.ankleCm': 'The Lunge: toe-to-wall cm for levels 1–5 (weaker leg, best of 3).',
-  'arm.calfReps': 'The Wall: heel raises to 60 bpm for levels 1–5 (weaker leg, stopped at 40).',
-  'arm.storkSec': 'The Stork: eyes-closed seconds for levels 1–4 (weaker leg, best of 3, stopped at 30). Level 5 = level 4 + hop yes.',
-  'arm.hopGateCm': 'Hop & Freeze is “yes” when the furthest line frozen is at least this (cm) on both legs.',
+  'arm.ankleCm': 'The Lunge: knee-to-wall cm for levels 1–5 (weaker leg, best of 3).',
+  'arm.calfReps': 'The Wall: heel raises to 60 bpm for levels 1–5 (weaker leg, counted up to the cap).',
+  'arm.hopGateCm': 'Balance plate only (config versions before the Throne): Hop & Freeze counts when the line frozen is at least this (cm) on both legs.',
 };
 
 const human = (k: string) => k.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase()).replace(/\bAg\b/, 'AG').replace(/ M$/, ' (men)').replace(/ F$/, ' (women)');
@@ -148,6 +155,14 @@ function ValueEditor({ path, value, onChange }: { path: Path; value: unknown; on
       <select className="select" value={value as string} onChange={(e) => onChange(e.target.value)}>
         <option value="world_record_curve">World-record curve (200 m to the mile)</option>
         <option value="extrapolate">Mile–5 km slope carried down (before Nov 2026)</option>
+      </select>
+    );
+  }
+  if (key === 'arm.plate3') {
+    return (
+      <select className="select" value={value as string} onChange={(e) => onChange(e.target.value)}>
+        <option value="control">Control: the Throne, one-leg squat (Season 0)</option>
+        <option value="balance">Balance: eyes-closed stork + hop-and-stick (before Nov 2026)</option>
       </select>
     );
   }

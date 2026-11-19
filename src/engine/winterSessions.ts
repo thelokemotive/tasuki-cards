@@ -42,7 +42,7 @@ export const WINTER_SESSIONS: WinterSession[] = [
     title: 'Ski-boot antidote',
     minutes: '10 min',
     counts: 'armour',
-    steps: ['3 × 20 pogo hops: both feet, quick and light, knees almost straight.', '3 × 15 single-leg calf raises off a step, each leg, slow down.', 'Knee-to-wall ankle stretch: 10 each side.', 'No equipment: dorm, gym or ski locker room.'],
+    steps: ['3 × 20 pogo hops: both feet, quick and light, knees almost straight.', '3 × 15 single-leg calf raises off a step, each leg, slow down.', 'Knee-to-wall ankle stretch: 10 each side.', '3 × 5 one-leg sit-downs to a solid chair, each leg, down in 3 seconds.', 'No equipment: dorm, gym or ski locker room.'],
   },
   {
     id: 'sore',

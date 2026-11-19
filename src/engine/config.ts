@@ -132,13 +132,33 @@ export interface Config {
   };
 
   arm: {
-    /** Minimum value for levels 1..5. */
+    /** Minimum value for levels 1..5 (weaker side). */
     ankleCm: [number, number, number, number, number];
     calfReps: [number, number, number, number, number];
-    /** Levels 1..4 (seconds). Level 5 = level-4 threshold and Hop & Freeze passed on both legs. */
+    /**
+     * The third plate. 'control' (Season 0, Nov 2026): THE THRONE, a one-leg squat to a rigid seat; the level is
+     * the lowest seat passed on the weaker leg (0–5). 'balance' (before): eyes-closed stork seconds (storkSec),
+     * with level 5 = level 4 and hop-and-stick passed on both legs. Older config versions read as 'balance'.
+     */
+    plate3: 'control' | 'balance';
+    /** Levels 1..4 (seconds) for the 'balance' plate. Level 5 = level-4 threshold and hop-and-stick on both legs. */
     storkSec: [number, number, number, number];
-    /** Hop & Freeze counts as passed when the furthest line frozen is at least this (cm) on both legs. */
+    /** 'balance' plate only: Hop & Freeze passes when the line frozen is at least this (cm) on both legs (18 Nov 2026 build). */
     hopGateCm: number;
+    /** Heel raises are counted up to this many (the Wall stops at 40); more is counted as the cap. */
+    calfRepCap: number;
+    /** Throne seat heights (cm) for T1..T5. Stamped on every test so a change of kit is visible. */
+    throneSeatsCm: [number, number, number, number, number];
+    /** Protocol id stamped on new ARM records. */
+    protocol: string;
+    /**
+     * Interim CONTROL level for a test with no Throne result (the Lower Sixth, tested on 19 Nov 2026 before the
+     * Throne existed). Only the hop counts, never the stork: hopping past hopCm and holding the landing on BOTH
+     * legs gives `level`, set no higher than where most pupils are expected to start (T2), so it cannot beat a
+     * real Throne result. It counts only while the test is under `months` old, and any Throne result in the
+     * ARM window replaces it, up or down. A rating that uses it is marked provisional.
+     */
+    interim: { enabled: boolean; level: number; hopCm: number; months: number };
     windowMonths: number;
     provisional: boolean;
   };
@@ -401,11 +421,17 @@ export const DEFAULT_CONFIG: Config = {
 
   nav: { allowance: 1.15, penaltySecPerError: 120, maxErrors: 3, refRaceMaxKmEff: 5, effAtMin: 0.5, riegelExponent: 1.06, provisional: false },
 
+  // Season 0 (Nov 2026): calf one level harder (outside audit, 17 Nov), the Throne replaces the Stork.
   arm: {
     ankleCm: [5, 8, 10, 12, 14],
     calfReps: [15, 20, 25, 30, 35],
-    storkSec: [3, 6, 10, 15],
+    plate3: 'control',
+    storkSec: [5, 10, 20, 30],
     hopGateCm: 120,
+    calfRepCap: 40,
+    throneSeatsCm: [61, 51, 42, 30.5, 19.5],
+    protocol: 'ARM-S0-v2',
+    interim: { enabled: true, level: 2, hopCm: 120, months: 6 },
     windowMonths: 12,
     provisional: false,
   },
@@ -556,10 +582,12 @@ export function evidenceMigration(configs: Config[] | undefined, createdAt: stri
  */
 function legacyRules(stored: Partial<Config>): Partial<Config> {
   // Versions from before the race rule in the 5K prediction (18 Nov 2026) are read with it off.
-  const c: Partial<Config> =
+  const raced: Partial<Config> =
     stored.predict?.raceOnlyRuledOutByLonger === undefined
       ? { ...stored, predict: { ...DEFAULT_PREDICT_VALUES, ...stored.predict, raceOnlyRuledOutByLonger: false } }
       : stored;
+  // Versions from before ARM Season 0 (19 Nov 2026) score the third plate from the stork, as they did then.
+  const c: Partial<Config> = raced.arm && raced.arm.plate3 === undefined ? { ...raced, arm: { ...DEFAULT_CONFIG.arm, ...raced.arm, plate3: 'balance', interim: { ...DEFAULT_CONFIG.arm.interim, enabled: false } } } : raced;
   // Versions from before the engagement rules (Nov 2026) are read with them off, likewise.
   const engaged: Partial<Config> =
     c.ovr && c.ovr.newStatNeverCosts === undefined
@@ -607,6 +635,36 @@ export function raceAnchorMigration(configs: Config[] | undefined, createdAt: st
   const draft = cloneConfig(cur);
   draft.predict.raceOnlyRuledOutByLonger = true;
   return { ...nextConfigVersion(cur, draft, createdAt, RACE_ANCHOR_NOTE), migration: RACE_ANCHOR_MIGRATION };
+}
+
+/** Marks the version that brought in ARM Season 0 (the Throne, calf levels one step harder). */
+export const ARM_S0_MIGRATION = 'arm-s0-2026-11';
+export const ARM_S0_NOTE = 'ARM Season 0: the Throne (CONTROL) replaces the Stork; calf levels 15–35 reps, counted up to 40';
+
+/**
+ * One-off, as the migrations above: a store whose current version still scores the stork gets a new version with
+ * the Season 0 ARM rules (calf thresholds, the CONTROL plate, seat heights, the interim hop rule). Ankle levels are
+ * unchanged. Earlier versions keep their thresholds, so their ARM ratings are reproduced.
+ */
+export function armS0Migration(configs: Config[] | undefined, createdAt: string): Config | undefined {
+  if (!configs || configs.length === 0) return undefined;
+  if (configs.some((c) => c.migration === ARM_S0_MIGRATION)) return undefined;
+  const cur = currentConfig(configs);
+  if (cur.arm.plate3 === 'control') return undefined;
+  const draft = cloneConfig(cur);
+  const d = DEFAULT_CONFIG.arm;
+  draft.arm = { ...draft.arm, calfReps: [...d.calfReps], plate3: 'control', calfRepCap: d.calfRepCap, throneSeatsCm: [...d.throneSeatsCm], protocol: d.protocol, interim: { ...d.interim } };
+  return { ...nextConfigVersion(cur, draft, createdAt, ARM_S0_NOTE), migration: ARM_S0_MIGRATION };
+}
+
+/** The ARM rules as they were before Season 0 (stork balance plate, calf 10–30). For tests and comparisons. */
+export function preArmS0Rules(c: Config): Config {
+  const out = cloneConfig(c);
+  out.arm.calfReps = [10, 15, 20, 25, 30];
+  out.arm.storkSec = [5, 10, 20, 30];
+  out.arm.plate3 = 'balance';
+  out.arm.interim.enabled = false;
+  return out;
 }
 
 /** The rules as they were before November 2026 (plain-average OVR, mile–5 km slope below the mile). */

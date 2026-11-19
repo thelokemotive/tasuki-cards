@@ -6,7 +6,7 @@ import type { Config } from './config';
 import { BLEEP_PERCENTILES } from './config';
 import type { PerfScore, RatingKey } from './types';
 import { ageOnDate } from './age';
-import { armLevelsFromTest, type ArmDomain } from './arm';
+import { armTestDetail, type ArmDomain } from './arm';
 import { isISODate, monthsBetween } from './dates';
 import { isOfficialRace, type PerfContext } from './perf';
 import { isAgeGradeProvisional, standardTime } from './standards';
@@ -164,7 +164,7 @@ const ARM_MAX_LEVEL = 5;
 
 /** True when every domain has reached at least level 1 (a measurement below L1 is level 0: no level yet). */
 export function armComplete(levels: Partial<Record<ArmDomain, number>>): levels is Record<ArmDomain, number> {
-  return [levels.ankle, levels.calf, levels.balance].every((l) => l != null && l >= ARM_MIN_LEVEL);
+  return [levels.ankle, levels.calf, levels.control].every((l) => l != null && l >= ARM_MIN_LEVEL);
 }
 
 /**
@@ -175,7 +175,7 @@ export function armComplete(levels: Partial<Record<ArmDomain, number>>): levels 
 export function armScoreClamped(levels: Record<ArmDomain, number>, config: Config): number {
   const { min, max } = config.runScore;
   const domains = 3;
-  const sum = levels.ankle + levels.calf + levels.balance;
+  const sum = levels.ankle + levels.calf + levels.control;
   const span = domains * (ARM_MAX_LEVEL - ARM_MIN_LEVEL);
   return clampScore(min + ((sum - domains * ARM_MIN_LEVEL) * (max - min)) / span, config);
 }
@@ -323,10 +323,11 @@ export function scorePerformance(ctx: PerfContext, athlete: Athlete, config: Con
 
   switch (p.kind) {
     case 'arm': {
-      const levels = armLevelsFromTest(p.arm, config);
-      if (levels.ankle == null && levels.calf == null && levels.balance == null) return unscored(UNSCORED.noArm);
+      const detail = armTestDetail(p.arm, config);
+      const levels = detail.levels;
+      if (levels.ankle == null && levels.calf == null && levels.control == null) return unscored(UNSCORED.noArm);
       const score = armComplete(levels) ? armScoreClamped(levels, config) : undefined;
-      return { ...base, feeds: perfFeeds(ctx, config), score, fresh: base.expired ? undefined : score, provisional: config.arm.provisional };
+      return { ...base, feeds: perfFeeds(ctx, config), score, fresh: base.expired ? undefined : score, provisional: config.arm.provisional || !!detail.interim };
     }
     case 'bleep': {
       if (p.bleepLaps == null || !Number.isFinite(p.bleepLaps) || p.bleepLaps < 0) return unscored(UNSCORED.noLaps);

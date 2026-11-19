@@ -1,13 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import type { Athlete, Course, Performance, TasukiEvent } from '../types';
-import { DEFAULT_CONFIG, cloneConfig, preEvidenceRules, type Config } from './config';
+import { preArmS0Rules, DEFAULT_CONFIG, cloneConfig, preEvidenceRules, type Config } from './config';
 import { makeLookup } from './perf';
 import type { OvrValue, RaceStat } from './types';
 import { STAT_KEYS } from './types';
 import { computeAthleteRatings, navReferencePace, tierFor } from './stats';
 
 // The spec's worked examples use the original rules; the November 2026 rules are tested in evidence.test.ts.
-const cfg = preEvidenceRules(DEFAULT_CONFIG);
+// The worked ARM examples use the rules before Season 0 (stork balance plate, calf 10–30); arm.test.ts covers Season 0.
+const cfg = preArmS0Rules(preEvidenceRules(DEFAULT_CONFIG));
 const AS_OF = '2026-10-22';
 
 function athlete(over: Partial<Athlete> = {}): Athlete {
@@ -210,17 +211,17 @@ describe('NAV', () => {
 });
 
 describe('ARM', () => {
-  const t1 = perf({ id: 'arm1', kind: 'arm', date: '2026-09-10', arm: { ankleCm: 11, calfReps: 23, storkSec: 12, hopStickBothLegs: true } });
-  const t2 = perf({ id: 'arm2', kind: 'arm', date: '2026-10-10', arm: { ankleCm: 9, calfReps: 31, storkSec: 16, hopStickBothLegs: true } });
-  const old = perf({ id: 'arm0', kind: 'arm', date: '2025-09-01', arm: { ankleCm: 15, calfReps: 35, storkSec: 20, hopStickBothLegs: true } });
+  const t1 = perf({ id: 'arm1', kind: 'arm', date: '2026-09-10', arm: { ankleCm: 11, calfReps: 18, storkSec: 22, hopStickBothLegs: true } });
+  const t2 = perf({ id: 'arm2', kind: 'arm', date: '2026-10-10', arm: { ankleCm: 9, calfReps: 26, storkSec: 31, hopStickBothLegs: true } });
+  const old = perf({ id: 'arm0', kind: 'arm', date: '2025-09-01', arm: { ankleCm: 15, calfReps: 30, storkSec: 40, hopStickBothLegs: true } });
 
   it('worked example: best level per domain in the last 12 months → 84', () => {
-    // Test 1: ankle 11 → L3, calf 23 → L2, stork 12 → L3
-    // Test 2: ankle 9 → L2, calf 31 → L4, stork 16 + hop-and-stick → L5
+    // Test 1: ankle 11 → L3, calf 18 → L2, stork 22 → L3
+    // Test 2: ankle 9 → L2, calf 26 → L4, stork 31 + hop-and-stick → L5
     // (the all-L5 test from 2025-09-01 is 13 months old: outside the 12-month window)
     // Best: ankle L3 + calf L4 + balance L5 = 12 → ARM = round(40 + (12 − 3) × 59 / 12) = round(84.25) = 84
     const r = rate(coach, [old, t1, t2]);
-    expect(r.arm).toEqual({ ankle: 3, calf: 4, balance: 5, missing: [] });
+    expect(r.arm).toEqual({ ankle: 3, calf: 4, control: 5, missing: [], plates: 'A3 · C4 · B5' });
     expect(r.stats.ARM).toMatchObject({ locked: false, value: 84, provisional: false });
     expect(r.stats.ARM.basis).toEqual({ perfIds: ['arm2', 'arm1'], date: '2026-10-10', label: 'from ARM tests, 10 Oct' });
   });
@@ -231,7 +232,7 @@ describe('ARM', () => {
 
   it('locked until all three domains have a level, naming the missing ones', () => {
     const r = rate(coach, [perf({ kind: 'arm', arm: { ankleCm: 11 } })]);
-    expect(r.arm.missing).toEqual(['calf', 'balance']);
+    expect(r.arm.missing).toEqual(['calf', 'control']);
     expect(r.stats.ARM.locked).toBe(true);
     expect(r.stats.ARM.value).toBeUndefined();
     expect(r.stats.ARM.unlockHelp).toContain('calf and balance');
@@ -240,20 +241,20 @@ describe('ARM', () => {
   });
 
   it('a domain measured below level 1 has no level yet: ARM stays locked (no number is manufactured)', () => {
-    // ankle 3 cm → below L1 (5 cm), calf 15 → L1, stork 3 → L1. Levels run 1–5, so ankle has no level.
-    const r = rate(coach, [perf({ kind: 'arm', date: '2026-09-15', arm: { ankleCm: 3, calfReps: 15, storkSec: 3 } })]);
-    expect(r.arm).toEqual({ ankle: 0, calf: 1, balance: 1, missing: ['ankle'] });
-    expect(r.stats.ARM).toMatchObject({ locked: true, unlockHint: 'Reach level 1' });
+    // ankle 3 cm → below L1 (5 cm), calf 10 → L1, stork 5 → L1. Levels run 1–5, so ankle has no level.
+    const r = rate(coach, [perf({ kind: 'arm', date: '2026-09-15', arm: { ankleCm: 3, calfReps: 10, storkSec: 5 } })]);
+    expect(r.arm).toEqual({ ankle: 0, calf: 1, control: 1, missing: ['ankle'], plates: 'A0 · C1 · B1' });
+    expect(r.stats.ARM).toMatchObject({ locked: true, unlockHint: 'Ankle below L1' }); // names the plate (Season 0 change)
     expect(r.stats.ARM.value).toBeUndefined();
     expect(r.stats.ARM.unlockHelp).toBe('Reach level 1 in ankle (5 cm knee-to-wall) to unlock ARM (tests from the last 12 months count).');
     // A retest reaching 6 cm (L1) completes the set: L1 + L1 + L1 = 3 → 40 + 0 × 59 / 12 = 40
-    const later = rate(coach, [perf({ kind: 'arm', date: '2026-09-15', arm: { ankleCm: 3, calfReps: 15, storkSec: 3 } }), perf({ kind: 'arm', date: '2026-10-15', arm: { ankleCm: 6 } })]);
+    const later = rate(coach, [perf({ kind: 'arm', date: '2026-09-15', arm: { ankleCm: 3, calfReps: 10, storkSec: 5 } }), perf({ kind: 'arm', date: '2026-10-15', arm: { ankleCm: 6 } })]);
     expect(later.stats.ARM).toMatchObject({ locked: false, value: 40 });
   });
 
   it('names untested domains and those below level 1 together', () => {
     const r = rate(coach, [perf({ kind: 'arm', arm: { ankleCm: 3 } })]);
-    expect(r.arm.missing).toEqual(['ankle', 'calf', 'balance']);
+    expect(r.arm.missing).toEqual(['ankle', 'calf', 'control']);
     expect(r.stats.ARM.unlockHint).toBe('Finish ARM tests');
     expect(r.stats.ARM.unlockHelp).toBe('Test calf and balance, and reach level 1 in ankle (5 cm knee-to-wall), to unlock ARM (tests from the last 12 months count).');
   });
@@ -265,8 +266,8 @@ describe('ARM', () => {
   });
 
   it('window boundary: a test exactly 12 months old is out; 11 whole months is in', () => {
-    // All L5 (ankle 14, calf 35, stork 15 + hop-and-stick): 40 + (15 − 3) × 59 / 12 = 99
-    const full = { ankleCm: 14, calfReps: 35, storkSec: 15, hopStickBothLegs: true };
+    // All L5 (ankle 14, calf 30, stork 30 + hop-and-stick): 40 + (15 − 3) × 59 / 12 = 99
+    const full = { ankleCm: 14, calfReps: 30, storkSec: 30, hopStickBothLegs: true };
     expect(rate(coach, [perf({ kind: 'arm', date: '2025-10-22', arm: full })]).stats.ARM.locked).toBe(true);
     expect(rate(coach, [perf({ kind: 'arm', date: '2025-10-23', arm: full })]).stats.ARM).toMatchObject({ locked: false, value: 99 });
   });
@@ -278,8 +279,8 @@ describe('ARM', () => {
   });
 
   it('equal levels: the more recent test is the basis', () => {
-    const a = perf({ id: 'armA', kind: 'arm', date: '2026-09-10', arm: { ankleCm: 10, calfReps: 25, storkSec: 10 } });
-    const b = perf({ id: 'armB', kind: 'arm', date: '2026-10-10', arm: { ankleCm: 11, calfReps: 26, storkSec: 11 } });
+    const a = perf({ id: 'armA', kind: 'arm', date: '2026-09-10', arm: { ankleCm: 10, calfReps: 20, storkSec: 20 } });
+    const b = perf({ id: 'armB', kind: 'arm', date: '2026-10-10', arm: { ankleCm: 11, calfReps: 21, storkSec: 21 } });
     // Both L3 + L3 + L3 = 9 → 40 + 6 × 59 / 12 = 69.5 → 70
     const r = rate(coach, [a, b]);
     expect(r.stats.ARM.value).toBe(70);
@@ -731,7 +732,7 @@ describe('locked stats never show numbers, whatever the inputs', () => {
       { kind: 'nav', courseId: 'c-nav', timeSec: 690, navErrors: 0 },
       { kind: 'bleep', bleepLaps: 60 },
       { kind: 'race', distanceKm: 10, timeSec: 2520 },
-      { kind: 'arm', arm: { ankleCm: 14, calfReps: 35, storkSec: 15 } },
+      { kind: 'arm', arm: { ankleCm: 14, calfReps: 30, storkSec: 30 } },
     ];
     const perfs = kinds.flatMap((k) => [
       perf({ ...k, verified: false }),
@@ -756,7 +757,7 @@ describe('provisional markers', () => {
   it('go-live defaults mark nothing provisional', () => {
     const r = rate(coach, [
       perf({ kind: 'nav', courseId: 'c-nav', timeSec: 690, navErrors: 1 }),
-      perf({ kind: 'arm', arm: { ankleCm: 11, calfReps: 23, storkSec: 12 } }),
+      perf({ kind: 'arm', arm: { ankleCm: 11, calfReps: 18, storkSec: 22 } }),
       perf({ kind: 'bleep', bleepLaps: 52 }),
     ]);
     expect([r.stats.NAV.provisional, r.stats.ARM.provisional, r.stats.END.provisional, r.provisionalAny]).toEqual([false, false, false, false]);
@@ -766,7 +767,7 @@ describe('provisional markers', () => {
     const r = rate(coach, [
       perf({ courseId: 'c-circuit', timeSec: 260 }),
       perf({ kind: 'nav', courseId: 'c-nav', timeSec: 690, navErrors: 1 }),
-      perf({ kind: 'arm', arm: { ankleCm: 11, calfReps: 23, storkSec: 12 } }),
+      perf({ kind: 'arm', arm: { ankleCm: 11, calfReps: 18, storkSec: 22 } }),
       perf({ kind: 'bleep', bleepLaps: 52 }),
     ], { config: provCfg() });
     expect(r.stats.SPD.provisional).toBe(false);
@@ -806,7 +807,7 @@ describe('a full card: every stat unlocked (worked example)', () => {
       perf({ kind: 'climb', courseId: 'c-climb', timeSec: 1500 }),
       perf({ kind: 'descent', courseId: 'c-desc', timeSec: 240, cleanRun: true }),
       perf({ kind: 'nav', courseId: 'c-nav', timeSec: 690, navErrors: 1 }),
-      perf({ kind: 'arm', arm: { ankleCm: 11, calfReps: 23, storkSec: 12 } }),
+      perf({ kind: 'arm', arm: { ankleCm: 11, calfReps: 18, storkSec: 22 } }),
     ]);
     expect(STAT_KEYS.map((k) => r.stats[k].value)).toEqual([86, 78, 77, 74, 82, 65]);
     expect(r.ovr).toEqual({ value: 77, unlocked: 6, display: '77' });
@@ -860,7 +861,7 @@ describe('every rating constant comes from config', () => {
   it('ARM window: with 6 months, a 7-month-old test no longer counts', () => {
     const c = cloneConfig(cfg);
     c.arm.windowMonths = 6;
-    const t = perf({ kind: 'arm', date: '2026-03-22', arm: { ankleCm: 11, calfReps: 23, storkSec: 12 } });
+    const t = perf({ kind: 'arm', date: '2026-03-22', arm: { ankleCm: 11, calfReps: 18, storkSec: 22 } });
     expect(rate(coach, [t]).stats.ARM.value).toBe(65);
     expect(rate(coach, [t], { config: c }).stats.ARM).toMatchObject({ locked: true, unlockHint: 'Retest all three' });
   });
@@ -895,14 +896,14 @@ describe('edge cases', () => {
     expect(r.stats.NAV).toMatchObject({ locked: true, unlockHint: 'Run any race' });
   });
 
-  it('ARM: L5 balance needs stance ≥ 15 s and hop-and-stick in the same test', () => {
-    // Test A: ankle 14 (L5), calf 35 (L5), stork 18 (L4), no hop-and-stick. Test B: stork 12 (L3) with hop-and-stick.
+  it('ARM: L5 balance needs stance ≥ 30 s and hop-and-stick in the same test', () => {
+    // Test A: ankle 14 (L5), calf 30 (L5), stork 35 (L4), no hop-and-stick. Test B: stork 25 (L3) with hop-and-stick.
     // Best balance = L4 (B's hop-and-stick does not lift A's stance). Sum 5 + 5 + 4 = 14 → 40 + 11 × 59 / 12 = 94.08 → 94
     const r = rate(coach, [
-      perf({ kind: 'arm', date: '2026-09-10', arm: { ankleCm: 14, calfReps: 35, storkSec: 18 } }),
-      perf({ kind: 'arm', date: '2026-10-10', arm: { storkSec: 12, hopStickBothLegs: true } }),
+      perf({ kind: 'arm', date: '2026-09-10', arm: { ankleCm: 14, calfReps: 30, storkSec: 35 } }),
+      perf({ kind: 'arm', date: '2026-10-10', arm: { storkSec: 25, hopStickBothLegs: true } }),
     ]);
-    expect(r.arm).toEqual({ ankle: 5, calf: 5, balance: 4, missing: [] });
+    expect(r.arm).toEqual({ ankle: 5, calf: 5, control: 4, missing: [], plates: 'A5 · C5 · B4' });
     expect(r.stats.ARM.value).toBe(94);
   });
 
@@ -918,7 +919,7 @@ describe('bad data never crashes the ratings or shows a made-up number', () => {
   it('an unrecognised year group: age-graded stats lock with "Check athlete details"; ARM still works', () => {
     // Before the fix this threw inside the standards table, taking down every rating on the page.
     const odd = athlete({ yearGroup: 'Y6' as never });
-    const r = rate(odd, [perf({ courseId: 'c-circuit', timeSec: 292 }), perf({ kind: 'arm', arm: { ankleCm: 11, calfReps: 23, storkSec: 12 } })]);
+    const r = rate(odd, [perf({ courseId: 'c-circuit', timeSec: 292 }), perf({ kind: 'arm', arm: { ankleCm: 11, calfReps: 18, storkSec: 22 } })]);
     expect(r.stats.SPD).toMatchObject({ locked: true, unlockHint: 'Check athlete details' });
     expect(r.stats.SPD.value).toBeUndefined();
     expect(words(r.stats.SPD.unlockHint)).toBeLessThanOrEqual(3);

@@ -3,8 +3,6 @@
 // and leaves an empty app (the seeded Campus Circuit and config stay: they are not demo data).
 // Deterministic: the same `today` always gives the same data (seeded generator, no Math.random).
 import type {
-  ArmMeasures,
-  ArmSide,
   Athlete,
   Calendar,
   Course,
@@ -28,7 +26,6 @@ import { counts, makeLookup, resolveContext } from '../engine/perf';
 import { isCircuitPerf } from '../engine/streak';
 import { predictLegTime } from '../engine/surge';
 import { formatTime } from '../engine/format';
-import { armResultText } from '../engine/arm';
 import { defaultAvatar, hashString, KIT_COLOURS } from '../engine/avatarDefaults';
 
 /** The seeded course (spec 2). Not demo data: it stays when demo data is cleared. */
@@ -451,8 +448,9 @@ export function buildDemoData(today: ISODate): DemoData {
     }
   }
 
-  // ---- ARM screening (the second test is a little better) ----------------------------------------
-  const armBase = new Map<string, { ankle: number; calf: number; stork: number; hop: boolean }>();
+  // ---- ARM screening, Season 0 format: left/right, the Throne (the second test is a little better) ----
+  // Same random draws as before, so the rest of the demo is unchanged.
+  const armBase = new Map<string, { ankle: number; calf: number; throne: number; tilt: number }>();
   for (const [i, off] of [-20, -2].entries()) {
     const date = dayAt(off, DOW.arm);
     const ev = addEvent({ id: `${DEMO_ID_PREFIX}evt-arm-${date}`, name: 'Demo ARM screening', date, kind: 'test' });
@@ -461,21 +459,16 @@ export function buildDemoData(today: ISODate): DemoData {
       if (!activeOn(r, date) || (r.spec.keeperWeeks == null && draws[0] >= 0.8)) continue;
       const prev = armBase.get(r.a.id);
       const m = prev
-        ? { ankle: prev.ankle + Math.round(draws[1] * 3) / 2, calf: prev.calf + Math.floor(draws[2] * 5), stork: prev.stork + Math.floor(draws[3] * 7), hop: prev.hop || draws[4] < 0.3 }
-        : { ankle: Math.round((5 + draws[1] * 9) * 2) / 2, calf: 13 + Math.floor(draws[2] * 24), stork: 2 + Math.floor(draws[3] * 16), hop: draws[4] < 0.45 };
+        ? { ankle: prev.ankle + Math.round(draws[1] * 3) / 2, calf: prev.calf + Math.floor(draws[2] * 5), throne: Math.min(5, prev.throne + (draws[3] > 0.6 ? 1 : 0)), tilt: prev.tilt }
+        : { ankle: Math.round((5 + draws[1] * 9) * 2) / 2, calf: 14 + Math.floor(draws[2] * 24), throne: 1 + Math.floor(draws[3] * 3), tilt: draws[4] };
       armBase.set(r.a.id, m);
-      if (i === 0) {
-        // The first screening is in the older format: one weaker-side value per test and hop yes/no.
-        const arm = r.spec.partialArm ? { ankleCm: m.ankle, storkSec: m.stork, hopStickBothLegs: m.hop } : { ankleCm: m.ankle, calfReps: m.calf, storkSec: m.stork, hopStickBothLegs: m.hop };
-        addPerf(r, { eventId: ev.id, date, kind: 'arm', arm, rawInput: `${r.name} ankle ${m.ankle}${r.spec.partialArm ? '' : ` calf ${m.calf}`} stork ${m.stork} hop ${m.hop ? 'yes' : 'no'}` });
-        continue;
-      }
-      // The retest records each leg (Season 0 protocol); the weaker leg carries the measured value.
-      const weak: ArmSide = { ankleCm: m.ankle, ...(r.spec.partialArm ? {} : { calfReps: m.calf }), storkSec: m.stork, hopLineCm: m.hop ? 120 : 100 };
-      const strong: ArmSide = { ankleCm: m.ankle + 1, ...(r.spec.partialArm ? {} : { calfReps: m.calf + 3 }), storkSec: m.stork + 2, hopLineCm: m.hop ? 140 : 120 };
-      const [left, right] = draws[0] < 0.4 ? [weak, strong] : [strong, weak];
-      const arm: ArmMeasures = { left, right };
-      addPerf(r, { eventId: ev.id, date, kind: 'arm', arm, rawInput: `${r.name} ${armResultText(arm, ' ').replace(/ cm| s/g, '')} (retest)` });
+      // The right leg is a little weaker for some runners.
+      const weak = m.tilt < 0.4;
+      const left = { ankleCm: m.ankle, ...(r.spec.partialArm ? {} : { calfReps: m.calf }), throne: m.throne };
+      const right = { ankleCm: weak ? m.ankle - 1 : m.ankle, ...(r.spec.partialArm ? {} : { calfReps: weak ? m.calf - 3 : m.calf }), throne: weak && m.throne > 1 ? m.throne - 1 : m.throne };
+      const arm = { left, right, protocol: 'ARM-S0-v2', throneSeatsCm: [61, 51, 42, 30.5, 19.5] };
+      const lr = (a: number | undefined, b: number | undefined) => `${a}/${b}`;
+      addPerf(r, { eventId: ev.id, date, kind: 'arm', arm, rawInput: `${r.name} ankle ${lr(left.ankleCm, right.ankleCm)}${r.spec.partialArm ? '' : ` calf ${lr(left.calfReps, right.calfReps)}`} throne ${lr(left.throne, right.throne)}${i === 0 ? '' : ' (retest)'}` });
     }
   }
 

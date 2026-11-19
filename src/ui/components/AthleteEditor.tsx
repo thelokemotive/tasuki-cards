@@ -102,6 +102,19 @@ export function AthleteEditor({ athlete, onClose, onSaved }: { athlete: Athlete;
           <Field label="Date of birth (coach only)" hint="Optional. Never on cards, boards or printouts. Without it, age is estimated from the year group.">
             <input className="input" type="date" value={a.dob ?? ''} onChange={(e) => set('dob', e.target.value || undefined)} />
           </Field>
+          <Field label="Height, cm (coach only)" hint={a.heightMeasuredOn ? `Measured ${a.heightMeasuredOn}. Used only to check ARM levels for a size bias.` : 'Optional. Used only to check ARM levels for a size bias.'}>
+            <input
+              className="input"
+              type="number"
+              min={100}
+              max={230}
+              value={a.heightCm ?? ''}
+              onChange={(e) => {
+                const v = e.target.value ? Number(e.target.value) : undefined;
+                setA((x) => ({ ...x, heightCm: v, heightMeasuredOn: v != null ? new Date().toISOString().slice(0, 10) : undefined }));
+              }}
+            />
+          </Field>
         </div>
         <Field label="Aliases" hint="Separate with ; — kanji, kana, romaji in either order, nicknames. Results are matched on all of these.">
           <textarea className="textarea" style={{ minHeight: 60, fontFamily: 'var(--font)' }} value={aliasText} onChange={(e) => setAliasText(e.target.value)} placeholder="テストフィールド アイコ; Ai" />

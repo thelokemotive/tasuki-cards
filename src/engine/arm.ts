@@ -1,78 +1,33 @@
-// ARM (Armour) domain levels, spec 3.9. Shared by the ARM stat and the ARM level-up badges.
-import type { ArmMeasures, ArmSide } from '../types';
+// ARM (Armour) plate levels, spec 3.9, as changed for Season 0 (Nov 2026). Shared by the ARM stat, the ARM
+// badges, the explanations, the Armoury spread and the entry grid.
+//
+// Three plates, each level 0–5 on the WEAKER side:
+//   ANKLE   — the Lunge (knee-to-wall, cm)
+//   CALF    — the Wall (single-leg heel raises at 60 bpm, reps, counted up to config.arm.calfRepCap)
+//   CONTROL — the Throne (one-leg squat to a rigid seat; the level is the lowest seat passed, 0–5)
+// Config versions from before Season 0 score the third plate as BALANCE from the eyes-closed stork instead
+// (config.arm.plate3 = 'balance'), so old ratings are reproduced exactly.
+import type { ArmLeg, ArmMeasures } from '../types';
 import type { Config } from './config';
-import type { ArmLevels } from './types';
 
-export type ArmDomain = 'ankle' | 'calf' | 'balance';
-export const ARM_DOMAINS: ArmDomain[] = ['ankle', 'calf', 'balance'];
-/** Plate letters for the compact profile, e.g. 'A3 · C4 · B2'. */
-export const ARM_PLATE_LETTER: Record<ArmDomain, string> = { ankle: 'A', calf: 'C', balance: 'B' };
-/** The Hop & Freeze ladder (cm). */
-export const HOP_LINES_CM = [80, 100, 120, 140] as const;
+export type ArmDomain = 'ankle' | 'calf' | 'control';
+export const ARM_DOMAINS: ArmDomain[] = ['ankle', 'calf', 'control'];
 
-export type ArmNumeric = 'ankleCm' | 'calfReps' | 'storkSec';
-const NUMERIC: ArmNumeric[] = ['ankleCm', 'calfReps', 'storkSec'];
+/** The measures that can be recorded per leg. */
+export type ArmMeasure = 'ankleCm' | 'calfReps' | 'throne' | 'storkSec' | 'hopCm';
 
-/** The values ARM is scored on: the weaker side of each measure, worked out by the engine. */
-export interface ArmEffective {
-  ankleCm?: number;
-  calfReps?: number;
-  storkSec?: number;
-  /** Hop & Freeze gate passed on both legs. Undefined = not tested (or only one leg recorded and it passed). */
-  hopStickBothLegs?: boolean;
-  /** Which leg was weaker for each per-leg measure ('=' when equal). Absent for old single-value records. */
-  weakSide?: Partial<Record<ArmNumeric | 'hopLineCm', 'L' | 'R' | '='>>;
+/** Plate names for the config in force ('balance' before Season 0). */
+export function plateName(d: ArmDomain, config: Config): string {
+  if (d === 'ankle') return 'ankle';
+  if (d === 'calf') return 'calf';
+  return config.arm.plate3 === 'balance' ? 'balance' : 'control';
 }
 
-const finite = (v: number | undefined): v is number => v != null && Number.isFinite(v);
-
-/** True when the record carries any per-leg value. */
-export function armHasSides(arm: ArmMeasures | undefined): boolean {
-  const has = (s: ArmSide | undefined) => !!s && Object.values(s).some((v) => finite(v as number | undefined));
-  return !!arm && (has(arm.left) || has(arm.right));
-}
-
-function weaker(l: number | undefined, r: number | undefined): { v?: number; side?: 'L' | 'R' | '=' } {
-  if (finite(l) && finite(r)) return { v: Math.min(l, r), side: l === r ? '=' : l < r ? 'L' : 'R' };
-  if (finite(l)) return { v: l, side: 'L' };
-  if (finite(r)) return { v: r, side: 'R' };
-  return {};
-}
-
-/** The weaker-side value of one measure (no config needed): per-leg values first, else the old single value. */
-export function armWeakerValue(arm: ArmMeasures | undefined, k: ArmNumeric): number | undefined {
-  if (!arm) return undefined;
-  return weaker(arm.left?.[k], arm.right?.[k]).v ?? (finite(arm[k]) ? arm[k] : undefined);
-}
-
-/**
- * The weaker side of every measure. Per-leg values win; a measure with no per-leg value falls back to the
- * old single value (which was always recorded as the weaker side). With only one leg recorded, that leg is
- * used. Hop: yes when the furthest line frozen is at least config.arm.hopGateCm on both legs; no when either
- * recorded leg is short of it; not tested when neither leg (nor the old yes/no) is recorded.
- */
-export function armEffective(arm: ArmMeasures | undefined, config: Config): ArmEffective {
-  if (!arm) return {};
-  const out: ArmEffective = {};
-  const sides: ArmEffective['weakSide'] = {};
-  for (const k of NUMERIC) {
-    const w = weaker(arm.left?.[k], arm.right?.[k]);
-    if (w.v != null) {
-      out[k] = w.v;
-      sides[k] = w.side;
-    } else if (finite(arm[k])) out[k] = arm[k];
-  }
-  const hop = weaker(arm.left?.hopLineCm, arm.right?.hopLineCm);
-  const gate = config.arm.hopGateCm;
-  if (hop.v != null) {
-    sides.hopLineCm = hop.side;
-    const both = finite(arm.left?.hopLineCm) && finite(arm.right?.hopLineCm);
-    if (hop.v < gate) out.hopStickBothLegs = false;
-    else if (both) out.hopStickBothLegs = true;
-    else if (arm.hopStickBothLegs != null) out.hopStickBothLegs = arm.hopStickBothLegs;
-  } else if (arm.hopStickBothLegs != null) out.hopStickBothLegs = arm.hopStickBothLegs;
-  if (Object.keys(sides).length) out.weakSide = sides;
-  return out;
+/** One-letter plate tags for the card: A (ankle), C (calf), T (the Throne) or B (balance, before Season 0). */
+export function plateTag(d: ArmDomain, config: Config): string {
+  if (d === 'ankle') return 'A';
+  if (d === 'calf') return 'C';
+  return config.arm.plate3 === 'balance' ? 'B' : 'T';
 }
 
 function levelFrom(value: number | undefined, thresholds: readonly number[]): number | undefined {
@@ -84,39 +39,169 @@ function levelFrom(value: number | undefined, thresholds: readonly number[]): nu
   return level;
 }
 
-/**
- * Level (0–5) for each domain from one test, on the weaker side. Undefined = not measured in this test.
- * Level 0 = measured but below level 1.
- * Balance: L1–L4 from eyes-closed stork seconds; L5 = L4 and Hop & Freeze passed on both legs.
- */
-export function armLevelsFromTest(arm: ArmMeasures | undefined, config: Config): Partial<Record<ArmDomain, number>> {
+const finite = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
+
+export interface WeakerSide {
+  /** The value that counts (the lower of the two legs, or the single value). */
+  value?: number;
+  left?: number;
+  right?: number;
+  /** Which leg is weaker, when both were measured and differ. */
+  weaker?: 'L' | 'R';
+  /** Only one leg was measured: the measure does not count until both are (the weaker side is unknown). */
+  oneLegOnly?: boolean;
+}
+
+/** The weaker side of one measure: the lower leg when both are recorded, else the single (weaker-side) value. */
+export function weakerSide(arm: ArmMeasures | undefined, m: ArmMeasure): WeakerSide {
   if (!arm) return {};
-  const e = armEffective(arm, config);
-  const out: Partial<Record<ArmDomain, number>> = {};
-  const ankle = levelFrom(e.ankleCm, config.arm.ankleCm);
-  if (ankle != null) out.ankle = ankle;
-  const calf = levelFrom(e.calfReps, config.arm.calfReps);
-  if (calf != null) out.calf = calf;
-  let balance = levelFrom(e.storkSec, config.arm.storkSec);
-  if (balance != null) {
-    if (balance === 4 && e.hopStickBothLegs === true) balance = 5;
-    out.balance = balance;
+  // Hop lines stored by the 18 Nov 2026 build (hopLineCm) read as hop distances.
+  const l = m === 'hopCm' ? (arm.left?.hopCm ?? arm.left?.hopLineCm) : arm.left?.[m];
+  const r = m === 'hopCm' ? (arm.right?.hopCm ?? arm.right?.hopLineCm) : arm.right?.[m];
+  if (finite(l) && finite(r)) return { value: Math.min(l, r), left: l, right: r, weaker: l < r ? 'L' : r < l ? 'R' : undefined };
+  const single = arm[m];
+  if (finite(single)) return { value: single };
+  if (finite(l)) return { left: l, oneLegOnly: true };
+  if (finite(r)) return { right: r, oneLegOnly: true };
+  return {};
+}
+
+export interface ArmTestDetail {
+  /** Level per plate (undefined = not measured in this test; 0 = measured, below level 1). */
+  levels: Partial<Record<ArmDomain, number>>;
+  ankle: WeakerSide;
+  calf: WeakerSide & { counted?: number; capped?: boolean };
+  /** The Throne (or the stork, under the 'balance' rules). */
+  control: WeakerSide;
+  /** The CONTROL level is the interim level from the hop (no Throne result). */
+  interim?: boolean;
+  hop: WeakerSide;
+  /** Both legs passed a full pistol squat (the "No Throne" badge). */
+  pistol: boolean;
+}
+
+/** Both legs' hops at or past the interim line. */
+function hopsPass(arm: ArmMeasures, cm: number): boolean {
+  const h = weakerSide(arm, 'hopCm');
+  return h.left != null && h.right != null && h.left >= cm && h.right >= cm;
+}
+
+/**
+ * Everything the engine reads from one test: the weaker side of each measure, the level of each plate, and
+ * whether the CONTROL level is an interim one. `opts.interim: false` ignores the interim rule (used when a real
+ * Throne result exists in the ARM window, which always replaces it).
+ */
+export function armTestDetail(arm: ArmMeasures | undefined, config: Config, opts: { interim?: boolean } = {}): ArmTestDetail {
+  const a = config.arm;
+  const out: ArmTestDetail = { levels: {}, ankle: weakerSide(arm, 'ankleCm'), calf: weakerSide(arm, 'calfReps'), control: {}, hop: weakerSide(arm, 'hopCm'), pistol: !!(arm?.left?.pistol && arm?.right?.pistol) };
+  if (!arm) return out;
+  const ankle = levelFrom(out.ankle.value, a.ankleCm);
+  if (ankle != null) out.levels.ankle = ankle;
+  if (out.calf.value != null) {
+    const cap = finite(a.calfRepCap) && a.calfRepCap > 0 ? a.calfRepCap : Infinity;
+    out.calf.counted = Math.min(Math.floor(out.calf.value), cap);
+    out.calf.capped = out.calf.value > cap;
+    out.levels.calf = levelFrom(out.calf.counted, a.calfReps);
+  }
+  if (a.plate3 === 'balance') {
+    out.control = weakerSide(arm, 'storkSec');
+    let balance = levelFrom(out.control.value, a.storkSec);
+    if (balance != null) {
+      // Level 5 = level 4 + hop: per-leg hop lines past the gate on both legs (18 Nov 2026 build), else hop-and-stick yes.
+      const perLeg = out.hop.left != null || out.hop.right != null;
+      const hop = perLeg ? hopsPass(arm, finite(a.hopGateCm) ? a.hopGateCm : 120) : arm.hopStickBothLegs === true;
+      if (balance === 4 && hop) balance = 5;
+      out.levels.control = balance;
+    }
+    return out;
+  }
+  out.control = weakerSide(arm, 'throne');
+  if (out.control.value != null) {
+    out.levels.control = Math.max(0, Math.min(5, Math.floor(out.control.value)));
+  } else if (opts.interim !== false && a.interim.enabled && hopsPass(arm, a.interim.hopCm)) {
+    out.levels.control = Math.max(0, Math.min(5, a.interim.level));
+    out.interim = true;
   }
   return out;
 }
 
-/** ARM = round(40 + (sumOfLevels − 3) × 59 / 12), once all three domains have a level. */
+/**
+ * Level (0–5) for each plate from one test. Undefined = not measured in this test; 0 = measured but below level 1.
+ * See armTestDetail for the rules.
+ */
+export function armLevelsFromTest(arm: ArmMeasures | undefined, config: Config, opts: { interim?: boolean } = {}): Partial<Record<ArmDomain, number>> {
+  return armTestDetail(arm, config, opts).levels;
+}
+
+/** True when the test has a real Throne result (either a weaker-leg value or both legs). */
+export function hasThrone(arm: ArmMeasures | undefined): boolean {
+  return weakerSide(arm, 'throne').value != null;
+}
+
+/** ARM = round(40 + (sumOfLevels − 3) × 59 / 12), once all three plates have a level. */
 export function armScore(levels: Record<ArmDomain, number>): number {
-  const sum = levels.ankle + levels.calf + levels.balance;
+  const sum = levels.ankle + levels.calf + levels.control;
   return Math.round(40 + ((sum - 3) * 59) / 12);
 }
 
-/** 'A3 · C4 · B2' (untested plates show '–'), so the ARM number never hides the profile. */
-export function armPlates(levels: Pick<ArmLevels, ArmDomain> | Partial<Record<ArmDomain, number>>): string {
-  return ARM_DOMAINS.map((d) => `${ARM_PLATE_LETTER[d]}${levels[d] ?? '–'}`).join(' · ');
+/** What the next level of a plate needs ('20 reps', 'T3 · 42 cm'), or undefined at level 5. */
+export function nextLevelTarget(d: ArmDomain, level: number | undefined, config: Config): string | undefined {
+  const l = level ?? 0;
+  if (l >= 5) return undefined;
+  const a = config.arm;
+  if (d === 'ankle') return `${a.ankleCm[l]} cm`;
+  if (d === 'calf') return `${a.calfReps[l]} reps`;
+  if (a.plate3 === 'balance') return l < 4 ? `${a.storkSec[l]} s` : `${a.storkSec[3]} s + hop-and-stick`;
+  return throneLabel(l + 1, config);
 }
 
-/** One plate's spread: pupils at each level. below = tested but under L1; untested = no result in the window. */
+/** 'T2 · 51 cm' */
+export function throneLabel(level: number, config: Config, seats: readonly number[] = config.arm.throneSeatsCm): string {
+  if (level < 1) return 'below T1';
+  return `T${level} · ${seats[level - 1]} cm`;
+}
+
+/** 'A2 · C5 · T2' (plates with no level yet show '–'). */
+export function plateLine(levels: Partial<Record<ArmDomain, number>>, config: Config): string {
+  return ARM_DOMAINS.map((d) => `${plateTag(d, config)}${levels[d] ?? '–'}`).join(' · ');
+}
+
+/** Stamp a new ARM record with the protocol and seat heights in force (only Season 0 configs). */
+export function stampArm(arm: ArmMeasures, config: Config): ArmMeasures {
+  if (config.arm.plate3 !== 'control') return arm;
+  const out: ArmMeasures = { ...arm, protocol: arm.protocol ?? config.arm.protocol };
+  if (hasThrone(arm) && !arm.throneSeatsCm) out.throneSeatsCm = [...config.arm.throneSeatsCm];
+  return out;
+}
+
+/** Plain-language summary of one test, e.g. 'ankle 12/9 cm · calf 40/40 · Throne 3/2 · hop 215/185 cm'. */
+export function armSummary(arm: ArmMeasures | undefined): string {
+  if (!arm) return '';
+  const lr = (m: ArmMeasure): string | undefined => {
+    const l = arm.left?.[m];
+    const r = arm.right?.[m];
+    if (finite(l) || finite(r)) return `${finite(l) ? l : '–'}/${finite(r) ? r : '–'}`;
+    const s = arm[m];
+    return finite(s) ? String(s) : undefined;
+  };
+  const parts: string[] = [];
+  const add = (m: ArmMeasure, label: string, unit = '') => {
+    const v = lr(m);
+    if (v != null) parts.push(`${label} ${v}${unit}`);
+  };
+  add('ankleCm', 'ankle', ' cm');
+  add('calfReps', 'calf');
+  add('throne', 'Throne');
+  add('storkSec', 'stork', ' s');
+  add('hopCm', 'hop', ' cm');
+  if (arm.hopStickBothLegs != null) parts.push(`hop ${arm.hopStickBothLegs ? '✓' : '✗'}`);
+  if (arm.left?.pistol || arm.right?.pistol) parts.push(`pistol ${arm.left?.pistol ? '✓' : '✗'}/${arm.right?.pistol ? '✓' : '✗'}`);
+  return parts.join(' · ');
+}
+
+export type { ArmLeg };
+
+/** How many pupils sit at each level of one plate (Settings → Scoring → ARM spread, before and after a change). */
 export interface ArmPlateSpread {
   below: number;
   /** Index 0 = L1 … index 4 = L5. */
@@ -126,11 +211,7 @@ export interface ArmPlateSpread {
   tested: number;
 }
 
-/**
- * For the Season 0 threshold review: how many pupils sit at each level of each plate. A plate where more
- * than about a third of tested pupils are at L5 or below L1 needs its thresholds moved (once, in Settings).
- */
-export function armSpread(all: Pick<ArmLevels, ArmDomain>[]): Record<ArmDomain, ArmPlateSpread> {
+export function armSpread(all: Partial<Record<ArmDomain, number>>[]): Record<ArmDomain, ArmPlateSpread> {
   const out = {} as Record<ArmDomain, ArmPlateSpread>;
   for (const d of ARM_DOMAINS) {
     const s: ArmPlateSpread = { below: 0, levels: [0, 0, 0, 0, 0], untested: 0, tested: 0 };
@@ -148,32 +229,7 @@ export function armSpread(all: Pick<ArmLevels, ArmDomain>[]): Record<ArmDomain, 
   return out;
 }
 
-/** True when more than `share` of tested pupils sit at L5 or below L1 on this plate. */
+/** More than `share` of the tested pupils at L5 or below L1: the thresholds may need moving. */
 export function armSpreadSkewed(s: ArmPlateSpread, share = 1 / 3): boolean {
   return s.tested > 0 && (s.below > s.tested * share || s.levels[4] > s.tested * share);
-}
-
-/**
- * Short text of one test's raw results, left/right where recorded: 'ankle 9.5/11 cm · calf 22/25 · stork 6/9 s ·
- * hop 100/120'. Older single-value records read 'ankle 11 cm · calf 18 · stork 22 s · hop ✓'.
- */
-export function armResultText(arm: ArmMeasures | undefined, sep = ' · '): string {
-  if (!arm) return '';
-  const pair = (k: keyof ArmSide, single?: number | boolean): string | undefined => {
-    const l = arm.left?.[k];
-    const r = arm.right?.[k];
-    if (l != null || r != null) return `${l ?? '–'}/${r ?? '–'}`;
-    if (single == null) return undefined;
-    return typeof single === 'boolean' ? (single ? '✓' : '✗') : String(single);
-  };
-  const parts: string[] = [];
-  const a = pair('ankleCm', arm.ankleCm);
-  if (a) parts.push(`ankle ${a} cm`);
-  const c = pair('calfReps', arm.calfReps);
-  if (c) parts.push(`calf ${c}`);
-  const s = pair('storkSec', arm.storkSec);
-  if (s) parts.push(`stork ${s} s`);
-  const h = pair('hopLineCm', arm.hopStickBothLegs);
-  if (h) parts.push(`hop ${h}`);
-  return parts.join(sep);
 }

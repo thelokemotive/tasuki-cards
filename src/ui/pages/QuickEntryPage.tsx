@@ -1,9 +1,7 @@
 // Quick Entry (spec 4.1): one phone-friendly screen with a live preview before saving.
 import './quickEntry.css';
 import { useDeferredValue, useEffect, useMemo, useState } from 'react';
-import { ArmLegsInput, tidyArm } from '../components/ArmLegsInput';
-import { armHasSides } from '../../engine/arm';
-import type { ArmMeasures, Performance, PerfKind, TasukiEvent } from '../../types';
+import type { ArmLeg, ArmMeasures, Performance, PerfKind, TasukiEvent } from '../../types';
 import { PERF_KINDS } from '../../types';
 import { Field, PageHeader, Panel, newId } from '../components/common';
 import { useToast } from '../components/Toast';
@@ -12,6 +10,7 @@ import { useRoute, Link } from '../router';
 import { AthletePicker } from '../components/AthletePicker';
 import { KIND_LABEL } from '../components/PerformanceEditor';
 import { makePerformance } from '../../engine/corrections';
+import { stampArm } from '../../engine/arm';
 import { parseTime, paceWarning } from '../../engine/time';
 import { effectiveDistance } from '../../engine/perf';
 import { isISODate, isoWeek } from '../../engine/dates';
@@ -42,7 +41,7 @@ interface Draft {
   team: string;
   racedEarlier: boolean;
   laps: string;
-  arm: ArmMeasures;
+  arm: { ankleL: string; ankleR: string; calfL: string; calfR: string; throneL: string; throneR: string };
   navErrors: string;
   routeKm: string;
   clean: boolean;
@@ -75,7 +74,7 @@ export function QuickEntryPage() {
     team: '',
     racedEarlier: false,
     laps: '',
-    arm: {},
+    arm: { ankleL: '', ankleR: '', calfL: '', calfR: '', throneL: '', throneR: '' },
     navErrors: '0',
     routeKm: '',
     clean: true,
@@ -109,7 +108,7 @@ export function QuickEntryPage() {
       if (!dist && !course) return 'Enter the distance (or choose a course)';
     }
     if (d.kind === 'bleep' && !(n(d.laps)! > 0)) return 'Enter the laps';
-    if (d.kind === 'arm' && !armHasSides(d.arm)) return 'Enter at least one ARM result';
+    if (d.kind === 'arm' && !Object.values(d.arm).some((v) => v !== '')) return 'Enter at least one ARM measure';
     return null;
   })();
 
@@ -124,7 +123,14 @@ export function QuickEntryPage() {
     if (!d.eventId && d.newEventName.trim()) {
       newEvent = { id: 'draft-event', name: d.newEventName.trim(), date: d.date, kind: EVENT_KIND[d.kind], official: true, ...(course ? { courseId: course.id } : {}), ...(dist && !course ? { distanceKm: dist } : {}), ...(climb && !course ? { climbM: climb } : {}) };
     }
-    const arm: ArmMeasures | undefined = d.kind === 'arm' ? tidyArm(d.arm) : undefined;
+    const leg = (l: string, r: string, t: string) => {
+      const out: ArmLeg = {};
+      if (n(l) != null) out.ankleCm = n(l);
+      if (n(r) != null) out.calfReps = n(r);
+      if (n(t) != null) out.throne = Math.max(0, Math.min(5, Math.round(n(t)!)));
+      return out;
+    };
+    const arm: ArmMeasures | undefined = d.kind === 'arm' ? stampArm({ left: leg(d.arm.ankleL, d.arm.calfL, d.arm.throneL), right: leg(d.arm.ankleR, d.arm.calfR, d.arm.throneR) }, config) : undefined;
     const perf: Performance = makePerformance(
       {
         athleteId: d.athleteId,
@@ -173,7 +179,7 @@ export function QuickEntryPage() {
     await commit(real);
     const a = snapshot.athletes.find((x) => x.id === d.athleteId);
     toast(`Saved for ${a ? fullName(a) : 'athlete'}${preview?.[0] ? `: ${preview[0].text}` : ''}`, 'ok');
-    setD((x) => ({ ...x, athleteId: null, time: '', laps: '', place: '', arm: {}, navErrors: '0', leg: '', racedEarlier: false, eventId: eventId ?? x.eventId, newEventName: '' }));
+    setD((x) => ({ ...x, athleteId: null, time: '', laps: '', place: '', arm: { ankleL: '', ankleR: '', calfL: '', calfR: '', throneL: '', throneR: '' }, navErrors: '0', leg: '', racedEarlier: false, eventId: eventId ?? x.eventId, newEventName: '' }));
   };
 
   return (
@@ -300,7 +306,40 @@ export function QuickEntryPage() {
                     <input className="input qe-time" type="number" value={d.laps} onChange={(e) => set('laps', e.target.value)} />
                   </Field>
                 )}
-                {d.kind === 'arm' && <ArmLegsInput value={d.arm} config={config} onChange={(v) => set('arm', v)} />}
+                {d.kind === 'arm' && (
+                  <div>
+                    <p className="small muted" style={{ marginTop: 0 }}>
+                      Left and right. A whole group? <Link to="/armoury">Armoury → Enter a session</Link> is quicker.
+                    </p>
+                    <div className="grid-2">
+                      {([
+                        ['ankle', 'Lunge: knee-to-wall (cm)', '0.5'],
+                        ['calf', 'Wall: heel raises (reps)', '1'],
+                      ] as const).map(([k, label, step]) => (
+                        <Field key={k} label={label}>
+                          <span className="row" style={{ gap: 6 }}>
+                            <input className="input" type="number" step={step} placeholder="L" aria-label={`${label} left`} value={d.arm[`${k}L`]} onChange={(e) => set('arm', { ...d.arm, [`${k}L`]: e.target.value })} />
+                            <input className="input" type="number" step={step} placeholder="R" aria-label={`${label} right`} value={d.arm[`${k}R`]} onChange={(e) => set('arm', { ...d.arm, [`${k}R`]: e.target.value })} />
+                          </span>
+                        </Field>
+                      ))}
+                      <Field label="Throne: level passed (0–5)">
+                        <span className="row" style={{ gap: 6 }}>
+                          {(['throneL', 'throneR'] as const).map((k) => (
+                            <select key={k} className="select" aria-label={`Throne ${k === 'throneL' ? 'left' : 'right'}`} value={d.arm[k]} onChange={(e) => set('arm', { ...d.arm, [k]: e.target.value })}>
+                              <option value="">{k === 'throneL' ? 'L –' : 'R –'}</option>
+                              {[0, 1, 2, 3, 4, 5].map((v) => (
+                                <option key={v} value={String(v)}>
+                                  {k === 'throneL' ? 'L' : 'R'} {v === 0 ? '0' : `T${v} · ${config.arm.throneSeatsCm[v - 1]} cm`}
+                                </option>
+                              ))}
+                            </select>
+                          ))}
+                        </span>
+                      </Field>
+                    </div>
+                  </div>
+                )}
                 {d.kind === 'nav' && (
                   <div className="grid-2">
                     <Field label="Control errors">
