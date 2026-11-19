@@ -35,7 +35,7 @@ export function ViewerHome() {
           </select>
         </div>
         <p className="tiny muted" style={{ marginTop: 8 }}>
-          Tap a card to see how your ratings are worked out and what to work on next.
+          Tap a card to see how your ratings are worked out and what to work on next. New: <Link to="/armour">what ARM (armour) is, and why the Lunge, the Wall and the Throne matter on the trail</Link>.
         </p>
       </Panel>
       <div className="viewer-cards">

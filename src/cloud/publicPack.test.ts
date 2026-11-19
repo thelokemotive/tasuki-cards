@@ -7,13 +7,13 @@ import { makePublicPack, readPublicPack } from './publicPack';
 
 describe('the view-only copy for pupils', () => {
   const s0 = { ...emptySnapshot(), ...buildDemoData('2026-11-13'), configs: [DEFAULT_CONFIG] };
-  const snap = { ...s0, athletes: s0.athletes.map((a, i) => (i === 0 ? { ...a, dob: '2013-05-17', notes: 'asthma inhaler', aliases: ['Secret'], schoolAccounts: ['secret.pupil@harrowappi.jp'], displayMode: 'alias' as const, publicAlias: 'Rocket' } : a)) };
+  const snap = { ...s0, athletes: s0.athletes.map((a, i) => (i === 0 ? { ...a, dob: '2013-05-17', notes: 'asthma inhaler', aliases: ['Secret'], schoolAccounts: ['secret.pupil@harrowappi.jp'], heightCm: 187, heightMeasuredOn: '2026-11-19', displayMode: 'alias' as const, publicAlias: 'Rocket' } : a)) };
   const derived = deriveAll(snap, '2026-11-13', DEFAULT_CONFIG);
   const json = makePublicPack(snap, derived);
   const pub = readPublicPack(json);
 
   it('leaves out dates of birth, notes, aliases, real names behind an alias, pasted text and history', () => {
-    for (const bad of [/2013-05-17/, /asthma/, /Secret/, /secret\.pupil/, /schoolAccounts/, /rawInput":"[^"]/, /"dob"/]) expect(json.match(bad)?.[0] ?? '', String(bad) + ' ' + json.slice(Math.max(0, (json.match(bad)?.index ?? 0) - 120), (json.match(bad)?.index ?? 0) + 60)).toBe('');
+    for (const bad of [/2013-05-17/, /asthma/, /Secret/, /secret\.pupil/, /schoolAccounts/, /heightCm/, /heightMeasuredOn/, /rawInput":"[^"]/, /"dob"/]) expect(json.match(bad)?.[0] ?? '', String(bad) + ' ' + json.slice(Math.max(0, (json.match(bad)?.index ?? 0) - 120), (json.match(bad)?.index ?? 0) + 60)).toBe('');
     expect(pub.snapshot.athletes.some((x) => x.notes || x.dob)).toBe(false);
     expect(pub.snapshot.athletes.some((x) => x.notes || x.dob)).toBe(false);
     const a = snap.athletes[0];

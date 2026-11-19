@@ -18,6 +18,8 @@ export interface RawSection {
   place?: number;
   fieldSize?: number;
   courseName?: string;
+  /** Header "note <text>": saved as the notes of a new event (e.g. where the results came from). */
+  notes?: string;
   /** NAV test header "<n> km": effective route distance. */
   routeKmEff?: number;
   official: boolean;
@@ -37,6 +39,8 @@ export interface RawRow {
   timeRaw?: string;
   laps?: number;
   arm?: ArmMeasures;
+  /** ARM line "height <cm>": the athlete's height, measured on the test date (coach-only). */
+  heightCm?: number;
   place?: number;
   fieldSize?: number;
   category?: string;

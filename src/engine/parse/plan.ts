@@ -9,6 +9,7 @@ import { matchName, normaliseName, withLearnedAlias, type NameMatch } from '../n
 import { effectiveDistance } from '../perf';
 import { paceWarning } from '../time';
 import { makePerformance } from '../corrections';
+import { stampArm } from '../arm';
 import { looksLikeLineFormat, parseLineFormat } from './lineFormat';
 import { detectLayout, parseTable } from './table';
 import { parkrunToTable } from './parkrun';
@@ -326,6 +327,7 @@ export function decisionFor(row: PlanRow, decisions: Record<string, RowDecision>
  * athlete that spelling as a new alias.
  */
 export function planToChanges(plan: ImportPlan, decisions: Record<string, RowDecision>, snapshot: DataSnapshot, ctx: CommitContext): { changes: Changes; summary: CommitSummary } {
+  const config = currentConfig(snapshot.configs);
   const summary: CommitSummary = { performances: 0, participation: 0, newEvents: 0, aliasesLearned: 0, outsiders: 0, notCommitted: 0, newAthletes: 0 };
   const perfs: Performance[] = [];
   const parts: Participation[] = [];
@@ -413,7 +415,9 @@ export function planToChanges(plan: ImportPlan, decisions: Record<string, RowDec
             ...(sec.resolvedClimbM && !sec.courseId ? { climbM: sec.resolvedClimbM } : {}),
             ...(fieldSize != null ? { fieldSize } : {}),
             ...(categoryWinners ? { categoryWinners } : {}),
+            ...(sec.notes ? { notes: sec.notes } : {}),
           };
+      if (existing && sec.notes && !existing.notes) event.notes = sec.notes;
       if (!existing) summary.newEvents++;
       events.set(event.id, event);
       for (const { r, d } of committed) {
@@ -434,7 +438,7 @@ export function planToChanges(plan: ImportPlan, decisions: Record<string, RowDec
             teamName: raw.teamName,
             racedEarlierSameDay: raw.racedEarlierSameDay,
             bleepLaps: raw.laps,
-            arm: raw.arm,
+            arm: raw.arm ? stampArm(raw.arm, config) : undefined,
             cleanRun: r.kind === 'descent' ? raw.cleanRun ?? true : raw.cleanRun,
             navErrors: raw.navErrors ?? (r.kind === 'nav' ? 0 : undefined),
             navVariant: raw.navVariant,
@@ -447,6 +451,15 @@ export function planToChanges(plan: ImportPlan, decisions: Record<string, RowDec
           ctx.now,
         );
         perfs.push(perf);
+        // ARM "height <cm>": the athlete's height on the test date (coach-only; never on cards or the pupil copy).
+        if (raw.heightCm != null && r.kind === 'arm') {
+          const a = athletes.get(d.athleteId!);
+          if (a && !(a.heightMeasuredOn && a.heightMeasuredOn > sec.date!)) {
+            athletes.set(a.id, { ...a, heightCm: raw.heightCm, heightMeasuredOn: sec.date! });
+            if (![...created.values()].some((c) => c.id === a.id)) touched.add(a.id);
+            else created.forEach((c, k) => c.id === a.id && created.set(k, athletes.get(a.id)!));
+          }
+        }
       }
       summary.performances += committed.length;
     }

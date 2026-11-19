@@ -41,6 +41,14 @@ const SECTION_LABELS: Record<string, string> = {
 
 const HELP: Record<string, string> = {
   'ageGrade.subMile': 'How standards are set below 1 mile, where the road tables stop.',
+  'arm.plate3': 'Which test sets the third ARM plate. Season 0 replaced the stork with the Throne.',
+  'arm.calfRepCap': 'Heel raises are counted up to this many (the Wall stops at 40).',
+  'arm.throneSeatsCm': 'Seat heights for T1–T5 (cm). Stamped on every Throne record, so changing the kit later is visible.',
+  'arm.interim.enabled': 'A test with no Throne result but both hops past the line gets an interim control level (provisional) until the first Throne test.',
+  'arm.interim.level': 'The interim control level. Keep it at or below where most pupils start (T2), so it cannot beat a real Throne result.',
+  'arm.interim.hopCm': 'Both legs must hop at least this far (cm) and hold the landing.',
+  'arm.interim.months': 'The interim level stops counting after this many months without a Throne test.',
+  'arm.storkSec': 'Only used when the third plate is Balance (config versions before Season 0).',
   'ovr.newStatNeverCosts': 'On: a stat with fewer than “new stat results” results counts in the OVR only when it lifts it, so a first try is never a loss.',
   'ovr.newStatResults': 'Results after which a stat always counts in the OVR (2 = only a first try is optional).',
   'streak.treadmillCounts': 'A verified treadmill session keeps the week in the streak, like a Circuit run.',
@@ -142,6 +150,14 @@ function ValueEditor({ path, value, onChange }: { path: Path; value: unknown; on
       <select className="select" value={value as string} onChange={(e) => onChange(e.target.value)}>
         <option value="world_record_curve">World-record curve (200 m to the mile)</option>
         <option value="extrapolate">Mile–5 km slope carried down (before Nov 2026)</option>
+      </select>
+    );
+  }
+  if (key === 'arm.plate3') {
+    return (
+      <select className="select" value={value as string} onChange={(e) => onChange(e.target.value)}>
+        <option value="control">Control: the Throne, one-leg squat (Season 0)</option>
+        <option value="balance">Balance: eyes-closed stork + hop-and-stick (before Nov 2026)</option>
       </select>
     );
   }

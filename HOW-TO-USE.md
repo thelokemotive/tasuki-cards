@@ -48,6 +48,17 @@ Drag the Green Long Ducker workbook (one sheet per house: Year, names and Positi
 
 **Courses and predictions.** The three Long Ducker courses (Prep 3.0 km +148.5 m, Senior 3.54 km +526 m, Sixth Form 4.50 km +658 m) are added automatically and every Long Ducker race is linked to its course. Each athlete page shows a **predicted Long Ducker time** (from the Next 5K, scaled to distance plus climb) and where that puts them among the squad. **Climb (CLB) from a place:** a Long Ducker place with no time counts for the climb rating, from where the runner finished in their whole-school race: 80 for first in the school down to 40 for last (60 mid-field). It never reaches Icon level; a timed climb that scores higher counts instead. Races with fewer than 5 finishers are not scored this way. Our runners are matched and their place and the field size are saved; everyone else is counted, not stored. Each athlete page then shows **Compared with the school** (top % and the change since last year), and the event page shows where our runners finished in the field.
 
+## 4a. ARM screening (the Armoury)
+
+Three tests, each on **both legs**; the weaker leg counts. **The Lunge** (ankle, knee-to-wall cm), **the Wall** (calf, single-leg heel raises at 60 bpm, counted up to 40; write reps, not seconds) and **the Throne** (control: a one-leg squat to a rigid seat; write the Throne number passed, 0–5, where T1 = 61 cm plyo box 24" side, T2 = 51 cm 20" side, T3 = 42 cm bench, T4 = 30.5 cm step +1 block, T5 = 19.5 cm step −1 block). A full pistol squat on both legs earns the **No Throne** badge; it does not change ARM.
+
+- **Entering a group:** **Armoury (ARM)** in the menu → **Enter results**. Pick the date, add a year group (or single pupils), and copy each Armour Card into its row: Lunge L/R, Wall L/R, Throne L/R. Leave a box empty if it was not tested. The plate levels and ARM appear as you type. **Save**. Tick **Also hop, pistol, height** for those.
+- **Or paste text** into **Paste & Match**: `# test: arm | 2026-11-19 | note …` then one line per pupil, `Name ankle 12/9 calf 22/25 throne 3/2 height 172` (left/right; `-` = not tested; a single number = the weaker side). Confirm any name the app is unsure of, then **Approve**.
+- **What pupils see:** ARM with the three plate levels next to it on the card (**A2·C5·T2** = ankle level 2, calf level 5, Throne level 2), an **Armour** panel on their page (weakest plate first, the next target, one thing to do) and the **Armour** guide in the menu: why each test exists, what it does on climbs and descents, the injury link, and what to do in the gym over winter.
+- **A locked ARM** names the plate: *Test calf*, *Calf below L1*, *Do the Throne*.
+- **Spread:** **Armoury → Spread** shows how many pupils are at each level on each plate, the raw minimum, median and maximum, and Throne level against height (if you record heights; coach only).
+- **The Lower Sixth (tested 19 Nov 2026, before the Throne):** their control level is an **interim T2** from the hop (both legs past 120 cm), marked * and provisional. Their first Throne test replaces it, up or down, and it stops counting after 6 months. Switch it off in Settings → Scoring → ARM → interim.
+
 ## 4b. Winter Mode (holidays and the snow season)
 
 **Winter Mode** (❄ in the menu). Add the winter weeks once: the Christmas holiday (kind *Holiday*) and the snow season (kind *Snow season*). From then on:

@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import type { Athlete, Course, ManualAchievement, Performance, TasukiEvent } from '../types';
 import type { CourseRecord, StreakResult, StreakWeek, SurgeResult } from './types';
-import { DEFAULT_CONFIG } from './config';
+import { preArmS0Rules, DEFAULT_CONFIG } from './config';
 import { addWeeks } from './dates';
 import { makeLookup } from './perf';
 import { badgeRow, computeBadges } from './badges';
 
 // Fictional athlete "Ben Sampleton" (Y12); "Hana Mockridge" appears only to check filtering.
-const cfg = DEFAULT_CONFIG;
+const cfg = preArmS0Rules(DEFAULT_CONFIG);
 const circuit: Course = { id: 'c-circuit', name: 'Campus Circuit', kind: 'circuit', distanceKm: 1.3, climbM: 0, terrainFactor: 1, benchmarkMode: 'age_grade', version: 1 };
 const ev = (id: string, date: string): TasukiEvent => ({ id, name: `Fictional Ekiden ${id}`, date, kind: 'relay', distanceKm: 2, official: true });
 const lookup = makeLookup([circuit], [ev('E1', '2026-11-01'), ev('E2', '2026-11-08')]);
@@ -101,7 +101,7 @@ describe('computeBadges (spec 3.13)', () => {
       ['streak-8', '8-week streak'],
       ['arm-ankle', 'Ankle L3'],
       ['arm-calf', 'Calf L3'],
-      ['arm-balance', 'Balance L5'],
+      ['arm-control', 'Balance L5'],
       [`surge:${leg1.id}`, 'Tasuki Surge gold · Fictional Ekiden E1'],
       [`surge:${leg2.id}`, 'Tasuki Surge bronze · Fictional Ekiden E2'],
       ['record:c-circuit:M:Y12-13', 'Campus Circuit record · Y12–13 boys'],
@@ -123,7 +123,7 @@ describe('computeBadges (spec 3.13)', () => {
     expect(by['streak-4'].date).toBe('2026-09-28'); // 4th counted week = W40 (the W39 holiday holds the run)
     expect(by['streak-8'].date).toBe('2026-10-26'); // 8th = W44
     expect(by['arm-ankle']).toMatchObject({ count: 3, perfId: arm1.id }); // ankle never falls on a weaker retest
-    expect(by['arm-balance']).toMatchObject({ count: 5, perfId: arm2.id }); // 31 s ≥ 30 s and hop-and-stick both legs
+    expect(by['arm-control']).toMatchObject({ count: 5, perfId: arm2.id }); // 31 s ≥ 30 s and hop-and-stick both legs
     expect(by[`surge:${leg1.id}`]).toMatchObject({ kind: 'surge', tier: 'gold', date: '2026-11-01' });
     expect(by['expedition:a1']).toMatchObject({ kind: 'expedition', icon: '🧭', date: '2026-11-20' });
   });
@@ -166,7 +166,7 @@ describe('badgeRow', () => {
       `surge:${leg2.id}`,
       'custom:a2',
       'streak-8',
-      'arm-balance',
+      'arm-control',
       'caps',
       'parkrun',
     ]);

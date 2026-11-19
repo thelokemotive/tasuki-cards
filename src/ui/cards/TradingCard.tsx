@@ -53,7 +53,13 @@ function StatCell({ s, coach }: { s: CardStat; coach: boolean }) {
             </span>
           )}
         </span>
-        {!s.locked && s.date && <span className="tc-stat-date">{s.date}</span>}
+        {s.sub ? (
+          <span className="tc-stat-date tc-stat-plates" title="Plate levels: Ankle · Calf · Throne (control)">
+            {s.sub}
+          </span>
+        ) : (
+          !s.locked && s.date && <span className="tc-stat-date">{s.date}</span>
+        )}
       </div>
       {s.locked ? (
         <div className="tc-stat-locked" title={`${STAT_NAMES[s.key]} is locked`}>

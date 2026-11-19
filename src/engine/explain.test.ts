@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import type { Athlete, DataSnapshot, Performance } from '../types';
 import { SCHEMA_VERSION } from '../types';
-import { DEFAULT_CONFIG, preEvidenceRules } from './config';
+import { preArmS0Rules, DEFAULT_CONFIG, preEvidenceRules } from './config';
 import { deriveAll } from './derive';
 import { explainAll, explainOvr, explainStat, explanationText } from './explain';
 import { buildDemoData, seedCourses, CAMPUS_CIRCUIT_ID } from '../demo/demoData';
 import { formatTime } from './format';
 import { standardTime } from './standards';
 
-const cfg = DEFAULT_CONFIG;
+const cfg = preArmS0Rules(DEFAULT_CONFIG);
 const AS_OF = '2026-10-12';
 
 const aiko: Athlete = {

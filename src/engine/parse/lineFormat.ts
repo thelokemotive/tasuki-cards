@@ -43,6 +43,7 @@ function headerField(f: string, sec: RawSection): boolean {
     if (m[2]) sec.fieldSize = Number(m[2]);
   } else if ((m = /^field\s+(\d+)$/i.exec(t))) sec.fieldSize = Number(m[1]);
   else if ((m = /^course\s+(.+)$/i.exec(t))) sec.courseName = m[1].trim();
+  else if ((m = /^note\s+(.+)$/i.exec(t))) sec.notes = m[1].trim();
   else if (/^unofficial$/i.test(t)) sec.official = false;
   else if (/^official$/i.test(t)) sec.official = true;
   else return false;
@@ -127,37 +128,107 @@ function nameBefore(text: string): string {
   return text.replace(/[,，:;\-–]+\s*$/, '').trim();
 }
 
-function parseArm(body: string, row: RawRow): void {
+const ARM_WORD = /\b(ankle|lunge|calf|wall|throne|stork|hop|pistol|height)\s*[:=]?\s*(-|–|\d+(?:[.,]\d+)?|yes|no|y|n|pass|fail)(?:\s*\/\s*(-|–|\d+(?:[.,]\d+)?|yes|no|y|n|pass|fail))?(?=[\s,;]|$)/gi;
+const YES = ['yes', 'y', 'pass'];
+const NO = ['no', 'n', 'fail'];
+const LIMITS: Record<'ankleCm' | 'calfReps' | 'storkSec' | 'hopCm' | 'throne', [number, number, string]> = {
+  ankleCm: [0, 30, 'ankle (cm)'],
+  calfReps: [0, 200, 'calf (reps)'],
+  storkSec: [0, 300, 'stork (s)'],
+  hopCm: [0, 400, 'hop (cm)'],
+  throne: [0, 5, 'Throne level (0–5)'],
+};
+
+/**
+ * ARM line: `Name ankle 12/9 calf 22/25 throne 3/2 hop 215/185 height 172` (left/right; "-" = not tested; a single
+ * value = the weaker side, as in every line written before Season 0). Also `stork 30/44`, `pistol yes/no`, and the
+ * old `hop yes|no` (hop-and-stick on both legs). Hop distances under 5 are read as metres (2.15 → 215 cm).
+ */
+function parseArm(body: string, row: RawRow, config?: Config): void {
   const arm: ArmMeasures = {};
-  const re = /\b(ankle|calf|stork|hop)\s*[:=]?\s*(\d+(?:\.\d+)?|yes|no|y|n|pass|fail)\b/gi;
   let m: RegExpExecArray | null;
   let first = -1;
-  while ((m = re.exec(body))) {
+  const val = (v: string | undefined): number | undefined => (v == null || v === '-' || v === '–' ? undefined : num(v));
+  const put = (field: keyof typeof LIMITS, a: string, b: string | undefined, scale: (x: number) => number = (x) => x) => {
+    const check = (x: number | undefined, side: string) => {
+      if (x == null) return undefined;
+      const [lo, hi, label] = LIMITS[field];
+      if (!Number.isFinite(x) || x < lo || x > hi) row.errors.push(`Implausible ${label}${side}: ${x}`);
+      if (field === 'throne' && !Number.isInteger(x)) row.errors.push(`Throne level must be a whole number 0–5${side}: ${x}`);
+      return x;
+    };
+    if (b === undefined) {
+      const v = check(val(a) != null ? scale(val(a)!) : undefined, '');
+      if (v != null) arm[field] = v;
+      return;
+    }
+    const l = check(val(a) != null ? scale(val(a)!) : undefined, ', left');
+    const r = check(val(b) != null ? scale(val(b)!) : undefined, ', right');
+    if (l != null) arm.left = { ...arm.left, [field]: l };
+    if (r != null) arm.right = { ...arm.right, [field]: r };
+    if ((l == null) !== (r == null)) row.warnings.push(`${LIMITS[field][2]}: only one leg recorded, so it does not count until both legs are tested`);
+  };
+  let metres = false;
+  const toCm = (x: number) => {
+    if (x > 0 && x < 5) {
+      metres = true;
+      return Math.round(x * 100);
+    }
+    return x;
+  };
+  while ((m = ARM_WORD.exec(body))) {
     if (first < 0) first = m.index;
-    const v = m[2].toLowerCase();
-    switch (m[1].toLowerCase()) {
+    const word = m[1].toLowerCase();
+    const a = m[2].toLowerCase();
+    const b = m[3]?.toLowerCase();
+    const isBool = (v: string | undefined) => v != null && (YES.includes(v) || NO.includes(v));
+    switch (word) {
       case 'ankle':
-        arm.ankleCm = Number(v);
+      case 'lunge':
+        put('ankleCm', a, b);
         break;
       case 'calf':
-        arm.calfReps = Number(v);
+      case 'wall':
+        put('calfReps', a, b);
+        break;
+      case 'throne':
+        put('throne', a, b);
         break;
       case 'stork':
-        arm.storkSec = Number(v);
+        put('storkSec', a, b);
         break;
       case 'hop':
-        arm.hopStickBothLegs = ['yes', 'y', 'pass'].includes(v);
+        if (isBool(a) && b === undefined) arm.hopStickBothLegs = YES.includes(a);
+        else put('hopCm', a, b, toCm);
         break;
+      case 'pistol': {
+        const l = YES.includes(a) ? true : NO.includes(a) ? false : undefined;
+        const r = b === undefined ? l : YES.includes(b) ? true : NO.includes(b) ? false : undefined;
+        if (l != null) arm.left = { ...arm.left, pistol: l };
+        if (r != null) arm.right = { ...arm.right, pistol: r };
+        break;
+      }
+      case 'height': {
+        const h = val(a);
+        if (h != null) {
+          const cm = h > 0 && h < 3 ? Math.round(h * 100) : h;
+          if (!(cm >= 100 && cm <= 230)) row.errors.push(`Implausible height: ${h}`);
+          else row.heightCm = cm;
+        }
+        break;
+      }
     }
   }
+  if (metres) row.warnings.push('hop read as metres and converted to cm');
   row.name = nameBefore(first >= 0 ? body.slice(0, first) : body);
-  if (first < 0) row.errors.push('No ARM measures (ankle, calf, stork, hop)');
+  if (first < 0) row.errors.push('No ARM measures (ankle, calf, throne, hop…)');
   else {
     row.arm = arm;
-    for (const k of ['ankleCm', 'calfReps', 'storkSec'] as const) {
-      const v = arm[k];
-      if (v != null && (!Number.isFinite(v) || v < 0 || v > 300)) row.errors.push(`Implausible ${k}: ${v}`);
-    }
+    const cap = config?.arm.calfRepCap;
+    const calf = [arm.calfReps, arm.left?.calfReps, arm.right?.calfReps].filter((x): x is number => x != null);
+    if (cap && calf.some((x) => x > cap)) row.warnings.push(`calf over ${cap}: counted as ${cap} (the Wall stops at ${cap})`);
+    if (config?.arm.plate3 === 'control' && (arm.storkSec != null || arm.left?.storkSec != null || arm.right?.storkSec != null)) row.warnings.push('stork is kept but no longer counts (the Throne replaced it)');
+    if (!Object.keys(arm).some((k) => k !== 'hopStickBothLegs') && arm.hopStickBothLegs == null && row.heightCm == null) row.errors.push('No ARM measures (ankle, calf, throne, hop…)');
   }
 }
 
@@ -242,7 +313,7 @@ export function parseLineFormat(text: string, opts: { today: string; config: Con
       return;
     }
     const row: RawRow = { line: lineNo, raw: rawLine, sectionKey: sec.key, name: '', source, warnings: [], errors: [] };
-    if (sec.perfKind === 'arm') parseArm(line, row);
+    if (sec.perfKind === 'arm') parseArm(line, row, config);
     else if (sec.perfKind === 'bleep') parseBleep(line, row);
     else parseTimed(line, row, config);
     if (!row.name) row.errors.push('No name before the result');

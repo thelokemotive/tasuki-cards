@@ -5,7 +5,7 @@ import type { Config } from './config';
 import type { ArmLevels, AthleteRatings, OvrValue, PerfScore, RaceStat, RatingKey, StatBasis, StatEvidence, StatKey, StatValue, Tier } from './types';
 import { STAT_KEYS } from './types';
 import { ageOnDate } from './age';
-import { ARM_DOMAINS, armLevelsFromTest, type ArmDomain } from './arm';
+import { ARM_DOMAINS, armTestDetail, hasThrone, nextLevelTarget, plateLine, plateName, type ArmDomain } from './arm';
 import { formatLongDate, formatShortDate, isISODate, monthsBetween } from './dates';
 import { formatKm, formatTime } from './format';
 import { byDate, counts, isOfficialRace, raceCaps, resolveContext, type Lookup, type PerfContext } from './perf';
@@ -176,23 +176,29 @@ function bestFreshStat(key: StatKey, entries: Entry[], input: StatsInput): StatV
  */
 function armLevelsInWindow(entries: Entry[], config: Config): { levels: ArmLevels; byDomain: Partial<Record<ArmDomain, Entry>> } {
   const tests = entries.filter((e) => e.perf.kind === 'arm' && e.ps.feeds.includes('ARM') && e.ps.monthsOld < config.arm.windowMonths);
-  const best: Partial<Record<ArmDomain, { level: number; entry: Entry }>> = {};
+  // An interim CONTROL level (from the hop, before the Throne existed) counts only while no Throne result is in
+  // the window and the test is under config.arm.interim.months old. A real Throne result replaces it, up or down.
+  const throneInWindow = config.arm.plate3 === 'control' && tests.some((e) => hasThrone(e.perf.arm));
+  const best: Partial<Record<ArmDomain, { level: number; entry: Entry; interim?: boolean }>> = {};
   for (const e of tests) {
-    const lv = armLevelsFromTest(e.perf.arm, config);
+    const detail = armTestDetail(e.perf.arm, config, { interim: !throneInWindow && e.ps.monthsOld < config.arm.interim.months });
+    const lv = detail.levels;
     for (const d of ARM_DOMAINS) {
       const l = lv[d];
       if (l == null) continue;
       const cur = best[d];
       // Higher level wins; on a tie the more recent test is the basis.
-      if (!cur || l > cur.level || (l === cur.level && byDate(cur.entry.perf, e.perf) < 0)) best[d] = { level: l, entry: e };
+      if (!cur || l > cur.level || (l === cur.level && byDate(cur.entry.perf, e.perf) < 0)) best[d] = { level: l, entry: e, interim: d === 'control' && detail.interim };
     }
   }
   const levels: ArmLevels = {
     ankle: best.ankle?.level,
     calf: best.calf?.level,
-    balance: best.balance?.level,
+    control: best.control?.level,
+    ...(best.control?.interim ? { controlInterim: true } : {}),
     missing: ARM_DOMAINS.filter((d) => !((best[d]?.level ?? 0) >= 1)),
   };
+  if (ARM_DOMAINS.some((d) => best[d])) levels.plates = plateLine(levels, config);
   const byDomain: Partial<Record<ArmDomain, Entry>> = {};
   for (const d of ARM_DOMAINS) {
     const b = best[d];
@@ -201,34 +207,43 @@ function armLevelsInWindow(entries: Entry[], config: Config): { levels: ArmLevel
   return { levels, byDomain };
 }
 
-/** 'ankle (5 cm knee-to-wall)': what level 1 needs in a domain. */
+/** 'ankle (5 cm knee-to-wall)': what level 1 needs on a plate. */
 function armLevel1(d: ArmDomain, config: Config): string {
   const a = config.arm;
   if (d === 'ankle') return `ankle (${a.ankleCm[0]} cm knee-to-wall)`;
   if (d === 'calf') return `calf (${a.calfReps[0]} heel raises)`;
-  return `balance (${a.storkSec[0]} s eyes-closed stance)`;
+  if (a.plate3 === 'balance') return `balance (${a.storkSec[0]} s eyes-closed stance)`;
+  return `control (the Throne: ${nextLevelTarget('control', 0, config)})`;
 }
 
-/** Lock for ARM when some domains have no level: untested domains, and domains measured below L1. */
+const cap = (w: string) => w[0].toUpperCase() + w.slice(1);
+
+/**
+ * Lock for ARM when some plates have no level: untested plates, and plates measured below L1. The card hint
+ * (≤ 3 words) names the plate: "Test control", "Calf below L1", "Missing calf".
+ */
 function armLock(levels: ArmLevels, entries: Entry[], config: Config, asOf: ISODate): Lock {
   const win = `tests from the last ${config.arm.windowMonths} months count`;
   const untested = levels.missing.filter((d) => levels[d] == null);
   const below = levels.missing.filter((d) => levels[d] != null);
+  const name = (d: ArmDomain) => plateName(d, config);
   if (untested.length === ARM_DOMAINS.length) {
     // Nothing in the window: say so when there are older tests.
     const older = entries.filter((e) => e.perf.kind === 'arm' && e.ps.feeds.includes('ARM') && e.ps.monthsOld >= config.arm.windowMonths);
     const last = older[older.length - 1];
     if (last) {
-      return { hint: 'Retest all three', help: `The last ARM test (${formatLongDate(last.perf.date)}) is over ${config.arm.windowMonths} months old: retest ankle, calf and balance to unlock ARM.` };
+      return { hint: 'Retest all three', help: `The last ARM test (${formatLongDate(last.perf.date)}) is over ${config.arm.windowMonths} months old: retest ${listWords(ARM_DOMAINS.map(name))} to unlock ARM.` };
     }
     return lockFor('ARM', entries, config, asOf);
   }
   const reach = below.length ? `reach level 1 in ${listWords(below.map((d) => armLevel1(d, config)))}` : '';
+  const throne = untested.includes('control') && config.arm.plate3 === 'control' ? ' (do the Throne)' : '';
   if (untested.length === 0) {
-    return { hint: 'Reach level 1', help: `${reach[0].toUpperCase()}${reach.slice(1)} to unlock ARM (${win}).` };
+    const hint = below.length === 1 ? `${cap(name(below[0]))} below L1` : 'Reach level 1';
+    return { hint, help: `${cap(reach)} to unlock ARM (${win}).` };
   }
-  const test = `Test ${listWords(untested)}`;
-  const hint = below.length ? 'Finish ARM tests' : untested.length === 1 ? `Test ${untested[0]}` : 'Finish ARM tests';
+  const test = `Test ${listWords(untested.map(name))}${throne}`;
+  const hint = untested.length + below.length > 1 ? (untested.length === 1 ? `Missing ${name(untested[0])}` : 'Finish ARM tests') : untested[0] === 'control' && config.arm.plate3 === 'control' ? 'Do the Throne' : `Test ${name(untested[0])}`;
   return { hint, help: below.length ? `${test}, and ${reach}, to unlock ARM (${win}).` : `${test} to unlock ARM (${win}).` };
 }
 
@@ -239,14 +254,14 @@ function armLock(levels: ArmLevels, entries: Entry[], config: Config, asOf: ISOD
  */
 function armStat(levels: ArmLevels, byDomain: Partial<Record<ArmDomain, Entry>>, entries: Entry[], input: StatsInput): StatValue {
   const { config } = input;
-  const { ankle, calf, balance, missing } = levels;
-  if (missing.length > 0 || ankle == null || calf == null || balance == null) {
+  const { ankle, calf, control, missing } = levels;
+  if (missing.length > 0 || ankle == null || calf == null || control == null) {
     return lockedStat('ARM', armLock(levels, entries, config, input.asOf), config);
   }
   const tests = [...new Set(ARM_DOMAINS.flatMap((d) => byDomain[d] ?? []))].sort((a, b) => -byDate(a.perf, b.perf));
   const date = tests[0].perf.date;
   const basis: StatBasis = { perfIds: tests.map((e) => e.perf.id), date, label: `from ARM test${tests.length > 1 ? 's' : ''}, ${formatShortDate(date)}` };
-  return withShield('ARM', armScoreClamped({ ankle, calf, balance }, config), basis, config.arm.provisional, entries, input);
+  return withShield('ARM', armScoreClamped({ ankle, calf, control }, config), basis, config.arm.provisional || !!levels.controlInterim, entries, input);
 }
 
 /** END = max(bleepRating, longRunRating); the basis says which pathway set it. */

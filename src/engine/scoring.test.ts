@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Athlete, Course, Performance } from '../types';
-import { DEFAULT_CONFIG, cloneConfig, preEvidenceRules, type Config } from './config';
+import { preArmS0Rules, DEFAULT_CONFIG, cloneConfig, preEvidenceRules, type Config } from './config';
 import { makeLookup, resolveContext } from './perf';
 import { standardTime } from './standards';
 import { armLevelsFromTest } from './arm';
@@ -22,7 +22,8 @@ import {
 } from './scoring';
 
 // The spec's worked examples use the original rules; the November 2026 rules are tested in evidence.test.ts.
-const cfg = preEvidenceRules(DEFAULT_CONFIG);
+// The worked ARM examples use the rules before Season 0 (stork balance plate, calf 10–30); arm.test.ts covers Season 0.
+const cfg = preArmS0Rules(preEvidenceRules(DEFAULT_CONFIG));
 const AS_OF = '2026-10-22';
 
 function athlete(over: Partial<Athlete> = {}): Athlete {
@@ -251,19 +252,19 @@ describe('ARM per test', () => {
 
   it('formula ends: all L1 → 40, all L5 → 99, all L3 → 69.5 → 70', () => {
     // 40 + (3 − 3) × 59 / 12 = 40; 40 + (15 − 3) × 59 / 12 = 99; 40 + (9 − 3) × 59 / 12 = 69.5 → 70
-    expect(armScoreClamped({ ankle: 1, calf: 1, balance: 1 }, cfg)).toBe(40);
-    expect(armScoreClamped({ ankle: 5, calf: 5, balance: 5 }, cfg)).toBe(99);
-    expect(armScoreClamped({ ankle: 3, calf: 3, balance: 3 }, cfg)).toBe(70);
-    expect(armComplete({ ankle: 1, calf: 1, balance: 1 })).toBe(true);
-    expect(armComplete({ ankle: 0, calf: 1, balance: 1 })).toBe(false);
-    expect(armComplete({ calf: 1, balance: 1 })).toBe(false);
+    expect(armScoreClamped({ ankle: 1, calf: 1, control: 1 }, cfg)).toBe(40);
+    expect(armScoreClamped({ ankle: 5, calf: 5, control: 5 }, cfg)).toBe(99);
+    expect(armScoreClamped({ ankle: 3, calf: 3, control: 3 }, cfg)).toBe(70);
+    expect(armComplete({ ankle: 1, calf: 1, control: 1 })).toBe(true);
+    expect(armComplete({ ankle: 0, calf: 1, control: 1 })).toBe(false);
+    expect(armComplete({ calf: 1, control: 1 })).toBe(false);
   });
 
   it('the 40 and 59 come from the 40–99 scale in config', () => {
     // runScore.min 30, max 99: 30 + (9 − 3) × 69 / 12 = 64.5 → 65
     const c = cloneConfig(cfg);
     c.runScore.min = 30;
-    expect(armScoreClamped({ ankle: 3, calf: 3, balance: 3 }, c)).toBe(65);
+    expect(armScoreClamped({ ankle: 3, calf: 3, control: 3 }, c)).toBe(65);
   });
 
   it('a test with a domain below level 1 has no ARM score (levels run 1–5; nothing is manufactured)', () => {
@@ -331,11 +332,11 @@ describe('ARM levels per domain (spec 3.9 thresholds, weaker side)', () => {
   });
 
   it('balance (eyes-closed stance s): L1 ≥ 5, L2 ≥ 10, L3 ≥ 20, L4 ≥ 30; L5 = L4 and hop-and-stick on both legs', () => {
-    expect([4, 5, 9, 10, 19, 20, 29.9, 30, 60].map((storkSec) => lv({ storkSec }).balance)).toEqual([0, 1, 1, 2, 2, 3, 3, 4, 4]);
-    expect(lv({ storkSec: 30, hopStickBothLegs: true }).balance).toBe(5);
-    expect(lv({ storkSec: 29, hopStickBothLegs: true }).balance).toBe(3); // hop-and-stick only lifts L4 to L5
-    expect(lv({ storkSec: 45, hopStickBothLegs: false }).balance).toBe(4);
-    expect(lv({ storkSec: 45 }).balance).toBe(4);
+    expect([4, 5, 9, 10, 19, 20, 29.9, 30, 60].map((storkSec) => lv({ storkSec }).control)).toEqual([0, 1, 1, 2, 2, 3, 3, 4, 4]);
+    expect(lv({ storkSec: 30, hopStickBothLegs: true }).control).toBe(5);
+    expect(lv({ storkSec: 29, hopStickBothLegs: true }).control).toBe(3); // hop-and-stick only lifts L4 to L5
+    expect(lv({ storkSec: 45, hopStickBothLegs: false }).control).toBe(4);
+    expect(lv({ storkSec: 45 }).control).toBe(4);
     expect(lv({ hopStickBothLegs: true })).toEqual({}); // no stance time: balance not measured
   });
 

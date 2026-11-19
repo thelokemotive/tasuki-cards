@@ -8,6 +8,7 @@ import { daysBetween } from './dates';
 import { yearBand, yearGroupOn } from './display';
 import { formatDelta, formatKm } from './format';
 import { byDate, counts, resolveContext, type Lookup } from './perf';
+import { weakerSide } from './arm';
 
 /** Kinds whose time on a course is a raw course result. Relay legs and NAV runs are excluded. */
 const COURSE_TIME_KINDS: PerfKind[] = ['race', 'parkrun', 'long_run', 'circuit', 'climb', 'descent'];
@@ -19,6 +20,7 @@ const SAME_COURSE_KM = 0.005;
 const ARM_MEASURES = [
   { key: 'arm:ankle', field: 'ankleCm', label: 'Ankle (knee-to-wall)', unit: ['cm', 'cm'] },
   { key: 'arm:calf', field: 'calfReps', label: 'Calf raises', unit: ['rep', 'reps'] },
+  { key: 'arm:throne', field: 'throne', label: 'Throne (one-leg squat)', unit: ['level', 'levels'] },
   { key: 'arm:stork', field: 'storkSec', label: 'Stork balance', unit: ['s', 's'] },
 ] as const;
 
@@ -65,7 +67,7 @@ function pbEntries(p: Performance, lookup: Lookup): PbEntry[] {
   if (p.kind === 'arm') {
     const out: PbEntry[] = [];
     ARM_MEASURES.forEach((m, i) => {
-      const v = p.arm?.[m.field];
+      const v = weakerSide(p.arm, m.field).value;
       if (v != null && Number.isFinite(v) && v >= 0) out.push({ key: m.key, label: m.label, measure: 'count', value: v, sort: [3, i] });
     });
     return out;

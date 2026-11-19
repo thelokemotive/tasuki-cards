@@ -93,7 +93,7 @@ export const SESSION_IDEAS: Record<StatKey, string[]> = {
   CLB: ['Hill reps: 6–10 × 60–90 s uphill, jog down', 'Power-hiking with hands on knees on the steepest bits', 'A hilly long run on the trails'],
   DSC: ['Descending drills: quick light feet, eyes 3–4 m ahead', 'Short downhill strides on grass, then on the trail', 'Ankle and calf strength (ARM work helps here)'],
   NAV: ['Map walk: keep the map turned to the ground (set the map)', 'Thumbing the map on a short loop', 'A butterfly or score course in pairs'],
-  ARM: ['10 minutes, three times a week: calf raises, single-leg balance, ankle mobility', 'Hop-and-stick practice on both legs', 'Retest after 6 weeks'],
+  ARM: ['10 minutes, three times a week: heel raises on a step, knee-to-wall rocks, one-leg sit-downs to a chair', 'Work on your weakest plate first (see Armour on your page)', 'Retest after 6 weeks'],
 };
 
 export interface FocusItem {

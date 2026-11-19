@@ -19,6 +19,8 @@ export interface CardStat {
   date?: string;
   provisional: boolean;
   shielded: boolean;
+  /** ARM: the plate levels, 'A2 · C5 · T2' (shown where the date goes). */
+  sub?: string;
 }
 
 export interface CardData {
@@ -89,6 +91,7 @@ export function buildCardData(d: AthleteDerived): CardData {
         date: s.basis?.date ? formatShortDate(s.basis.date) : undefined,
         provisional: s.provisional,
         shielded: s.shielded,
+        ...(k === 'ARM' && r.arm.plates ? { sub: r.arm.plates.replace(/ · /g, '·') } : {}),
       };
     }),
     streak: d.streak.currentStreak,

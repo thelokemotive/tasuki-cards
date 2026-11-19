@@ -95,3 +95,23 @@
 
 .nf-peer { display: flex; gap: 12px; align-items: center; margin-top: 10px; padding: 10px 12px; border-radius: 12px; background: linear-gradient(90deg, #fff4d6, #fffdf8); border: 1px solid #f0d995; font-size: 0.9rem; }
 .nf-peer-pct { font-size: 1.8rem; font-weight: 800; color: #9a6b00; min-width: 3.4em; text-align: center; }
+
+/* Armour: plates on the runner's page, the Armour guide and the Armoury */
+.arm-head { display: flex; gap: 14px; align-items: center; margin-bottom: 10px; }
+.arm-score { font-size: 2rem; font-weight: 800; line-height: 1; }
+.arm-plates { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; }
+.arm-plate { border: 1px solid var(--line); border-radius: var(--r); padding: 10px 12px; background: var(--surface); }
+.arm-plate.is-focus { border-color: var(--warn); box-shadow: inset 0 0 0 1px var(--warn); }
+.arm-plate-top { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+.arm-level { font-size: 1.6rem; font-weight: 800; margin-top: 4px; display: flex; align-items: center; }
+.arm-guide h3 { margin: 14px 0 4px; font-size: 1rem; }
+.arm-guide ul { margin: 4px 0 8px 18px; padding: 0; }
+.arm-guide li { margin: 3px 0; line-height: 1.45; }
+.arm-lookup { display: flex; flex-wrap: wrap; gap: 4px; }
+.arm-lookup span { border: 1px solid var(--line); border-radius: 6px; padding: 2px 6px; font-size: 0.8rem; background: var(--surface-2); }
+.arm-grid input.input { width: 4.2em; padding: 4px 6px; }
+.arm-grid td, .arm-grid th { padding: 4px 6px; white-space: nowrap; }
+.arm-bars { display: grid; grid-template-columns: auto 1fr auto; gap: 3px 8px; align-items: center; font-size: 0.85rem; }
+.arm-bar { height: 12px; border-radius: 3px; background: var(--moss, #7a8f5a); min-width: 2px; }
+.arm-bar.is-zero { background: var(--warn); }
+.arm-bar.is-none { background: var(--line-strong); }

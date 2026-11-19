@@ -269,6 +269,41 @@ The coach asked for more pull in the build (with the research synthesis on youth
 
 **With Winter Mode.** Winter top-ups (a Forms report of a session) still never feed a rating. A treadmill run sent with a photo of the console and approved by a coach is a different record: of 5 km of effort or more it feeds END (the coach's decision, 18 Nov 2026). Both keep the weekly streak.
 
+## ARM Season 0: the Throne, per-leg results, the Armoury (19 Nov 2026)
+
+Ahead of the first real ARM screening, and the coach's "THE THRONE v2.1" protocol (protocol id `ARM-S0-v2`). Where the v2.1 addendum and the first Season 0 brief differ, v2.1 wins: the Stork, its new thresholds, the hop gate and `calfsec` were dropped before they were built. No pupil names or results are in the repository; real results go into the app through its own import.
+
+**Rules** (`src/engine/arm.ts`, constants in `config.arm`)
+- **Three plates on the weaker leg.** ANKLE (the Lunge, knee-to-wall cm, levels 5 · 8 · 10 · 12 · 14, unchanged), CALF (the Wall, single-leg heel raises at 60 bpm, now **15 · 20 · 25 · 30 · 35** reps, one level harder, as the 17 Nov audit suggested) and **CONTROL** (the Throne). ARM = 40 + (sum − 3) × 59 ÷ 12, unchanged, so the lookup strip on the sheet (3→40 … 15→99) still holds.
+- **CONTROL replaces BALANCE.** The Throne is a one-leg squat to a rigid seat: three clean taps on each leg. The level is the lowest seat passed on the weaker leg, 0–5 (T1 61 cm, T2 51 cm, T3 42 cm, T4 30.5 cm, T5 19.5 cm: the plyo box's 24" and 20" sides, the bench, the step with +1 and −1 block; `arm.throneSeatsCm`). A full pistol squat on both legs earns the **No Throne** badge (👑) and nothing else: it never feeds ARM or OVR. The eyes-closed stork no longer feeds ARM; old stork and hop records are kept and shown.
+- **Per-leg records.** `ArmMeasures.left` / `.right` hold ankleCm, calfReps, throne, hopCm, storkSec and pistol. The engine takes the lower leg. A single top-level value is the weaker side, so every older record is still valid. **One leg alone does not count**, because the weaker side is unknown; the review warns.
+- **Calf is counted up to 40** (`arm.calfRepCap`), whole reps only. Calf is always reps (v2.1): a timed calf test is converted before entry, at 60 bpm 2 s = 1 rep, rounded down, capped at 40. "Why?" shows both legs and the cap.
+- **Each new record is stamped** with the protocol and, when it has a Throne result, the seat heights in force (`stampArm`), so a change of kit later cannot silently reinterpret it.
+- **A locked ARM names the plate**: "Test calf", "Calf below L1", "Do the Throne", "Missing calf" (three words at most on the card; the full sentence in "Why?").
+
+**A fair control level for pupils tested before the Throne existed (`arm.interim`)**
+- The Lower Sixth did the eyes-closed stork and the hop for distance, not the Throne. The coach asked for an equivalent that gives them no advantage. No validated conversion exists from a stork time or a hop distance to a one-leg squat depth, so nothing is "converted". Instead:
+  - **The stork earns nothing.** Standing still with eyes closed is a different quality from lowering on one leg.
+  - **The hop gives an interim level.** Both legs landed and held at or past 120 cm (the hop sheet's own line) gives an **interim T2**. Holding a one-leg landing needs the same eccentric thigh and hip control the Throne tests. T2 (51 cm, about chair height) is where v2.1 expects most pupils to start, so it is at or below what a pupil who hops 1.2 m or more is likely to pass. Everyone who clears the line gets the same T2, however far they hopped: the hop shows control of a one-leg landing, not how deep the pupil can squat.
+  - **Any Throne result in the ARM window replaces it, up or down.** This is the one exception to "ARM never falls on a bad retest", because the interim level was never a measurement. It also stops counting after 6 months (`arm.interim.months`), so it cannot outlive the spring retest.
+  - **Marked provisional** (on the ARM stat, in "Why?" and with a * on the athlete page), and it never earns a permanent badge.
+  - The v2.1 addendum said "ARM stays locked until retested"; the coach's later message asked for an equivalent. The interim rule follows the later message. Unticking one box (Settings → Scoring → ARM → interim) switches it off, and ARM then locks with "Do the Throne".
+
+**Entering results**
+- **Line format** (`docs/LINE-FORMAT.md`): `Name ankle 12/9 calf 22/25 throne 3/2 hop 215/185 height 172`, with `-` for not tested and a single value for the weaker side. Old lines (`ankle 11 calf 18 stork 22 hop yes`) still parse. Hop values under 5 are read as metres. A header `note <text>` becomes the event's notes.
+- **Armoury → Enter results** (`src/ui/pages/ArmouryPage.tsx`): a grid laid out like the paper Armour Card, one row per pupil, with the levels and ARM shown live. It saves through the Paste & Match path (`armGridPlan` writes line format, then `buildImportPlan` and `planToChanges`), so the grid, a pasted block and the offline file check and save results the same way. Each row goes to the pupil it was typed for, never by guessing names. Quick Entry and the result editor take left/right too.
+- **Height** (`Athlete.heightCm`, `heightMeasuredOn`) is coach-only. It comes from `height 172` on an ARM line, the grid or Edit details, and is never on cards, boards, print or the pupil copy (`publicPack` strips it; tested). It is used only for the Throne-against-height scatter, to check Season 0 for a size bias.
+
+**Showing it**
+- The card shows the plate levels where the ARM date was (**A2·C5·T2**: ankle, calf, Throne; **B** for balance under older config versions). The athlete page shows them in the ARM row.
+- **Armour panel** on every runner's page, in the coach and pupil views: each plate's level, both legs, the next target ("Next: T3 · 42 cm") and one thing to do, weakest plate first.
+- **Armour guide** (`/armour`, in the pupils' menu and linked from "Find your card"; content in `src/engine/armGuide.ts`): what ARM is, why each test exists, what it does on climbs, descents and rough ground, and the injury link, always said as "linked with" (Backman & Danielson 2011; Hébert-Losier et al. 2009; Hewett et al. 2005; FIFA 11+ trials; strength and running economy: Balsalobre-Fernández et al. 2016, Blagrove et al. 2018). It also covers how to build each plate (10 minutes, 3 times a week, including the Forge chair progression from v2.1), how to keep it over winter (gym and ski days; Spiering et al. 2021) and how ARM is scored. It promises no percentages.
+- **Armoury → Spread**: per plate, the pupils at each level, below L1 and untested; raw minimum, median and maximum (weaker leg, latest test); hop distances (not scored); Throne level against height.
+
+**Version history.** The rules arrive as one config version, "ARM Season 0: the Throne (CONTROL) replaces the Stork; calf levels 15–35 reps, counted up to 40", created once on load (`armS0Migration`). Stored versions without `arm.plate3` are read as `'balance'` (the stork), so their ARM ratings are reproduced exactly. `preArmS0Rules` gives the old rules, and the spec's worked ARM examples in the tests run under it. `src/engine/arm.test.ts` and `src/engine/parse/armLine.test.ts` cover Season 0.
+
+**Not built now:** a QR code and share link for pupils (later, separately), and any change to the thresholds from the first results: they are reviewed once every group has been tested.
+
 
 ## Open questions for the coach
 
@@ -281,3 +316,5 @@ The coach asked for more pull in the build (with the research synthesis on youth
 7. Winter Mode: is 2 sessions (one a run) the right weekly bar for Y7–8 as well as Y12–13? Should the Tuesday gym count as a run when there are no treadmill surges?
 8. Treadmill logging is on and long treadmill runs feed END (18 Nov 2026). The DSL note (decision 4 in `docs/SAFEGUARDING-NOTE.md`) still asks for their agreement.
 9. A new stat joins the OVR at its second result. Is 2 right, or would you rather 3?
+10. ARM interim control level (T2 from the hop, provisional, replaced by the first Throne test) for pupils tested before the Throne: keep it, or lock their ARM until they do the Throne?
+11. Ankle level 5 at 14 cm knee-to-wall: keep it, cap it, or flag very large values for a re-measure? Decide with the Season 0 spread.

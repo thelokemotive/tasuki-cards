@@ -3,7 +3,7 @@
 import type { Athlete, ISODate, ManualAchievement, Performance, PerfKind } from '../types';
 import type { Config } from './config';
 import type { Badge, BadgeKind, CourseRecord, StreakResult, SurgeResult } from './types';
-import { ARM_DOMAINS, armLevelsFromTest, type ArmDomain } from './arm';
+import { ARM_DOMAINS, armTestDetail, type ArmDomain } from './arm';
 import { weekMonday } from './dates';
 import { byDate, counts, raceCapPerfs, resolveContext, TIMED_KINDS, type Lookup } from './perf';
 import { treadmillBadges } from './treadmill/session';
@@ -11,7 +11,7 @@ import { treadmillBadges } from './treadmill/session';
 /** Order badges are listed in (the spec's order); the card row re-sorts by prestige. */
 const KIND_ORDER: BadgeKind[] = ['caps', 'parkrun', 'distance', 'mountain', 'streak', 'treadmill', 'arm', 'surge', 'record', 'expedition', 'custom'];
 
-const ARM_LABEL: Record<ArmDomain, string> = { ankle: 'Ankle', calf: 'Calf', balance: 'Balance' };
+const ARM_LABEL: Record<ArmDomain, string> = { ankle: 'Ankle', calf: 'Calf', control: 'Control' };
 
 const BAND_LABEL: Record<CourseRecord['band'], string> = { 'Y7-8': 'Y7–8', 'Y9-11': 'Y9–11', 'Y12-13': 'Y12–13', Staff: 'Staff' };
 
@@ -98,8 +98,12 @@ export function computeBadges(input: {
   badges.push(...treadmillBadges(mine, athlete.id, asOf, config));
 
   const armBest = new Map<ArmDomain, { level: number; p: Performance }>();
+  let pistol: Performance | undefined;
   for (const p of mine.filter((q) => q.kind === 'arm')) {
-    const levels = armLevelsFromTest(p.arm, config);
+    // Badges are permanent, so an interim CONTROL level (an estimate from the hop) never earns one.
+    const detail = armTestDetail(p.arm, config, { interim: false });
+    if (detail.pistol && !pistol) pistol = p;
+    const levels = detail.levels;
     for (const d of ARM_DOMAINS) {
       const level = levels[d];
       if (level != null && level >= 1 && level > (armBest.get(d)?.level ?? 0)) armBest.set(d, { level, p });
@@ -107,8 +111,10 @@ export function computeBadges(input: {
   }
   for (const d of ARM_DOMAINS) {
     const b = armBest.get(d);
-    if (b) badges.push({ key: `arm-${d}`, kind: 'arm', label: `${ARM_LABEL[d]} L${b.level}`, icon: '🛡️', date: b.p.date, perfId: b.p.id, count: b.level });
+    if (b) badges.push({ key: `arm-${d}`, kind: 'arm', label: `${d === 'control' && config.arm.plate3 === 'balance' ? 'Balance' : ARM_LABEL[d]} L${b.level}`, icon: '🛡️', date: b.p.date, perfId: b.p.id, count: b.level });
   }
+  // "No Throne": a full pistol squat, 3 clean reps on each leg. A mastery badge only: it never feeds ARM.
+  if (pistol) badges.push({ key: 'arm-pistol', kind: 'arm', label: 'No Throne (pistol)', icon: '👑', date: pistol.date, perfId: pistol.id, count: 6 });
 
   const perfById = new Map(mine.map((p) => [p.id, p]));
   for (const s of input.surges) {

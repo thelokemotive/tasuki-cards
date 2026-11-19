@@ -6,7 +6,7 @@ import type { Performance, Sex } from '../types';
 import type { Config } from './config';
 import type { AthleteDerived } from './derive';
 import type { PerfScore, RatingKey, StatKey, StatValue } from './types';
-import { ARM_DOMAINS, armLevelsFromTest } from './arm';
+import { ARM_DOMAINS, armSummary, armTestDetail, plateName, throneLabel, type WeakerSide } from './arm';
 import { formatLongDate, formatShortDate } from './dates';
 import { displayName } from './display';
 import { formatPace, formatTime } from './format';
@@ -87,10 +87,7 @@ function placeOf(ctx: PerfContext): string {
 
 function resultText(p: Performance): string {
   if (p.kind === 'bleep') return p.bleepLaps != null ? `${p.bleepLaps} laps` : '';
-  if (p.kind === 'arm') {
-    const a = p.arm ?? {};
-    return [a.ankleCm != null && `ankle ${a.ankleCm} cm`, a.calfReps != null && `calf ${a.calfReps}`, a.storkSec != null && `stork ${a.storkSec} s`].filter(Boolean).join(', ');
-  }
+  if (p.kind === 'arm') return armSummary(p.arm).replace(/ · /g, ', ');
   return p.timeSec != null ? formatTime(p.timeSec) : '';
 }
 
@@ -233,30 +230,49 @@ function pathwayText(key: StatKey, config: Config): string {
     case 'NAV':
       return 'NAV compares the time on a nav course with a prediction from the runner’s own pace.';
     case 'ARM':
-      return `ARM uses the best level in each of ankle, calf and balance from tests in the last ${config.arm.windowMonths} months, so it never falls on a bad retest.`;
+      return `ARM uses the best level on each plate (${ARM_DOMAINS.map((d) => plateName(d, config)).join(', ')}), always on the weaker leg, from tests in the last ${config.arm.windowMonths} months, so it never falls on a bad retest.${config.arm.plate3 === 'control' ? ` Control is the Throne: the lowest seat passed with 3 clean one-leg squat taps (${config.arm.throneSeatsCm.map((h, i) => `T${i + 1} ${h} cm`).join(', ')}).` : ''}`;
   }
+}
+
+/** 'left 12, right 9 → 9 cm' (or the single weaker-side value). */
+function sideText(ws: WeakerSide, unit: string): string | undefined {
+  if (ws.value == null) return ws.oneLegOnly ? `one leg only (${ws.left ?? ws.right}${unit}): both legs are needed` : undefined;
+  if (ws.left != null && ws.right != null) return `left ${ws.left}, right ${ws.right} → weaker ${ws.value}${unit}`;
+  return `${ws.value}${unit}`;
 }
 
 function armWorking(d: AthleteDerived, items: Item[], stat: StatValue, config: Config, w: Who): string[] {
   const used = new Set(stat.basis?.perfIds ?? []);
   const levels = d.ratings.arm;
   const parts: string[] = [];
+  const throneInUse = config.arm.plate3 === 'control';
   for (const dom of ARM_DOMAINS) {
     const lvl = levels[dom];
+    const name = plateName(dom, config);
     if (lvl == null) {
-      parts.push(`${dom}: not tested`);
+      parts.push(`${name}: not tested${dom === 'control' && throneInUse ? ' (the Throne)' : ''}`);
       continue;
     }
-    const src = items.find((i) => used.has(i.perf.id) && armLevelsFromTest(i.perf.arm, config)[dom] === lvl);
-    const m = src?.perf.arm;
-    const measure = dom === 'ankle' ? m?.ankleCm != null && `${m.ankleCm} cm` : dom === 'calf' ? m?.calfReps != null && `${m.calfReps} heel raises` : m?.storkSec != null && `${m.storkSec} s${lvl === 5 ? ' + hop-and-stick' : ''}`;
-    parts.push(`${dom} level ${lvl}${measure ? ` (${measure}${src ? `, ${formatShortDate(src.perf.date)}` : ''})` : ''}`);
+    const interim = dom === 'control' && levels.controlInterim;
+    const src = items.find((i) => used.has(i.perf.id) && armTestDetail(i.perf.arm, config, { interim: !!interim }).levels[dom] === lvl) ?? items.find((i) => armTestDetail(i.perf.arm, config, { interim: !!interim }).levels[dom] === lvl);
+    const det = src ? armTestDetail(src.perf.arm, config, { interim: !!interim }) : undefined;
+    let measure: string | undefined;
+    if (det && dom === 'ankle') measure = sideText(det.ankle, ' cm');
+    else if (det && dom === 'calf') {
+      measure = sideText(det.calf, ' heel raises');
+      if (measure && det.calf.capped) measure += `, counted as ${det.calf.counted} (the Wall stops at ${config.arm.calfRepCap})`;
+    } else if (det && dom === 'control') {
+      if (interim) measure = `interim level ${lvl} from the hop (${sideText(det.hop, ' cm') ?? 'both legs'}; both legs at least ${config.arm.interim.hopCm} cm). No Throne result yet: the first Throne test replaces it, up or down`;
+      else if (throneInUse) measure = det.control.value != null ? `Throne ${sideText(det.control, '')}: ${throneLabel(lvl, config, src?.perf.arm?.throneSeatsCm ?? config.arm.throneSeatsCm)}` : undefined;
+      else measure = det.control.value != null ? `${sideText(det.control, ' s')}${lvl === 5 ? ' + hop-and-stick' : ''}` : undefined;
+    }
+    parts.push(`${name} level ${lvl}${measure ? ` (${measure}${src ? `, ${formatShortDate(src.perf.date)}` : ''})` : ''}`);
   }
   const out = [`${w.name}'s best levels: ${parts.join('; ')}.`];
-  if (!stat.locked && levels.ankle != null && levels.calf != null && levels.balance != null) {
-    const sum = levels.ankle + levels.calf + levels.balance;
+  if (!stat.locked && levels.ankle != null && levels.calf != null && levels.control != null) {
+    const sum = levels.ankle + levels.calf + levels.control;
     const { min, max } = config.runScore;
-    out.push(`ARM = ${min} + (${sum} − 3) × ${max - min} ÷ 12 = ${num1(min + ((sum - 3) * (max - min)) / 12)} → ${stat.current}. ARM has no freshness penalty: the ${config.arm.windowMonths}-month window replaces it.`);
+    out.push(`ARM = ${min} + (${sum} − 3) × ${max - min} ÷ 12 = ${num1(min + ((sum - 3) * (max - min)) / 12)} → ${stat.current}. ARM has no freshness penalty: the ${config.arm.windowMonths}-month window replaces it.${levels.controlInterim ? ' Marked provisional while the control level is interim.' : ''}`);
   }
   return out;
 }

@@ -213,20 +213,30 @@ export function PerformanceEditor({ perf, onClose }: { perf: Performance; onClos
           )}
           {kind === 'arm' && (
             <>
-              <Field label="Ankle, knee-to-wall (cm)">
-                <input className="input" type="number" step="0.5" value={p.arm?.ankleCm ?? ''} onChange={(e) => set('arm', { ...p.arm, ankleCm: numOrUndef(e.target.value) })} />
-              </Field>
-              <Field label="Calf raises (reps)">
-                <input className="input" type="number" value={p.arm?.calfReps ?? ''} onChange={(e) => set('arm', { ...p.arm, calfReps: numOrUndef(e.target.value) })} />
-              </Field>
-              <Field label="Stork, eyes closed (s)">
-                <input className="input" type="number" value={p.arm?.storkSec ?? ''} onChange={(e) => set('arm', { ...p.arm, storkSec: numOrUndef(e.target.value) })} />
-              </Field>
-              <Field label="Hop and stick, both legs">
-                <label className="check">
-                  <input type="checkbox" checked={!!p.arm?.hopStickBothLegs} onChange={(e) => set('arm', { ...p.arm, hopStickBothLegs: e.target.checked })} /> Passed
-                </label>
-              </Field>
+              {([
+                ['ankleCm', 'Lunge, knee-to-wall (cm)'],
+                ['calfReps', 'Wall, heel raises (reps)'],
+                ['throne', 'Throne level (0–5)'],
+                ['hopCm', 'Hop (cm, not scored)'],
+                ['storkSec', 'Stork (s, before Season 0)'],
+              ] as const)
+                .filter(([k]) => k !== 'storkSec' || p.arm?.storkSec != null || p.arm?.left?.storkSec != null || p.arm?.right?.storkSec != null)
+                .map(([k, label]) => (
+                  <Field key={k} label={label} hint={p.arm?.[k] != null ? 'Single value = weaker side (older record)' : undefined}>
+                    <span className="row" style={{ gap: 6 }}>
+                      <input className="input" type="number" step="any" placeholder="L" aria-label={`${label} left`} value={p.arm?.left?.[k] ?? ''} onChange={(e) => set('arm', { ...p.arm, left: { ...p.arm?.left, [k]: numOrUndef(e.target.value) } })} />
+                      <input className="input" type="number" step="any" placeholder="R" aria-label={`${label} right`} value={p.arm?.right?.[k] ?? ''} onChange={(e) => set('arm', { ...p.arm, right: { ...p.arm?.right, [k]: numOrUndef(e.target.value) } })} />
+                      {p.arm?.[k] != null && <input className="input" type="number" step="any" aria-label={`${label} weaker side`} value={p.arm?.[k] ?? ''} onChange={(e) => set('arm', { ...p.arm, [k]: numOrUndef(e.target.value) })} />}
+                    </span>
+                  </Field>
+                ))}
+              {p.arm?.hopStickBothLegs != null && (
+                <Field label="Hop and stick, both legs (before Season 0)">
+                  <label className="check">
+                    <input type="checkbox" checked={!!p.arm?.hopStickBothLegs} onChange={(e) => set('arm', { ...p.arm, hopStickBothLegs: e.target.checked })} /> Passed
+                  </label>
+                </Field>
+              )}
             </>
           )}
         </div>
