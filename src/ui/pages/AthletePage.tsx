@@ -27,6 +27,7 @@ import { GldPanel } from '../components/GldPanel';
 import { WinterPanel } from '../components/WinterPanel';
 import { Placings } from '../components/Placings';
 import { paceOf } from '../../engine/explain';
+import { armPlates, armResultText } from '../../engine/arm';
 import { formatPace } from '../../engine/format';
 
 const SPARK_KEYS: RatingKey[] = ['RACE', 'SPD', 'END', 'CLB', 'DSC', 'NAV', 'ARM'];
@@ -81,8 +82,7 @@ function StreakCalendar({ d }: { d: AthleteDerived }) {
 function resultText(p: Performance): string {
   if (p.kind === 'bleep') return p.bleepLaps != null ? `${p.bleepLaps} laps` : '—';
   if (p.kind === 'arm') {
-    const a = p.arm ?? {};
-    return [a.ankleCm != null && `ankle ${a.ankleCm} cm`, a.calfReps != null && `calf ${a.calfReps}`, a.storkSec != null && `stork ${a.storkSec} s`, a.hopStickBothLegs != null && `hop ${a.hopStickBothLegs ? '✓' : '✗'}`].filter(Boolean).join(' · ') || '—';
+    return armResultText(p.arm) || '—';
   }
   const t = p.timeSec != null ? formatTime(p.timeSec) : '—';
   const extra = [p.place && `${p.place}${p.fieldSize ? `/${p.fieldSize}` : ''}`, p.kind === 'nav' && p.navErrors != null && `${p.navErrors} err`, p.kind === 'descent' && p.cleanRun === false && 'not clean', p.legNumber && `leg ${p.legNumber}`].filter(Boolean);
@@ -208,6 +208,11 @@ export function AthletePage() {
                         {s.locked ? <span className="lock" title={s.unlockHelp}>🔒</span> : <strong>{s.value}</strong>}
                         {!s.locked && s.provisional && <Prov />}
                         {s.shielded && <span className="pill pill-ai" title={`Growth Shield: best in 12 months was ${s.peak12m}`} style={{ marginLeft: 4 }}>shield</span>}
+                        {key === 'ARM' && r.arm.missing.length < 3 && (
+                          <span className="muted tiny" title="ARM plate levels: Ankle · Calf · Balance" style={{ marginLeft: 6, whiteSpace: 'nowrap' }}>
+                            {armPlates(r.arm)}
+                          </span>
+                        )}
                       </td>
                       <td className="small" onClick={(e) => e.stopPropagation()}>
                         {s.locked ? (
@@ -258,7 +263,11 @@ export function AthletePage() {
             </table>
           </div>
           <p className="tiny muted">Click any stat for the working behind it: which result, the calculation, and why the other results did not count.</p>
-          {r.arm.missing.length > 0 && r.arm.missing.length < 3 && <p className="small muted">ARM levels so far: ankle {r.arm.ankle ?? '—'}, calf {r.arm.calf ?? '—'}, balance {r.arm.balance ?? '—'}.</p>}
+          {r.arm.missing.length < 3 && (
+            <p className="small muted">
+              ARM plates{r.arm.missing.length > 0 ? ' so far' : ''}: <strong className="num">{armPlates(r.arm)}</strong> (Ankle · Calf · Balance, weaker leg; 0 = below level 1).
+            </p>
+          )}
         </Panel>
       </div>
 

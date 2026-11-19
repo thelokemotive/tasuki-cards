@@ -127,36 +127,50 @@ function nameBefore(text: string): string {
   return text.replace(/[,，:;\-–]+\s*$/, '').trim();
 }
 
+const ARM_FIELD = { ankle: 'ankleCm', calf: 'calfReps', stork: 'storkSec' } as const;
+const HOP_LADDER = [0, 80, 100, 120, 140];
+
+/**
+ * "ankle 9.5/11 calf 22/25 stork 6/9 hop 100/120" (left/right; the engine works out the weaker side), or the
+ * older "ankle 11 calf 18 stork 22 hop yes" (one value per measure, already the weaker side).
+ */
 function parseArm(body: string, row: RawRow): void {
   const arm: ArmMeasures = {};
-  const re = /\b(ankle|calf|stork|hop)\s*[:=]?\s*(\d+(?:\.\d+)?|yes|no|y|n|pass|fail)\b/gi;
+  const re = /\b(ankle|calf|stork|hop)\s*[:=]?\s*(?:(\d+(?:\.\d+)?)(?:\s*\/\s*(\d+(?:\.\d+)?))?|(yes|no|y|n|pass|fail))(?!\w)/gi;
   let m: RegExpExecArray | null;
   let first = -1;
+  const side = (k: 'left' | 'right') => (arm[k] ??= {});
   while ((m = re.exec(body))) {
     if (first < 0) first = m.index;
-    const v = m[2].toLowerCase();
-    switch (m[1].toLowerCase()) {
-      case 'ankle':
-        arm.ankleCm = Number(v);
-        break;
-      case 'calf':
-        arm.calfReps = Number(v);
-        break;
-      case 'stork':
-        arm.storkSec = Number(v);
-        break;
-      case 'hop':
-        arm.hopStickBothLegs = ['yes', 'y', 'pass'].includes(v);
-        break;
+    const what = m[1].toLowerCase() as 'ankle' | 'calf' | 'stork' | 'hop';
+    const [a, b, word] = [m[2], m[3], m[4]?.toLowerCase()];
+    if (what === 'hop') {
+      if (word) arm.hopStickBothLegs = ['yes', 'y', 'pass'].includes(word);
+      else if (b != null) {
+        side('left').hopLineCm = Number(a);
+        side('right').hopLineCm = Number(b);
+        for (const v of [Number(a), Number(b)]) if (!HOP_LADDER.includes(v)) row.warnings.push(`Hop line ${v} cm is not on the ladder (80 / 100 / 120 / 140)`);
+      } else row.errors.push(`Hop needs the furthest line frozen on each leg, e.g. “hop 100/120” (left/right), or yes/no`);
+      continue;
     }
+    if (word) {
+      row.errors.push(`${m[1]} needs a number`);
+      continue;
+    }
+    const k = ARM_FIELD[what];
+    if (b != null) {
+      side('left')[k] = Number(a);
+      side('right')[k] = Number(b);
+    } else arm[k] = Number(a);
   }
   row.name = nameBefore(first >= 0 ? body.slice(0, first) : body);
   if (first < 0) row.errors.push('No ARM measures (ankle, calf, stork, hop)');
   else {
     row.arm = arm;
     for (const k of ['ankleCm', 'calfReps', 'storkSec'] as const) {
-      const v = arm[k];
-      if (v != null && (!Number.isFinite(v) || v < 0 || v > 300)) row.errors.push(`Implausible ${k}: ${v}`);
+      for (const v of [arm[k], arm.left?.[k], arm.right?.[k]]) {
+        if (v != null && (!Number.isFinite(v) || v < 0 || v > 300)) row.errors.push(`Implausible ${k}: ${v}`);
+      }
     }
   }
 }

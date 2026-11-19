@@ -148,6 +148,7 @@
 .tc-stat-top { display: flex; align-items: baseline; justify-content: space-between; gap: 0.5mm; line-height: 1.15; }
 .tc-stat-label { font-size: 1.9mm; font-weight: 800; letter-spacing: 0.1em; color: var(--ink-c2); display: inline-flex; align-items: center; gap: 0.6mm; }
 .tc-stat-value { font-family: var(--font-num-condensed); font-weight: 700; font-size: 4.6mm; line-height: 1.05; margin-top: 0.2mm; color: var(--ink-c); }
+.tc-stat-plates { font-family: var(--font-num-condensed); font-weight: 600; font-size: 1.6mm; color: var(--ink-c2); margin-left: 0.6mm; letter-spacing: 0; white-space: nowrap; }
 .tc-stat-date { font-size: 1.45mm; color: var(--ink-c2); white-space: nowrap; }
 .tc-stat-locked { display: flex; align-items: flex-start; gap: 0.6mm; margin-top: 0.6mm; color: var(--ink-c2); }
 .tc-hint { font-size: 1.7mm; font-weight: 700; line-height: 1.1; overflow-wrap: break-word; min-width: 0; }

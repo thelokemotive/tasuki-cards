@@ -240,9 +240,9 @@ describe('NAV score (spec 3.9)', () => {
 
 describe('ARM per test', () => {
   it('scores a test that measured all three domains', () => {
-    // ankle 11 cm → L3; calf 18 → L2; stork 22 s → L3 (hop-and-stick only matters at L4)
+    // ankle 11 cm → L3; calf 23 → L2; stork 12 s → L3 (hop-and-stick only matters at L4)
     // ARM = round(40 + (8 − 3) × 59 / 12) = round(64.58) = 65
-    const ps = score(perf({ kind: 'arm', arm: { ankleCm: 11, calfReps: 18, storkSec: 22, hopStickBothLegs: true } }));
+    const ps = score(perf({ kind: 'arm', arm: { ankleCm: 11, calfReps: 23, storkSec: 12, hopStickBothLegs: true } }));
     expect(ps.score).toBe(65);
     expect(ps.penalty).toBe(0);
     expect(ps.feeds).toEqual(['ARM']);
@@ -267,8 +267,8 @@ describe('ARM per test', () => {
   });
 
   it('a test with a domain below level 1 has no ARM score (levels run 1–5; nothing is manufactured)', () => {
-    // ankle 4 cm → below L1 (5 cm), calf 18 → L2, stork 22 → L3
-    const ps = score(perf({ kind: 'arm', arm: { ankleCm: 4, calfReps: 18, storkSec: 22 } }));
+    // ankle 4 cm → below L1 (5 cm), calf 23 → L2, stork 12 → L3
+    const ps = score(perf({ kind: 'arm', arm: { ankleCm: 4, calfReps: 23, storkSec: 12 } }));
     expect(ps.score).toBeUndefined();
     expect(ps.fresh).toBeUndefined();
     expect(ps.feeds).toEqual(['ARM']);
@@ -326,16 +326,16 @@ describe('ARM levels per domain (spec 3.9 thresholds, weaker side)', () => {
     expect([4.9, 5, 7.9, 8, 9.9, 10, 11.9, 12, 13.9, 14, 20].map((ankleCm) => lv({ ankleCm }).ankle)).toEqual([0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5]);
   });
 
-  it('calf (single-leg heel raises): L1 ≥ 10, L2 ≥ 15, L3 ≥ 20, L4 ≥ 25, L5 ≥ 30', () => {
-    expect([9, 10, 14, 15, 19, 20, 24, 25, 29, 30, 50].map((calfReps) => lv({ calfReps }).calf)).toEqual([0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5]);
+  it('calf (single-leg heel raises): L1 ≥ 15, L2 ≥ 20, L3 ≥ 25, L4 ≥ 30, L5 ≥ 35', () => {
+    expect([14, 15, 19, 20, 24, 25, 29, 30, 34, 35, 40].map((calfReps) => lv({ calfReps }).calf)).toEqual([0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5]);
   });
 
-  it('balance (eyes-closed stance s): L1 ≥ 5, L2 ≥ 10, L3 ≥ 20, L4 ≥ 30; L5 = L4 and hop-and-stick on both legs', () => {
-    expect([4, 5, 9, 10, 19, 20, 29.9, 30, 60].map((storkSec) => lv({ storkSec }).balance)).toEqual([0, 1, 1, 2, 2, 3, 3, 4, 4]);
-    expect(lv({ storkSec: 30, hopStickBothLegs: true }).balance).toBe(5);
-    expect(lv({ storkSec: 29, hopStickBothLegs: true }).balance).toBe(3); // hop-and-stick only lifts L4 to L5
-    expect(lv({ storkSec: 45, hopStickBothLegs: false }).balance).toBe(4);
-    expect(lv({ storkSec: 45 }).balance).toBe(4);
+  it('balance (eyes-closed stance s): L1 ≥ 3, L2 ≥ 6, L3 ≥ 10, L4 ≥ 15; L5 = L4 and hop-and-stick on both legs', () => {
+    expect([2.9, 3, 5.9, 6, 9.9, 10, 14.9, 15, 30].map((storkSec) => lv({ storkSec }).balance)).toEqual([0, 1, 1, 2, 2, 3, 3, 4, 4]);
+    expect(lv({ storkSec: 15, hopStickBothLegs: true }).balance).toBe(5);
+    expect(lv({ storkSec: 14, hopStickBothLegs: true }).balance).toBe(3); // hop-and-stick only lifts L4 to L5
+    expect(lv({ storkSec: 30, hopStickBothLegs: false }).balance).toBe(4);
+    expect(lv({ storkSec: 30 }).balance).toBe(4);
     expect(lv({ hopStickBothLegs: true })).toEqual({}); // no stance time: balance not measured
   });
 
@@ -576,7 +576,7 @@ describe('bad inputs never crash and never manufacture a number', () => {
       expect(score(perf({ kind: 'bleep', bleepLaps: 52 }), a).unscoredReason).toBe(UNSCORED.noAge);
       expect(score(perf({ kind: 'descent', courseId: 'c-desc', timeSec: 240 }), a).unscoredReason).toBe(UNSCORED.noAge);
       // ARM and NAV do not depend on age or sex, so they are still scored.
-      expect(score(perf({ kind: 'arm', arm: { ankleCm: 11, calfReps: 18, storkSec: 22 } }), a).score).toBe(65);
+      expect(score(perf({ kind: 'arm', arm: { ankleCm: 11, calfReps: 23, storkSec: 12 } }), a).score).toBe(65);
       expect(score(perf({ kind: 'nav', timeSec: 690, navErrors: 1, routeKmEff: 3 }), a, cfg, { navRefPaceSecPerKm: 200 }).score).toBe(82);
     }
   });
@@ -651,7 +651,7 @@ describe('every scoring constant comes from config', () => {
     c.arm.ankleCm = [6, 8, 10, 12, 14];
     expect(armLevelsFromTest({ ankleCm: 5 }, c).ankle).toBe(0);
     expect(armLevelsFromTest({ ankleCm: 6 }, c).ankle).toBe(1);
-    expect(score(perf({ kind: 'arm', arm: { ankleCm: 5, calfReps: 18, storkSec: 22 } }), athlete(), c).score).toBeUndefined();
+    expect(score(perf({ kind: 'arm', arm: { ankleCm: 5, calfReps: 23, storkSec: 12 } }), athlete(), c).score).toBeUndefined();
   });
 });
 

@@ -18,6 +18,7 @@ import { academicYearOf } from '../../engine/dates';
 import type { ParseFormat } from '../../engine/parse/types';
 import { formatKm, formatTime } from '../../engine/format';
 import { fullName } from '../../engine/display';
+import { armResultText } from '../../engine/arm';
 import { formatLongDate } from '../../engine/dates';
 
 const STATUS_LABEL: Record<RowStatus, string> = { ready: 'Import', review: 'Check', skip: 'Skip', outsider: 'Outsider' };
@@ -25,7 +26,7 @@ const STATUS_LABEL: Record<RowStatus, string> = { ready: 'Import', review: 'Chec
 function resultCell(r: PlanRow): string {
   const raw = r.raw;
   if (raw.laps != null) return `${raw.laps} laps`;
-  if (raw.arm) return Object.entries(raw.arm).map(([k, v]) => `${k.replace(/Cm|Reps|Sec|StickBothLegs/, '')} ${v === true ? '✓' : v === false ? '✗' : v}`).join(' · ');
+  if (raw.arm) return armResultText(raw.arm);
   if (r.kind === 'participation') return 'attended';
   if (raw.timeSec != null) return formatTime(raw.timeSec) + (raw.timeSec % 1 ? `.${Math.round((raw.timeSec % 1) * 10)}` : '');
   return '—';

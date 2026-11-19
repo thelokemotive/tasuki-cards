@@ -39,6 +39,19 @@ function athlete(id: string, givenName: string, sex: Sex, yearGroup: YearGroup):
 }
 
 describe('computePersonalBests (spec 7)', () => {
+  it('ARM PBs use the weaker leg of per-leg results, and compare with old single values', () => {
+    const r = computePersonalBests(
+      [
+        perf('aiko', { date: '2026-10-12', kind: 'arm', arm: { ankleCm: 9, calfReps: 18 } }),
+        perf('aiko', { date: '2026-11-20', kind: 'arm', arm: { left: { ankleCm: 12, calfReps: 17 }, right: { ankleCm: 10, calfReps: 30 } } }),
+      ],
+      lookup,
+    );
+    const cur = Object.fromEntries(r.current.map((b) => [b.key, b.value]));
+    expect(cur['arm:ankle']).toBe(10); // weaker leg 10 > 9: a PB
+    expect(cur['arm:calf']).toBe(18); // weaker leg 17 < 18: no PB
+  });
+
   const aiko = [
     circ('aiko', '2026-09-30', 310), // first Circuit: PB, no previous best
     circ('aiko', '2026-10-07', 300), // PB −10 s

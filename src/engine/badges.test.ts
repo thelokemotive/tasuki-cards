@@ -36,9 +36,9 @@ function perf(p: Partial<Performance> & Pick<Performance, 'date' | 'kind'>, athl
 const parkrun1 = perf({ date: '2026-09-05', kind: 'parkrun', distanceKm: 5, timeSec: 1250 });
 const parkrun2 = perf({ date: '2026-09-12', kind: 'parkrun', distanceKm: 5, timeSec: 1240 });
 const tenK = perf({ date: '2026-09-20', kind: 'race', distanceKm: 10, timeSec: 2500 });
-const arm1 = perf({ date: '2026-09-15', kind: 'arm', arm: { ankleCm: 10, calfReps: 12, storkSec: 3 } }); // ankle L3, calf L1, balance L0
+const arm1 = perf({ date: '2026-09-15', kind: 'arm', arm: { ankleCm: 10, calfReps: 17, storkSec: 2 } }); // ankle L3, calf L1, balance L0
 const half = perf({ date: '2026-10-04', kind: 'race', distanceKm: 21.0975, timeSec: 5400 });
-const arm2 = perf({ date: '2026-10-15', kind: 'arm', arm: { ankleCm: 8, calfReps: 22, storkSec: 31, hopStickBothLegs: true } }); // ankle L2, calf L3, balance L5
+const arm2 = perf({ date: '2026-10-15', kind: 'arm', arm: { ankleCm: 8, calfReps: 27, storkSec: 16, hopStickBothLegs: true } }); // ankle L2, calf L3, balance L5
 const climb = perf({ date: '2026-10-18', kind: 'climb', distanceKm: 5, climbM: 1000, timeSec: 3600 }); // 1,000 m: Mountain
 const leg1 = perf({ date: '2026-11-01', kind: 'relay_leg', eventId: 'E1', timeSec: 420 });
 const leg2 = perf({ date: '2026-11-08', kind: 'relay_leg', eventId: 'E2', timeSec: 430 });
@@ -123,7 +123,7 @@ describe('computeBadges (spec 3.13)', () => {
     expect(by['streak-4'].date).toBe('2026-09-28'); // 4th counted week = W40 (the W39 holiday holds the run)
     expect(by['streak-8'].date).toBe('2026-10-26'); // 8th = W44
     expect(by['arm-ankle']).toMatchObject({ count: 3, perfId: arm1.id }); // ankle never falls on a weaker retest
-    expect(by['arm-balance']).toMatchObject({ count: 5, perfId: arm2.id }); // 31 s ≥ 30 s and hop-and-stick both legs
+    expect(by['arm-balance']).toMatchObject({ count: 5, perfId: arm2.id }); // 16 s ≥ 15 s and hop-and-stick both legs
     expect(by[`surge:${leg1.id}`]).toMatchObject({ kind: 'surge', tier: 'gold', date: '2026-11-01' });
     expect(by['expedition:a1']).toMatchObject({ kind: 'expedition', icon: '🧭', date: '2026-11-20' });
   });

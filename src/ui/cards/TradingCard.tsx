@@ -63,7 +63,14 @@ function StatCell({ s, coach }: { s: CardStat; coach: boolean }) {
           </span>
         </div>
       ) : (
-        <div className="tc-stat-value num">{s.value}</div>
+        <div className="tc-stat-value num">
+          {s.value}
+          {s.plates && (
+            <span className="tc-stat-plates" title="ARM plate levels: Ankle · Calf · Balance">
+              {s.plates}
+            </span>
+          )}
+        </div>
       )}
     </div>
   );

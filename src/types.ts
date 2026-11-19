@@ -133,15 +133,34 @@ export const PERF_KINDS: PerfKind[] = ['race', 'relay_leg', 'parkrun', 'long_run
 
 export type PerfSource = 'coach' | 'paste' | 'voice' | 'form';
 
-/** All measured on the weaker side. */
-export interface ArmMeasures {
-  /** Knee-to-wall, cm */
+/** One leg's raw ARM results (Season 0 protocol, Nov 2026). */
+export interface ArmSide {
+  /** The Lunge: toe-to-wall, cm (best of 3) */
   ankleCm?: number;
-  /** Single-leg heel raises, full range, steady tempo, capped count */
+  /** The Wall: single-leg heel raises to 60 bpm, stopped at 40 */
   calfReps?: number;
-  /** Eyes-closed single-leg stance, seconds */
+  /** The Stork: eyes-closed single-leg stance, seconds (best of 3, stopped at 30) */
   storkSec?: number;
+  /** Hop & Freeze: furthest line frozen for 3 s (80 / 100 / 120 / 140 cm; 0 = none) */
+  hopLineCm?: number;
+}
+
+/**
+ * ARM results. New records keep each leg's raw result in `left` / `right`; the engine works out the weaker
+ * side (arm.ts armEffective). Old records hold one value per measure, already the weaker side, plus a hop
+ * yes/no: those still count, used where a measure has no per-leg value.
+ */
+export interface ArmMeasures {
+  /** Knee-to-wall, cm (old single value: weaker side) */
+  ankleCm?: number;
+  /** Single-leg heel raises (old single value: weaker side) */
+  calfReps?: number;
+  /** Eyes-closed single-leg stance, seconds (old single value: weaker side) */
+  storkSec?: number;
+  /** Old hop-and-stick yes/no (both legs). Per-leg hop lines take precedence. */
   hopStickBothLegs?: boolean;
+  left?: ArmSide;
+  right?: ArmSide;
 }
 
 export interface HistoryEntry {

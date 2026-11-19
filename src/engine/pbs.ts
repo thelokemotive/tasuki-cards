@@ -7,6 +7,7 @@ import { YEAR_BANDS } from './types';
 import { daysBetween } from './dates';
 import { yearBand, yearGroupOn } from './display';
 import { formatDelta, formatKm } from './format';
+import { armWeakerValue } from './arm';
 import { byDate, counts, resolveContext, type Lookup } from './perf';
 
 /** Kinds whose time on a course is a raw course result. Relay legs and NAV runs are excluded. */
@@ -65,7 +66,7 @@ function pbEntries(p: Performance, lookup: Lookup): PbEntry[] {
   if (p.kind === 'arm') {
     const out: PbEntry[] = [];
     ARM_MEASURES.forEach((m, i) => {
-      const v = p.arm?.[m.field];
+      const v = armWeakerValue(p.arm, m.field);
       if (v != null && Number.isFinite(v) && v >= 0) out.push({ key: m.key, label: m.label, measure: 'count', value: v, sort: [3, i] });
     });
     return out;

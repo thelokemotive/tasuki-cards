@@ -15,7 +15,7 @@ Aiko Testfield 16:15
 # test: bleep | 2026-11-10
 Ben Sampleton 64 laps
 # test: arm | 2026-11-10
-Aiko Testfield ankle 11 calf 18 stork 22 hop yes
+Aiko Testfield ankle 9.5/11 calf 22/25 stork 6/9 hop 100/120
 # participation: saturday_run | 2026-11-07
 Aiko Testfield, Ben Sampleton
 # event: Chiang Mai Trail 64K | 2026-12-20 | race | 64 km | climb 2800 m
@@ -56,7 +56,8 @@ Coach Example 9:45:00
 - Descents: add `not clean` if the run was not a clean run (it is stored but never scored).
 - Navigation: add `errors <n>` (control errors) and optionally `variant <x>` and `route <n> km`.
 - Bleep test lines: `<name> <laps> laps` (or just the number).
-- ARM lines: any of `ankle <cm>`, `calf <reps>`, `stork <seconds>`, `hop yes|no`, in any order. Everything is measured on the weaker side.
+- ARM lines: any of `ankle <L>/<R>` (cm), `calf <L>/<R>` (reps), `stork <L>/<R>` (seconds), `hop <L>/<R>` (furthest line frozen: 80, 100, 120 or 140 cm; 0 = none), in any order, **left leg first**. Example: `Aiko Testfield ankle 9.5/11 calf 22/25 stork 6/9 hop 100/120`. Give both legs; the app works out the weaker side, and hop counts as passed when both legs froze at 120 cm or more (Settings → Scoring → ARM → hop gate).
+- The older form, one value per test already on the weaker side and `hop yes|no` (`ankle 11 calf 18 stork 22 hop yes`), is still read. A lone hop number (`hop 120`) is refused: give both legs.
 
 ### Names
 
