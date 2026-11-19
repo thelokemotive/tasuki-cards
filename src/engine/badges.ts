@@ -99,7 +99,7 @@ export function computeBadges(input: {
 
   const armBest = new Map<ArmDomain, { level: number; p: Performance }>();
   for (const p of mine.filter((q) => q.kind === 'arm')) {
-    const levels = armLevelsFromTest(p.arm, config);
+    const levels = armLevelsFromTest(p.arm, config, p.date);
     for (const d of ARM_DOMAINS) {
       const level = levels[d];
       if (level != null && level >= 1 && level > (armBest.get(d)?.level ?? 0)) armBest.set(d, { level, p });

@@ -178,7 +178,7 @@ function armLevelsInWindow(entries: Entry[], config: Config): { levels: ArmLevel
   const tests = entries.filter((e) => e.perf.kind === 'arm' && e.ps.feeds.includes('ARM') && e.ps.monthsOld < config.arm.windowMonths);
   const best: Partial<Record<ArmDomain, { level: number; entry: Entry }>> = {};
   for (const e of tests) {
-    const lv = armLevelsFromTest(e.perf.arm, config);
+    const lv = armLevelsFromTest(e.perf.arm, config, e.perf.date);
     for (const d of ARM_DOMAINS) {
       const l = lv[d];
       if (l == null) continue;

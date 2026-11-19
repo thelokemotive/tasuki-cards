@@ -323,7 +323,7 @@ export function scorePerformance(ctx: PerfContext, athlete: Athlete, config: Con
 
   switch (p.kind) {
     case 'arm': {
-      const levels = armLevelsFromTest(p.arm, config);
+      const levels = armLevelsFromTest(p.arm, config, p.date);
       if (levels.ankle == null && levels.calf == null && levels.balance == null) return unscored(UNSCORED.noArm);
       const score = armComplete(levels) ? armScoreClamped(levels, config) : undefined;
       return { ...base, feeds: perfFeeds(ctx, config), score, fresh: base.expired ? undefined : score, provisional: config.arm.provisional };

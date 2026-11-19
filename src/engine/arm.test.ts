@@ -35,6 +35,15 @@ describe('Armoury thresholds', () => {
     expect(armLookup().find((x) => x.arm >= cfg.avatarUnlocks.armGuards)?.sum).toBe(9);
   });
 
+  it('a test from before the Armoury, typed the old way, keeps its old levels (the new thresholds never lower it)', () => {
+    const old = { ankleCm: 5, calfReps: 30, storkSec: 22 };
+    expect(armLevelsFromTest(old, cfg, '2026-10-12')).toEqual({ ankle: 1, calf: 5, balance: 3 });
+    // The same numbers on or after the first Armoury day are read by the new levels.
+    expect(armLevelsFromTest(old, cfg, '2026-11-19')).toEqual({ ankle: 0, calf: 3, balance: 3 });
+    // An early test already typed with both legs is an Armoury test.
+    expect(armLevelsFromTest({ calfRepsL: 30, calfRepsR: 31 }, cfg, '2026-11-18')).toEqual({ calf: 3 });
+  });
+
   it('text shows both legs', () => {
     expect(armMeasuresText({ ankleCmL: 9.5, ankleCmR: 11, calfRepsL: 24, calfRepsR: 27, hopCmL: 95, hopCmR: 110 })).toBe('Lunge L9.5 R11 cm · Wall L24 R27 · Landing L95 R110 cm');
   });

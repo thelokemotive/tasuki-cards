@@ -651,7 +651,7 @@ describe('every scoring constant comes from config', () => {
     c.arm.ankleCm = [6, 8, 10, 12, 14];
     expect(armLevelsFromTest({ ankleCm: 5 }, c).ankle).toBe(0);
     expect(armLevelsFromTest({ ankleCm: 6 }, c).ankle).toBe(1);
-    expect(score(perf({ kind: 'arm', arm: { ankleCm: 5, calfReps: 18, storkSec: 22 } }), athlete(), c).score).toBeUndefined();
+    expect(score(perf({ kind: 'arm', arm: { ankleCmL: 5, ankleCmR: 5, calfReps: 18, storkSec: 22 } }), athlete(), c).score).toBeUndefined();
   });
 });
 

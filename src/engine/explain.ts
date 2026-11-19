@@ -247,7 +247,7 @@ function armWorking(d: AthleteDerived, items: Item[], stat: StatValue, config: C
       parts.push(`${plate}: not tested`);
       continue;
     }
-    const src = items.find((i) => used.has(i.perf.id) && armLevelsFromTest(i.perf.arm, config)[dom] === lvl);
+    const src = items.find((i) => used.has(i.perf.id) && armLevelsFromTest(i.perf.arm, config, i.perf.date)[dom] === lvl);
     const m = src?.perf.arm;
     const wk = armWeaker(m);
     const leg = wk.weakerLeg[dom] ? `, ${wk.weakerLeg[dom] === 'L' ? 'left' : 'right'} leg` : '';

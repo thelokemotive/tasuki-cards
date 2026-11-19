@@ -15,6 +15,21 @@ export const ARM_PLATE_NAME: Record<ArmDomain, string> = { ankle: 'Ankle', calf:
 export const ARM_TEST_NAME: Record<ArmDomain, string> = { ankle: 'The Lunge', calf: 'The Wall', balance: 'The Landing' };
 export const ARM_UNIT: Record<ArmDomain, string> = { ankle: 'cm', calf: 'reps', balance: 'cm' };
 
+/** First day of THE ARMOURY protocol. A test before this, typed the old way, is scored by the old rules. */
+export const ARMOURY_FROM = '2026-11-19';
+/** The pre-Armoury Lunge and Wall levels (the old Wall stopped at 30, so 30 meant "maxed out"). */
+export const PRE_ARMOURY_LEVELS = { ankleCm: [5, 8, 10, 12, 14], calfReps: [10, 15, 20, 25, 30] } as const;
+
+/**
+ * True when a test was done under the old protocol: dated before ARMOURY_FROM and with no left/right numbers and
+ * no Landing ladder. Such a test keeps its old levels, so the new thresholds never lower an old result.
+ */
+export function isPreArmouryTest(arm: ArmMeasures | undefined, date: string | undefined): boolean {
+  if (!arm || !date || date >= ARMOURY_FROM) return false;
+  const perLeg = [arm.ankleCmL, arm.ankleCmR, arm.calfRepsL, arm.calfRepsR, arm.hopCmL, arm.hopCmR, arm.hopCm].some((v) => v != null);
+  return !perLeg;
+}
+
 export function levelFrom(value: number | undefined, thresholds: readonly number[]): number | undefined {
   if (value == null || !Number.isFinite(value)) return undefined;
   let level = 0;
@@ -73,16 +88,18 @@ export function plateLevel(domain: ArmDomain, value: number | undefined, config:
 /**
  * Level (0–5) for each plate from one test. Undefined = not measured in this test (or only one leg).
  * Level 0 = measured but below level 1.
+ * A test from before THE ARMOURY typed the old way (see isPreArmouryTest) keeps the old Lunge and Wall levels.
  * Landing: from the hop-and-stick ladder. A legacy test with only a stork time keeps the old rule
  * (L1–L4 from eyes-closed seconds; L5 = L4 and hop-and-stick passed on both legs).
  */
-export function armLevelsFromTest(arm: ArmMeasures | undefined, config: Config): Partial<Record<ArmDomain, number>> {
+export function armLevelsFromTest(arm: ArmMeasures | undefined, config: Config, date?: string): Partial<Record<ArmDomain, number>> {
   if (!arm) return {};
   const w = armWeaker(arm);
+  const old = isPreArmouryTest(arm, date);
   const out: Partial<Record<ArmDomain, number>> = {};
-  const ankle = plateLevel('ankle', w.ankle, config);
+  const ankle = old ? levelFrom(w.ankle, PRE_ARMOURY_LEVELS.ankleCm) : plateLevel('ankle', w.ankle, config);
   if (ankle != null) out.ankle = ankle;
-  const calf = plateLevel('calf', w.calf, config);
+  const calf = old ? levelFrom(w.calf, PRE_ARMOURY_LEVELS.calfReps) : plateLevel('calf', w.calf, config);
   if (calf != null) out.calf = calf;
   if (w.hop != null) {
     out.balance = plateLevel('balance', w.hop, config);

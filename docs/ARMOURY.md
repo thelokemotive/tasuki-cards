@@ -20,6 +20,7 @@ It is **not** an injury test. It does not predict injury, and a high ARM does no
 - **Below level 1 on any plate: ARM stays locked**, and that plate is the pupil's target. Nothing is manufactured.
 - **ARM = round(40 + (sum of the three levels − 3) × 59 ÷ 12)**: 3→40 · 4→45 · 5→50 · 6→55 · 7→60 · 8→65 · 9→70 · 10→74 · 11→79 · 12→84 · 13→89 · 14→94 · 15→99.
 - **Best level per plate from the last 12 months.** A bad retest never lowers ARM. Tests drop out after 12 months.
+- **Tests from before 19 Nov 2026 keep the old levels** (Lunge 5–14 cm, Wall 10–30 reps, the Stork rule). The new thresholds never lower an old result.
 - Avatar unlocks: **Ankle guards at 70 (9 levels)**. **Armour Glow at 89 (13 levels)**. (The config value is 85; on the lookup the first score at or above 85 is 89, so the posters say 89.)
 
 ## Why these tests and these numbers (the decisions)

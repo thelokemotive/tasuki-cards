@@ -554,7 +554,12 @@ export function evidenceMigration(configs: Config[] | undefined, createdAt: stri
  * A stored version from before the evidence rules is read with them off, so its ratings can be reproduced.
  * (withDefaults would otherwise fill the new keys with today's defaults.)
  */
-function legacyRules(c: Partial<Config>): Partial<Config> {
+function legacyRules(stored: Partial<Config>): Partial<Config> {
+  // Versions from before the race rule in the 5K prediction (18 Nov 2026) are read with it off.
+  const c: Partial<Config> =
+    stored.predict?.raceOnlyRuledOutByLonger === undefined
+      ? { ...stored, predict: { ...DEFAULT_PREDICT_VALUES, ...stored.predict, raceOnlyRuledOutByLonger: false } }
+      : stored;
   // Versions from before the engagement rules (Nov 2026) are read with them off, likewise.
   const engaged: Partial<Config> =
     c.ovr && c.ovr.newStatNeverCosts === undefined
@@ -585,6 +590,23 @@ export function engagementMigration(configs: Config[] | undefined, createdAt: st
   draft.streak.treadmillCounts = true;
   draft.treadmill.feedsEnd = true;
   return { ...nextConfigVersion(cur, draft, createdAt, ENGAGEMENT_NOTE), migration: ENGAGEMENT_MIGRATION };
+}
+
+/** Marks the version in which a short result can no longer rule out an official race in the 5K prediction. */
+export const RACE_ANCHOR_MIGRATION = 'race-anchor-2026-11';
+export const RACE_ANCHOR_NOTE = '5K prediction: only a result at least as long can mark an official race as not a full effort';
+
+/** One-off, as engagementMigration: switches the race rule on in a new version, once, for a store made before it. */
+export function raceAnchorMigration(configs: Config[] | undefined, createdAt: string): Config | undefined {
+  if (!configs || configs.length === 0) return undefined;
+  if (configs.some((c) => c.migration === RACE_ANCHOR_MIGRATION)) return undefined;
+  const on = (c: Config) => c.predict.raceOnlyRuledOutByLonger;
+  const first = withDefaults(configs.reduce((a, b) => (b.version < a.version ? b : a)));
+  const cur = currentConfig(configs);
+  if (on(first) || on(cur)) return undefined;
+  const draft = cloneConfig(cur);
+  draft.predict.raceOnlyRuledOutByLonger = true;
+  return { ...nextConfigVersion(cur, draft, createdAt, RACE_ANCHOR_NOTE), migration: RACE_ANCHOR_MIGRATION };
 }
 
 /** Marks the version that brought in THE ARMOURY battery (Lunge, Wall, Landing ladder; both legs kept). */
