@@ -121,7 +121,7 @@ export function armHowWorkedOut(config: Config): { lines: string[]; lookup: { su
       'Add your three levels. 3 → ARM 40, 15 → ARM 99. You need at least level 1 on every plate to unlock ARM.',
       `The best level on each plate from the last ${config.arm.windowMonths} months counts, so a bad day never lowers your ARM.`,
       config.arm.interim.enabled
-        ? `Tested before the Throne existed? Your control level may be an interim T${config.arm.interim.level} from the hop (both legs past ${config.arm.interim.hopCm} cm). It is marked *, and your first Throne test replaces it, up or down.`
+        ? `Tested before the Throne existed? Your control level may be an interim one from the hop on your weaker leg (${[config.arm.interim.hopCm, ...config.arm.interim.steps].map((cm, i) => `${cm} cm → T${Math.min(4, config.arm.interim.level + i)}`).join(', ')}). It is marked *, and your first Throne test replaces it, up or down. T5 needs the Throne itself.`
         : '',
     ].filter(Boolean),
     lookup,

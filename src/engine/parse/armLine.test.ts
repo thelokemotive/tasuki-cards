@@ -64,7 +64,7 @@ const athlete = (id: string, given: string, family: string): Athlete => ({
 
 describe('ARM import (Paste & Match path)', () => {
   const snap: DataSnapshot = { ...emptySnapshot(), configs: [cfg], athletes: [athlete('kit', 'Kit', 'Fictional'), athlete('rio', 'Rio', 'Placeholder')] };
-  const text = '# test: arm | 2026-11-19 | note Season 0, trio sheets\nKit Fictional ankle 12/9 calf 75/75 hop 215/185 height 181\nRio Placeholder ankle 8/9 calf 30/26 throne 2/3';
+  const text = '# test: arm | 2026-11-19 | note Season 0, trio sheets\nKit Fictional ankle 12/9 calf 75/75 hop 150/135 height 181\nRio Placeholder ankle 8/9 calf 30/26 throne 2/3';
   it('matches, saves per-leg records stamped with the protocol, the event note and the height', () => {
     const plan = buildImportPlan(text, { snapshot: snap, config: cfg, today: '2026-11-19' });
     expect(plan.rows.map((r) => [r.athleteId, r.status])).toEqual([
@@ -75,7 +75,7 @@ describe('ARM import (Paste & Match path)', () => {
     expect(summary).toMatchObject({ performances: 2, newEvents: 1 });
     expect(changes.put!.events![0]).toMatchObject({ name: 'ARM tests', kind: 'test', notes: 'Season 0, trio sheets' });
     const kit = changes.put!.performances!.find((p) => p.athleteId === 'kit')!;
-    expect(kit).toMatchObject({ verified: true, arm: { left: { ankleCm: 12, calfReps: 75, hopCm: 215 }, right: { ankleCm: 9, calfReps: 75, hopCm: 185 }, protocol: 'ARM-S0-v2' } });
+    expect(kit).toMatchObject({ verified: true, arm: { left: { ankleCm: 12, calfReps: 75, hopCm: 150 }, right: { ankleCm: 9, calfReps: 75, hopCm: 135 }, protocol: 'ARM-S0-v2' } });
     expect(changes.put!.performances!.find((p) => p.athleteId === 'rio')!.arm).toMatchObject({ throneSeatsCm: [61, 51, 42, 30.5, 19.5] });
     expect(changes.put!.athletes).toEqual([expect.objectContaining({ id: 'kit', heightCm: 181, heightMeasuredOn: '2026-11-19' })]);
 

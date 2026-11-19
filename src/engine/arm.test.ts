@@ -89,7 +89,7 @@ describe('Season 0 thresholds', () => {
 
 describe('interim control level from the hop (tested before the Throne existed)', () => {
   it('both hops at least 120 cm → interim T2; the stork earns nothing', () => {
-    const d = armTestDetail({ left: { hopCm: 215, storkSec: 30 }, right: { hopCm: 185, storkSec: 44 } }, cfg);
+    const d = armTestDetail({ left: { hopCm: 150, storkSec: 30 }, right: { hopCm: 135, storkSec: 44 } }, cfg);
     expect(d.levels.control).toBe(2);
     expect(d.interim).toBe(true);
   });
@@ -99,13 +99,13 @@ describe('interim control level from the hop (tested before the Throne existed)'
   });
   it('a full Season 0 test with no Throne: unlocks ARM, marked provisional', () => {
     // ankle 12/9 → 9 cm L2; calf 150/90 reps → 90, L5; hop 215/185 → interim T2. 2 + 5 + 2 = 9 → 69.5 → 70.
-    const r = rate([arm({ left: { ankleCm: 12, calfReps: 150, hopCm: 215 }, right: { ankleCm: 9, calfReps: 90, hopCm: 185 } })]);
+    const r = rate([arm({ left: { ankleCm: 12, calfReps: 150, hopCm: 150 }, right: { ankleCm: 9, calfReps: 90, hopCm: 135 } })]);
     expect(r.arm).toMatchObject({ ankle: 2, calf: 5, control: 2, controlInterim: true, missing: [] });
     expect(r.stats.ARM).toMatchObject({ locked: false, value: 70, provisional: true });
     expect(plateLine(r.arm, cfg)).toBe('A2 · C5 · T2');
   });
   it('any Throne result in the window replaces it, even a lower one', () => {
-    const first = arm({ left: { ankleCm: 12, calfReps: 75, hopCm: 215 }, right: { ankleCm: 9, calfReps: 75, hopCm: 185 } }, { date: '2026-11-19' });
+    const first = arm({ left: { ankleCm: 12, calfReps: 75, hopCm: 150 }, right: { ankleCm: 9, calfReps: 75, hopCm: 135 } }, { date: '2026-11-19' });
     const throne = arm({ left: { throne: 1 }, right: { throne: 2 } }, { date: '2026-12-01' });
     const r = rate([first, throne], cfg, '2026-12-02');
     expect(r.arm).toMatchObject({ control: 1, missing: [] });
@@ -113,19 +113,19 @@ describe('interim control level from the hop (tested before the Throne existed)'
     expect(r.stats.ARM).toMatchObject({ value: 65, provisional: false }); // 2 + 5 + 1 = 8
   });
   it('expires after 6 months without a Throne test', () => {
-    const t = arm({ left: { ankleCm: 12, calfReps: 75, hopCm: 215 }, right: { ankleCm: 9, calfReps: 75, hopCm: 185 } }, { date: '2026-11-19' });
+    const t = arm({ left: { ankleCm: 12, calfReps: 75, hopCm: 150 }, right: { ankleCm: 9, calfReps: 75, hopCm: 135 } }, { date: '2026-11-19' });
     expect(rate([t], cfg, '2027-05-18').stats.ARM.locked).toBe(false);
     const later = rate([t], cfg, '2027-05-20');
     expect(later.stats.ARM).toMatchObject({ locked: true, unlockHint: 'Do the Throne' });
   });
   it('never earns a permanent badge', () => {
-    const t = arm({ left: { ankleCm: 12, calfReps: 75, hopCm: 215 }, right: { ankleCm: 9, calfReps: 75, hopCm: 185 } });
+    const t = arm({ left: { ankleCm: 12, calfReps: 75, hopCm: 150 }, right: { ankleCm: 9, calfReps: 75, hopCm: 135 } });
     const badges = computeBadges({ athlete: kit, perfs: [t], lookup, config: cfg, asOf: AS_OF, streak: { currentStreak: 0, bestStreak: 0, weeks: [], holidayBonusFlames: 0 } as never, surges: [], courseRecords: [], achievements: [] });
     expect(badges.map((b) => b.key)).toEqual(['arm-ankle', 'arm-calf']);
   });
   it('can be switched off in config', () => {
     const off = withDefaults({ ...cfg, arm: { ...cfg.arm, interim: { ...cfg.arm.interim, enabled: false } } });
-    expect(armLevelsFromTest({ left: { hopCm: 215 }, right: { hopCm: 185 } }, off).control).toBeUndefined();
+    expect(armLevelsFromTest({ left: { hopCm: 150 }, right: { hopCm: 135 } }, off).control).toBeUndefined();
   });
 });
 
@@ -208,13 +208,13 @@ describe('records and wording', () => {
     expect(stampArm({ ankleCm: 10 }, preArmS0Rules(cfg))).toEqual({ ankleCm: 10 });
   });
   it('summarises a test leg by leg', () => {
-    expect(armSummary({ left: { ankleCm: 12, calfReps: 40, hopCm: 215 }, right: { ankleCm: 9, calfReps: 40, hopCm: 185 } })).toBe('ankle 12/9 cm · calf 40/40 · hop 215/185 cm');
+    expect(armSummary({ left: { ankleCm: 12, calfReps: 40, hopCm: 150 }, right: { ankleCm: 9, calfReps: 40, hopCm: 135 } })).toBe('ankle 12/9 cm · calf 40/40 · hop 150/135 cm');
   });
   it('"Why?" shows both legs, the cap and the interim rule', () => {
     const s = emptySnapshot();
     s.configs = [cfg];
     s.athletes = [kit];
-    s.performances = [arm({ left: { ankleCm: 12, calfReps: 150, hopCm: 215 }, right: { ankleCm: 9, calfReps: 190, hopCm: 185 } })];
+    s.performances = [arm({ left: { ankleCm: 12, calfReps: 150, hopCm: 150 }, right: { ankleCm: 9, calfReps: 190, hopCm: 135 } })];
     const derived = deriveAll(s, AS_OF);
     const e = explainStat(derived.athletes.get('a-kit')!, 'ARM', derived.config, derived.lookup);
     const t = e.paragraphs.join(' ');
@@ -275,5 +275,22 @@ describe('armCalfMigration (calf rescaled after the first two groups)', () => {
     expect(armCalfMigration([first, v2], '2026-11-20T00:00:00.000Z')).toBeUndefined();
     const edited = { ...first, arm: { ...first.arm, calfReps: [12, 20, 30, 40, 50] as Config['arm']['calfReps'] } };
     expect(armCalfMigration([edited], '2026-11-19T00:00:00.000Z')).toBeUndefined();
+  });
+});
+
+describe('the hop ladder for interim control (L6, before the Throne)', () => {
+  const lv = (l: number, r: number) => armTestDetail({ left: { hopCm: l }, right: { hopCm: r } }, cfg).levels.control;
+  it('weaker leg ≥ 120 → T2, ≥ 160 → T3, ≥ 180 → T4; never T5 from a hop', () => {
+    expect([lv(119, 200), lv(120, 150), lv(146, 153), lv(164, 176), lv(183, 178), lv(215, 185), lv(300, 300)]).toEqual([undefined, 2, 2, 3, 3, 4, 4]);
+  });
+  it('a store with a flat interim level gets the ladder once; older versions keep the flat level', async () => {
+    const { armLadderMigration, ARM_LADDER_MIGRATION } = await import('./config');
+    const flat = JSON.parse(JSON.stringify(DEFAULT_CONFIG)) as Config;
+    delete (flat.arm.interim as Partial<Config['arm']['interim']>).steps;
+    expect(withDefaults(flat).arm.interim.steps).toEqual([]);
+    expect(armLevelsFromTest({ left: { hopCm: 215 }, right: { hopCm: 185 } }, withDefaults(flat)).control).toBe(2);
+    const v2 = armLadderMigration([flat], '2026-11-19T12:00:00.000Z')!;
+    expect(v2).toMatchObject({ migration: ARM_LADDER_MIGRATION, arm: { interim: { steps: [160, 180] } } });
+    expect(armLadderMigration([flat, v2], '2026-11-20T00:00:00.000Z')).toBeUndefined();
   });
 });

@@ -119,7 +119,10 @@ export function armTestDetail(arm: ArmMeasures | undefined, config: Config, opts
   if (out.control.value != null) {
     out.levels.control = Math.max(0, Math.min(5, Math.floor(out.control.value)));
   } else if (opts.interim !== false && a.interim.enabled && hopsPass(arm, a.interim.hopCm)) {
-    out.levels.control = Math.max(0, Math.min(5, a.interim.level));
+    // The hop ladder: each further step the weaker leg reaches adds a level, never above T4 (T5 needs the Throne).
+    const weaker = out.hop.value ?? 0;
+    const extra = (a.interim.steps ?? []).filter((cm) => finite(cm) && weaker >= cm).length;
+    out.levels.control = Math.max(0, Math.min(4, a.interim.level + extra));
     out.interim = true;
   }
   return out;
