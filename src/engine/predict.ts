@@ -40,6 +40,13 @@ export interface PredictConfig {
   maturationPctByAge: Record<Sex, Record<number, number>>;
   /** A projection this % slower than the fastest is treated as not a full effort (listed, not used). */
   notFullEffortPct: number;
+  /**
+   * An official race (a race or relay leg at an official event) is a full effort: only a result at least as long
+   * can mark it "not a full effort". A shorter result (a 1500 m, a 2 km time trial) projects to 5 km with a wide
+   * margin of error and must not throw out a real race. Off: every race is judged against the fastest projection
+   * from 1.5 km or more (the rule before 18 Nov 2026).
+   */
+  raceOnlyRuledOutByLonger: boolean;
   /** Confidence level of the interval (0.9 = 90%). */
   confidence: number;
   /** Training tier for targets: 'pe' (PE only), 'intro' (2 sessions/week), 'club' (3–4), 'academy' (5–6). */
@@ -67,6 +74,7 @@ export const DEFAULT_PREDICT: PredictConfig = {
     F: { 11: 2.1, 12: 1.2, 13: 0.3, 14: 0.0, 15: 0.2, 16: 0.3, 17: 0.2, 18: 0.1 },
   },
   notFullEffortPct: 12,
+  raceOnlyRuledOutByLonger: true,
   confidence: 0.9,
   trainingTier: 'club',
   termTrainingPct: {
@@ -143,6 +151,8 @@ export interface PredictionSource {
   /** Uncertainty (SD of log time) and the resulting weight. */
   sigma: number;
   weight: number;
+  /** A race or relay leg at an official event. */
+  officialRace?: boolean;
   used: boolean;
   /** Why not used, or the share of the estimate. */
   note: string;
@@ -209,7 +219,8 @@ export function predictFiveK(athlete: Athlete, perfs: Performance[], lookup: Loo
     const sigma = Math.sqrt(
       (cfg.sigmaPerLogDistance * Math.abs(Math.log(cfg.targetKm / km))) ** 2 + (cfg.sigmaByKind[p.kind] ?? 0.03) ** 2 + (official ? 0 : cfg.sigmaUnofficial) ** 2 + (cfg.sigmaPerYear * years) ** 2,
     );
-    sources.push({ perfId: p.id, date: p.date, label: labelOf(ctx), km, timeSec: p.timeSec, age, exponent: b, fiveKThen, growthPct, fiveKNow, sigma, weight: 1 / sigma ** 2, used: true, note: '' });
+    const officialRace = official && (p.kind === 'race' || p.kind === 'relay_leg');
+    sources.push({ perfId: p.id, date: p.date, label: labelOf(ctx), km, timeSec: p.timeSec, age, exponent: b, fiveKThen, growthPct, fiveKNow, sigma, weight: 1 / sigma ** 2, officialRace, used: true, note: '' });
   }
   if (!sources.length) return undefined;
 
@@ -219,10 +230,15 @@ export function predictFiveK(athlete: Athlete, perfs: Performance[], lookup: Loo
   // sprint projects to 5 km with a wide margin of error, and must not throw out a real 5 km as "a jog".
   const anchors = sources.filter((s) => s.km >= 1.5);
   const fastest = Math.min(...(anchors.length ? anchors : sources).map((s) => s.fiveKNow));
+  // An official race is a full effort: only a result at least as long can call it a jog. It is judged against the
+  // fastest projection from results of its own distance or longer (itself included, so it is never ruled out alone).
+  const yardstickFor = (s: PredictionSource) =>
+    cfg.raceOnlyRuledOutByLonger && s.officialRace ? Math.min(...sources.filter((t) => t.km >= s.km - 0.05).map((t) => t.fiveKNow)) : fastest;
   for (const s of sources) {
-    if (s.fiveKNow > fastest * (1 + cfg.notFullEffortPct / 100)) {
+    const yard = yardstickFor(s);
+    if (s.fiveKNow > yard * (1 + cfg.notFullEffortPct / 100)) {
       s.used = false;
-      s.note = `${Math.round((s.fiveKNow / fastest - 1) * 100)}% slower than the best projection: probably not a full effort`;
+      s.note = `${Math.round((s.fiveKNow / yard - 1) * 100)}% slower than the best projection${s.officialRace && cfg.raceOnlyRuledOutByLonger ? ' from a race this long or longer' : ''}: probably not a full effort`;
     }
   }
   const used = sources.filter((s) => s.used);
@@ -281,6 +297,10 @@ export function explainPrediction(pr: Prediction, name: string, cfg: PredictConf
       ? `Next 5 km targets: ${name} has already run ${formatTime(pr.best5kSec!)} for 5 km, faster than today's prediction, so the realistic target is to get back to that PB, and the stretch target beats it by ${pr.stretchPct.toFixed(1)}% (${formatTime(pr.stretchSec)}).`
       : `Next 5 km targets (about one term of training): realistic ${formatTime(pr.realisticSec)} (${pr.realisticPct.toFixed(1)}% faster: growth plus what a typical runner gains in a term), stretch ${formatTime(pr.stretchSec)} (${pr.stretchPct.toFixed(1)}% faster: what the most consistent fifth of runners gain).`,
   ];
-  if (pr.sources.some((s) => !s.used)) out.push('Results much slower than the rest are treated as not a full effort and left out (a jog with a friend is not a race).');
+  if (pr.sources.some((s) => !s.used)) {
+    out.push(
+      `Results much slower than the rest are treated as not a full effort and left out (a jog with a friend is not a race).${cfg.raceOnlyRuledOutByLonger ? ' A race is only compared with results at least as long: a fast short time trial cannot rule out a real race.' : ''}`,
+    );
+  }
   return out;
 }

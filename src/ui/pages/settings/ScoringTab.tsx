@@ -43,6 +43,7 @@ const SECTION_LABELS: Record<string, string> = {
 const HELP: Record<string, string> = {
   'ageGrade.subMile': 'How standards are set below 1 mile, where the road tables stop.',
   'ovr.newStatNeverCosts': 'On: a stat with fewer than “new stat results” results counts in the OVR only when it lifts it, so a first try is never a loss.',
+  'predict.raceOnlyRuledOutByLonger': 'On: an official race is marked “not a full effort” only by a faster result at least as long, never by a short time trial.',
   'ovr.newStatResults': 'Results after which a stat always counts in the OVR (2 = only a first try is optional).',
   'streak.treadmillCounts': 'A verified treadmill session keeps the week in the streak, like a Circuit run.',
   'treadmill.kmMilestones': 'Treadmill km club badges, by total verified treadmill km.',

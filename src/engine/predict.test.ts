@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Athlete, Performance } from '../types';
-import { DEFAULT_CONFIG } from './config';
+import { cloneConfig, currentConfig, DEFAULT_CONFIG, RACE_ANCHOR_MIGRATION, RACE_ANCHOR_NOTE, raceAnchorMigration, withDefaults, type Config } from './config';
 import { makeLookup } from './perf';
 import { DEFAULT_PREDICT, exponentFor, maturationBetween, predictFiveK, shortSourcePenalty, explainPrediction } from './predict';
 
@@ -70,5 +70,74 @@ describe('a fast short time trial cannot throw out a real 5 km', () => {
   it('a jogged 5 km is still left out when there is a faster one', () => {
     const pr = predictFiveK(ath, [perf({ kind: 'parkrun', distanceKm: 5, timeSec: 1290, date: '2026-10-10' }), perf({ kind: 'parkrun', distanceKm: 5, timeSec: 1600, date: '2026-10-17' })], lk, cfg, '2026-11-16')!;
     expect(pr.sources.filter((s) => s.used)).toHaveLength(1);
+  });
+});
+
+describe('a shorter result cannot rule out an official race (18 Nov 2026)', () => {
+  // A fast 2 km time trial (unofficial) and a 5 km cross-country race on a hilly course whose climb was not recorded.
+  const tt = { id: 'ev-tt', name: '2 km time trial', date: '2026-10-20', kind: 'time_trial', official: false } as const;
+  const xc = { id: 'ev-xc', name: 'Prefectural XC', date: '2026-10-25', kind: 'race', official: true } as const;
+  const lkEv = makeLookup([], [tt, xc]);
+  const runs = () => [perf({ eventId: 'ev-tt', distanceKm: 2, timeSec: 360, date: '2026-10-20' }), perf({ eventId: 'ev-xc', distanceKm: 5, timeSec: 1170, date: '2026-10-25' })];
+  const off = (() => {
+    const c = cloneConfig(cfg);
+    c.predict.raceOnlyRuledOutByLonger = false;
+    return c;
+  })();
+
+  it('the race is kept and carries the estimate; under the old rule the time trial threw it out', () => {
+    const before = predictFiveK(ath, runs(), lkEv, off, '2026-11-16')!;
+    expect(before.sources.find((s) => s.officialRace)?.used).toBe(false);
+    const now = predictFiveK(ath, runs(), lkEv, cfg, '2026-11-16')!;
+    expect(now.sources.every((s) => s.used)).toBe(true);
+    const race = now.sources.find((s) => s.officialRace)!;
+    expect(race.weight).toBeGreaterThan(now.sources.find((s) => !s.officialRace)!.weight * 4);
+    expect(now.predictedSec).toBeGreaterThan(before.predictedSec);
+    // The two disagree, so the interval is wider than the race alone would give.
+    const raceOnly = predictFiveK(ath, [runs()[1]], lkEv, cfg, '2026-11-16')!;
+    expect(now.plusMinusPct).toBeGreaterThan(raceOnly.plusMinusPct);
+  });
+
+  it('a faster race at least as long still rules a slow race out', () => {
+    const pr = predictFiveK(ath, [...runs(), perf({ distanceKm: 5, timeSec: 1000, date: '2026-11-01' })], lkEv, cfg, '2026-11-16')!;
+    const slow = pr.sources.find((s) => s.timeSec === 1170)!;
+    expect(slow.used).toBe(false);
+    expect(slow.note).toMatch(/from a race this long or longer: probably not a full effort/);
+  });
+
+  it('a parkrun is not a race: a jogged one is still ruled out by a shorter, faster result', () => {
+    const pr = predictFiveK(ath, [perf({ distanceKm: 3, timeSec: 600, date: '2026-10-20' }), perf({ kind: 'parkrun', distanceKm: 5, timeSec: 1500, date: '2026-10-25' })], lk, cfg, '2026-11-16')!;
+    expect(pr.sources.find((s) => s.km === 5)?.used).toBe(false);
+  });
+
+  it('the explanation says so when a result is left out', () => {
+    const pr = predictFiveK(ath, [...runs(), perf({ distanceKm: 5, timeSec: 1000, date: '2026-11-01' })], lkEv, cfg, '2026-11-16')!;
+    expect(explainPrediction(pr, 'Aiko', cfg.predict).join(' ')).toMatch(/cannot rule out a real race/);
+    expect(explainPrediction(pr, 'Aiko', off.predict).join(' ')).not.toMatch(/cannot rule out a real race/);
+  });
+});
+
+describe('the race-anchor config version', () => {
+  it('arrives once, as its own version, for a store made before it; the older version is read with the rule off', () => {
+    const stored = { ...JSON.parse(JSON.stringify(cfg)), version: 5 } as Config;
+    delete (stored.predict as Partial<Config['predict']>).raceOnlyRuledOutByLonger;
+    expect(withDefaults(stored).predict.raceOnlyRuledOutByLonger).toBe(false);
+    // Reading the old version reproduces its prediction.
+    const tt = { id: 'ev-tt', name: '2 km time trial', date: '2026-10-20', kind: 'time_trial', official: false } as const;
+    const lkEv = makeLookup([], [tt]);
+    const runs = [perf({ eventId: 'ev-tt', distanceKm: 2, timeSec: 360, date: '2026-10-20' }), perf({ distanceKm: 5, timeSec: 1170, date: '2026-10-25' })];
+    expect(predictFiveK(ath, runs, lkEv, withDefaults(stored), '2026-11-16')!.sources.filter((s) => s.used)).toHaveLength(1);
+    const v6 = raceAnchorMigration([stored], '2026-11-18T00:00:00.000Z')!;
+    expect(v6).toMatchObject({ version: 6, note: RACE_ANCHOR_NOTE, migration: RACE_ANCHOR_MIGRATION });
+    expect(v6.predict.raceOnlyRuledOutByLonger).toBe(true);
+    expect(currentConfig([stored, v6]).predict.raceOnlyRuledOutByLonger).toBe(true);
+    expect(predictFiveK(ath, runs, lkEv, currentConfig([stored, v6]), '2026-11-16')!.sources.every((s) => s.used)).toBe(true);
+    expect(raceAnchorMigration([stored, v6], 'later')).toBeUndefined();
+  });
+  it('a new store starts with the rule on and needs no migration; a coach who switches it off keeps that', () => {
+    expect(raceAnchorMigration([cfg], 'x')).toBeUndefined();
+    const offLater = { ...cloneConfig(cfg), version: 2 };
+    offLater.predict.raceOnlyRuledOutByLonger = false;
+    expect(raceAnchorMigration([cfg, offLater], 'x')).toBeUndefined();
   });
 });
