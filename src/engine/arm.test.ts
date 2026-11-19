@@ -63,12 +63,12 @@ describe('Season 0 thresholds', () => {
   it('ankle unchanged: L1 ≥ 5, L2 ≥ 8, L3 ≥ 10, L4 ≥ 12, L5 ≥ 14 cm', () => {
     expect([4.9, 5, 8, 10, 12, 14].map((ankleCm) => armLevelsFromTest({ ankleCm }, cfg).ankle)).toEqual([0, 1, 2, 3, 4, 5]);
   });
-  it('calf one level harder: L1 ≥ 15, L2 ≥ 20, L3 ≥ 25, L4 ≥ 30, L5 ≥ 35 reps', () => {
-    expect([14, 15, 20, 25, 30, 35].map((calfReps) => armLevelsFromTest({ calfReps }, cfg).calf)).toEqual([0, 1, 2, 3, 4, 5]);
+  it('calf (rescaled after the first two groups): L1 ≥ 15, L2 ≥ 25, L3 ≥ 35, L4 ≥ 50, L5 ≥ 70 reps', () => {
+    expect([14, 15, 25, 35, 50, 70].map((calfReps) => armLevelsFromTest({ calfReps }, cfg).calf)).toEqual([0, 1, 2, 3, 4, 5]);
   });
-  it('calf is counted up to 40 (the Wall stops there), and whole reps only', () => {
-    const d = armTestDetail({ left: { calfReps: 90 }, right: { calfReps: 50 } }, cfg);
-    expect(d.calf).toMatchObject({ value: 50, counted: 40, capped: true });
+  it('calf is counted up to 100 (the Wall stops there), and whole reps only', () => {
+    const d = armTestDetail({ left: { calfReps: 300 }, right: { calfReps: 200 } }, cfg);
+    expect(d.calf).toMatchObject({ value: 200, counted: 100, capped: true });
     expect(armTestDetail({ calfReps: 17.9 }, cfg).calf.counted).toBe(17);
   });
   it('control = the Throne level on the weaker leg, 0–5', () => {
@@ -82,7 +82,7 @@ describe('Season 0 thresholds', () => {
   it('the next level target names the seat', () => {
     expect(nextLevelTarget('control', 2, cfg)).toBe('T3 · 42 cm');
     expect(nextLevelTarget('control', 0, cfg)).toBe('T1 · 61 cm');
-    expect(nextLevelTarget('calf', 1, cfg)).toBe('20 reps');
+    expect(nextLevelTarget('calf', 1, cfg)).toBe('25 reps');
     expect(nextLevelTarget('ankle', 5, cfg)).toBeUndefined();
   });
 });
@@ -98,14 +98,14 @@ describe('interim control level from the hop (tested before the Throne existed)'
     expect(armLevelsFromTest({ left: { hopCm: 186 } }, cfg).control).toBeUndefined();
   });
   it('a full Season 0 test with no Throne: unlocks ARM, marked provisional', () => {
-    // ankle 12/9 → 9 cm L2; calf 50/90 reps → 40 counted, L5; hop 215/185 → interim T2. 2 + 5 + 2 = 9 → 69.5 → 70.
-    const r = rate([arm({ left: { ankleCm: 12, calfReps: 50, hopCm: 215 }, right: { ankleCm: 9, calfReps: 90, hopCm: 185 } })]);
+    // ankle 12/9 → 9 cm L2; calf 150/90 reps → 90, L5; hop 215/185 → interim T2. 2 + 5 + 2 = 9 → 69.5 → 70.
+    const r = rate([arm({ left: { ankleCm: 12, calfReps: 150, hopCm: 215 }, right: { ankleCm: 9, calfReps: 90, hopCm: 185 } })]);
     expect(r.arm).toMatchObject({ ankle: 2, calf: 5, control: 2, controlInterim: true, missing: [] });
     expect(r.stats.ARM).toMatchObject({ locked: false, value: 70, provisional: true });
     expect(plateLine(r.arm, cfg)).toBe('A2 · C5 · T2');
   });
   it('any Throne result in the window replaces it, even a lower one', () => {
-    const first = arm({ left: { ankleCm: 12, calfReps: 40, hopCm: 215 }, right: { ankleCm: 9, calfReps: 40, hopCm: 185 } }, { date: '2026-11-19' });
+    const first = arm({ left: { ankleCm: 12, calfReps: 75, hopCm: 215 }, right: { ankleCm: 9, calfReps: 75, hopCm: 185 } }, { date: '2026-11-19' });
     const throne = arm({ left: { throne: 1 }, right: { throne: 2 } }, { date: '2026-12-01' });
     const r = rate([first, throne], cfg, '2026-12-02');
     expect(r.arm).toMatchObject({ control: 1, missing: [] });
@@ -113,13 +113,13 @@ describe('interim control level from the hop (tested before the Throne existed)'
     expect(r.stats.ARM).toMatchObject({ value: 65, provisional: false }); // 2 + 5 + 1 = 8
   });
   it('expires after 6 months without a Throne test', () => {
-    const t = arm({ left: { ankleCm: 12, calfReps: 40, hopCm: 215 }, right: { ankleCm: 9, calfReps: 40, hopCm: 185 } }, { date: '2026-11-19' });
+    const t = arm({ left: { ankleCm: 12, calfReps: 75, hopCm: 215 }, right: { ankleCm: 9, calfReps: 75, hopCm: 185 } }, { date: '2026-11-19' });
     expect(rate([t], cfg, '2027-05-18').stats.ARM.locked).toBe(false);
     const later = rate([t], cfg, '2027-05-20');
     expect(later.stats.ARM).toMatchObject({ locked: true, unlockHint: 'Do the Throne' });
   });
   it('never earns a permanent badge', () => {
-    const t = arm({ left: { ankleCm: 12, calfReps: 40, hopCm: 215 }, right: { ankleCm: 9, calfReps: 40, hopCm: 185 } });
+    const t = arm({ left: { ankleCm: 12, calfReps: 75, hopCm: 215 }, right: { ankleCm: 9, calfReps: 75, hopCm: 185 } });
     const badges = computeBadges({ athlete: kit, perfs: [t], lookup, config: cfg, asOf: AS_OF, streak: { currentStreak: 0, bestStreak: 0, weeks: [], holidayBonusFlames: 0 } as never, surges: [], courseRecords: [], achievements: [] });
     expect(badges.map((b) => b.key)).toEqual(['arm-ankle', 'arm-calf']);
   });
@@ -188,7 +188,7 @@ describe('armS0Migration', () => {
     const v1 = stored();
     const v2 = armS0Migration([v1], '2026-11-19T00:00:00.000Z')!;
     expect(v2).toMatchObject({ version: 2, migration: ARM_S0_MIGRATION });
-    expect(v2.arm).toMatchObject({ calfReps: [15, 20, 25, 30, 35], plate3: 'control', calfRepCap: 40, ankleCm: [5, 8, 10, 12, 14] });
+    expect(v2.arm).toMatchObject({ calfReps: [15, 25, 35, 50, 70], plate3: 'control', calfRepCap: 100, ankleCm: [5, 8, 10, 12, 14] });
     expect(currentConfig([v1, v2]).arm.plate3).toBe('control');
     expect(armS0Migration([v1, v2], '2026-11-20T00:00:00.000Z')).toBeUndefined();
   });
@@ -214,12 +214,12 @@ describe('records and wording', () => {
     const s = emptySnapshot();
     s.configs = [cfg];
     s.athletes = [kit];
-    s.performances = [arm({ left: { ankleCm: 12, calfReps: 50, hopCm: 215 }, right: { ankleCm: 9, calfReps: 90, hopCm: 185 } })];
+    s.performances = [arm({ left: { ankleCm: 12, calfReps: 150, hopCm: 215 }, right: { ankleCm: 9, calfReps: 190, hopCm: 185 } })];
     const derived = deriveAll(s, AS_OF);
     const e = explainStat(derived.athletes.get('a-kit')!, 'ARM', derived.config, derived.lookup);
     const t = e.paragraphs.join(' ');
     expect(t).toContain('ankle level 2 (left 12, right 9 → weaker 9 cm');
-    expect(t).toContain('counted as 40 (the Wall stops at 40)');
+    expect(t).toContain('counted as 100 (the Wall stops at 100)');
     expect(t).toContain('interim level 2 from the hop');
     expect(t).not.toMatch(/undefined|NaN/);
   });
@@ -235,7 +235,7 @@ describe('the Armour guide', () => {
     const { plateAdvice } = await import('./armGuide');
     const a = plateAdvice({ ankle: 2, calf: 1, control: 2, controlInterim: true, missing: [] }, cfg);
     expect(a.map((x) => x.domain)).toEqual(['calf', 'ankle', 'control']);
-    expect(a[0].next).toBe('Next: 20 reps (level 2)');
+    expect(a[0].next).toBe('Next: 25 reps (level 2)');
     expect(a[2]).toMatchObject({ interim: true, next: 'Next: T3 · 42 cm' });
   });
 });
@@ -260,6 +260,20 @@ describe('records and config versions from the 18 Nov 2026 build (Stork + Hop & 
   });
   it('the Season 0 migration moves such a store to the Throne', () => {
     const v2 = armS0Migration([nov18()], '2026-11-19T00:00:00.000Z')!;
-    expect(v2.arm).toMatchObject({ plate3: 'control', calfReps: [15, 20, 25, 30, 35] });
+    expect(v2.arm).toMatchObject({ plate3: 'control', calfReps: [15, 25, 35, 50, 70] });
+  });
+});
+
+describe('armCalfMigration (calf rescaled after the first two groups)', () => {
+  it('moves a store on the first Season 0 calf scale, once; hand-edited numbers are kept', async () => {
+    const { armCalfMigration, ARM_CALF_MIGRATION } = await import('./config');
+    const first = JSON.parse(JSON.stringify(DEFAULT_CONFIG)) as Config;
+    first.arm.calfReps = [15, 20, 25, 30, 35];
+    first.arm.calfRepCap = 40;
+    const v2 = armCalfMigration([first], '2026-11-19T00:00:00.000Z')!;
+    expect(v2).toMatchObject({ version: 2, migration: ARM_CALF_MIGRATION, arm: { calfReps: [15, 25, 35, 50, 70], calfRepCap: 100 } });
+    expect(armCalfMigration([first, v2], '2026-11-20T00:00:00.000Z')).toBeUndefined();
+    const edited = { ...first, arm: { ...first.arm, calfReps: [12, 20, 30, 40, 50] as Config['arm']['calfReps'] } };
+    expect(armCalfMigration([edited], '2026-11-19T00:00:00.000Z')).toBeUndefined();
   });
 });

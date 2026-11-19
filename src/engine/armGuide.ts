@@ -61,7 +61,7 @@ export function plateGuides(config: Config): PlateGuide[] {
       plate: 'CALF',
       test: 'The Wall',
       icon: '🦵',
-      measures: 'How many full heel raises one leg can do in time with a 60 bpm beat: strength and stamina in your calf and Achilles.',
+      measures: 'How many full heel raises one leg can do in time with a 60 bpm beat: strength and stamina in your calf and Achilles. Every rep goes all the way up (head touches the shelf) and all the way down. Tiny bounces do not count.',
       trail: [
         'Your calf pushes you off the ground on every step, thousands of times a run, and it works harder uphill.',
         'When your calves tire, your stride gets short and sloppy at the end of a race, just when the last climb comes.',

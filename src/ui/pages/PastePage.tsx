@@ -1,6 +1,6 @@
 // Paste-and-Match (spec 4.2–4.4): paste or dictate → review table → approve. Nothing commits before approval.
 import './paste.css';
-import { useDeferredValue, useMemo, useRef, useState, type DragEvent } from 'react';
+import { useDeferredValue, useEffect, useMemo, useRef, useState, type DragEvent } from 'react';
 import { decodeText, droppedKind, readXlsxSheets } from '../../engine/parse/xlsx';
 import { wholeSchoolToTable } from '../../engine/parse/wholeSchool';
 import type { PerfKind } from '../../types';
@@ -9,7 +9,7 @@ import { Field, PageHeader, Panel, Seg, newId } from '../components/common';
 import { armSummary } from '../../engine/arm';
 import { useToast } from '../components/Toast';
 import { useData } from '../data/DataContext';
-import { Link } from '../router';
+import { Link, useRoute } from '../router';
 import { KIND_LABEL } from '../components/PerformanceEditor';
 import { VoiceButton } from '../components/VoiceButton';
 import { buildImportPlan, decisionFor, evaluateRow, MATCH_LABEL, planToChanges, willCommit, type PlanRow, type RowDecision, type RowStatus } from '../../engine/parse/plan';
@@ -35,7 +35,17 @@ function resultCell(r: PlanRow): string {
 export function PastePage() {
   const { fullSnapshot: snapshot, config, today, commit } = useData();
   const toast = useToast();
-  const [text, setText] = useState('');
+  const route = useRoute();
+  // A prepared link (#/paste?text=…) fills the box: the coach only checks the review and approves. The text is
+  // dropped from the address bar straight away, so names do not stay in the browser history. Nothing is saved
+  // before Approve.
+  const linked = route.query.get('text');
+  const [text, setText] = useState(linked ?? '');
+  useEffect(() => {
+    if (linked == null) return;
+    setText(linked);
+    window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}#/paste`);
+  }, [linked]);
   const [format, setFormat] = useState<'auto' | ParseFormat>('auto');
   const [eventId, setEventId] = useState('');
   const [ev, setEv] = useState({ name: '', date: today, kind: 'race' as PerfKind, distanceKm: '', climbM: '', courseName: '' });

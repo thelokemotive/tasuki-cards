@@ -145,7 +145,7 @@ export interface Config {
     storkSec: [number, number, number, number];
     /** 'balance' plate only: Hop & Freeze passes when the line frozen is at least this (cm) on both legs (18 Nov 2026 build). */
     hopGateCm: number;
-    /** Heel raises are counted up to this many (the Wall stops at 40); more is counted as the cap. */
+    /** Heel raises are counted up to this many (the Wall stops there); more is counted as the cap. */
     calfRepCap: number;
     /** Throne seat heights (cm) for T1..T5. Stamped on every test so a change of kit is visible. */
     throneSeatsCm: [number, number, number, number, number];
@@ -424,11 +424,12 @@ export const DEFAULT_CONFIG: Config = {
   // Season 0 (Nov 2026): calf one level harder (outside audit, 17 Nov), the Throne replaces the Stork.
   arm: {
     ankleCm: [5, 8, 10, 12, 14],
-    calfReps: [15, 20, 25, 30, 35],
+    // Rescaled after the first two groups (19 Nov 2026): pupils' counts ran from 11 to 200, so 35 for L5 meant nothing.
+    calfReps: [15, 25, 35, 50, 70],
     plate3: 'control',
     storkSec: [5, 10, 20, 30],
     hopGateCm: 120,
-    calfRepCap: 40,
+    calfRepCap: 100,
     throneSeatsCm: [61, 51, 42, 30.5, 19.5],
     protocol: 'ARM-S0-v2',
     interim: { enabled: true, level: 2, hopCm: 120, months: 6 },
@@ -639,7 +640,7 @@ export function raceAnchorMigration(configs: Config[] | undefined, createdAt: st
 
 /** Marks the version that brought in ARM Season 0 (the Throne, calf levels one step harder). */
 export const ARM_S0_MIGRATION = 'arm-s0-2026-11';
-export const ARM_S0_NOTE = 'ARM Season 0: the Throne (CONTROL) replaces the Stork; calf levels 15–35 reps, counted up to 40';
+export const ARM_S0_NOTE = 'ARM Season 0: the Throne (CONTROL) replaces the Stork; calf levels 15 · 25 · 35 · 50 · 70 reps, counted up to 100';
 
 /**
  * One-off, as the migrations above: a store whose current version still scores the stork gets a new version with
@@ -655,6 +656,26 @@ export function armS0Migration(configs: Config[] | undefined, createdAt: string)
   const d = DEFAULT_CONFIG.arm;
   draft.arm = { ...draft.arm, calfReps: [...d.calfReps], plate3: 'control', calfRepCap: d.calfRepCap, throneSeatsCm: [...d.throneSeatsCm], protocol: d.protocol, interim: { ...d.interim } };
   return { ...nextConfigVersion(cur, draft, createdAt, ARM_S0_NOTE), migration: ARM_S0_MIGRATION };
+}
+
+/** Marks the version that rescaled the Wall after the first two Season 0 groups. */
+export const ARM_CALF_MIGRATION = 'arm-calf-2026-11';
+export const ARM_CALF_NOTE = 'ARM calf rescaled after the first two groups: levels 15 · 25 · 35 · 50 · 70 reps, counted up to 100';
+
+/**
+ * One-off: a store that already took the first Season 0 version (calf 15–35, counted up to 40) gets the rescaled
+ * Wall. A store whose calf numbers were edited by hand keeps them. Runs at most once.
+ */
+export function armCalfMigration(configs: Config[] | undefined, createdAt: string): Config | undefined {
+  if (!configs || configs.length === 0) return undefined;
+  if (configs.some((c) => c.migration === ARM_CALF_MIGRATION)) return undefined;
+  const cur = currentConfig(configs);
+  if (cur.arm.plate3 !== 'control') return undefined;
+  if (JSON.stringify(cur.arm.calfReps) !== JSON.stringify([15, 20, 25, 30, 35]) || cur.arm.calfRepCap !== 40) return undefined;
+  const draft = cloneConfig(cur);
+  draft.arm.calfReps = [...DEFAULT_CONFIG.arm.calfReps];
+  draft.arm.calfRepCap = DEFAULT_CONFIG.arm.calfRepCap;
+  return { ...nextConfigVersion(cur, draft, createdAt, ARM_CALF_NOTE), migration: ARM_CALF_MIGRATION };
 }
 
 /** The ARM rules as they were before Season 0 (stork balance plate, calf 10–30). For tests and comparisons. */
