@@ -50,6 +50,26 @@ export interface TreadmillCloud {
   remove(id: string): Promise<void>;
 }
 
+/** A phone's reminder subscription (the website's `reminders` collection, one per phone). */
+export interface ReminderDevice {
+  athleteId: string;
+  prefs: { thursday: boolean; saturday: boolean; monday: boolean };
+  /** The companion spirit that "sends" the reminder. */
+  companion?: string;
+}
+
+export interface RemindersCloud {
+  /** Whether the head coach has switched reminders on, and the public key phones subscribe with. */
+  settings(): Promise<{ open: boolean; key?: string }>;
+  /** Head coach only. */
+  setSettings(s: { open?: boolean; key?: string }): Promise<void>;
+  /** This phone's reminder, if it has one. */
+  mine(deviceId: string): Promise<ReminderDevice | null>;
+  /** Save (or update) this phone's reminder with its push subscription. */
+  save(deviceId: string, device: ReminderDevice, sub: PushSubscriptionJSON): Promise<void>;
+  remove(deviceId: string): Promise<void>;
+}
+
 export interface Account {
   email: string;
   isOwner: boolean;
@@ -63,6 +83,10 @@ export interface Account {
   signOut: () => Promise<void>;
   /** Treadmill logs (the website only). */
   treadmill?: TreadmillCloud;
+  /** Phone reminders (the website only; off until the head coach switches them on). */
+  reminders?: RemindersCloud;
+  /** A coach previewing the pupil app with the squad's own data (nothing is sent anywhere). */
+  preview?: boolean;
 }
 
 export const AccountContext = createContext<Account | null>(null);

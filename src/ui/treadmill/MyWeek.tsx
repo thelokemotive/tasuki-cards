@@ -7,24 +7,24 @@ import type { Calendar, ISODate } from '../../types';
 import { addDays } from '../../engine/dates';
 import { formatKm } from '../../engine/format';
 import { treadmillSummary } from '../../engine/treadmill/session';
+import { trailWeek } from '../../engine/trail';
+import { Flame, TrailStrip } from '../pupil/TrailStrip';
+import '../pupil/pupil.css';
 
 function plural(n: number, one: string, many = `${one}s`): string {
   return `${n} ${n === 1 ? one : many}`;
 }
 
 export function MyWeek({ d, config, calendar, asOf, onLog }: { d: AthleteDerived; config: Config; calendar: Calendar; asOf: ISODate; onLog?: () => void }) {
-  const s = d.streak;
-  const now = s.weeks[s.weeks.length - 1];
-  const thisWeek = now && now.state !== 'missed' ? now.state : 'current';
-  const next = s.currentStreak + (thisWeek === 'counted' ? 0 : 1);
-  const milestone = [...config.streak.milestones].sort((a, b) => a - b).find((m) => m > s.currentStreak);
-  const ways = config.streak.treadmillCounts ? 'a Circuit run, a Saturday run or a treadmill run' : 'a Circuit run or a Saturday run';
+  const tw = trailWeek(d, config, asOf, 0, new Set(calendar.holidayWeeks));
+  const ways = tw.ways;
   let streakLine: string;
-  if (thisWeek === 'counted') streakLine = `This week is done. ${s.currentStreak > 1 ? 'Nice and steady.' : 'A new streak has started.'}`;
-  else if (thisWeek === 'holiday') streakLine = 'Holiday week: your streak is safe. A parkrun or long run earns a bonus flame.';
-  else if (thisWeek === 'frozen') streakLine = 'This week is frozen: your streak is safe.';
-  else if (s.currentStreak > 0) streakLine = `One session by Sunday (${ways}) makes it ${plural(next, 'week')}.`;
-  else streakLine = `${s.bestStreak > 0 ? 'Start a new streak' : 'Start your first streak'} this week: ${ways} is all it takes.`;
+  if (tw.status === 'kept') streakLine = `This week is done. ${tw.streak > 1 ? 'Nice and steady.' : 'A new trail has started.'}`;
+  else if (tw.status === 'holiday') streakLine = 'Holiday week: your trail is safe. A parkrun or long run earns a bonus flame.';
+  else if (tw.status === 'frozen') streakLine = 'This week is frozen: your trail is safe.';
+  else if (tw.streak > 0) streakLine = `One session by Sunday (${ways}) makes it ${plural(tw.next, 'week')}.`;
+  else streakLine = `${tw.comeback ? 'Start a fresh trail' : 'Start your first trail'} this week: ${ways} is all it takes.`;
+  const milestone = tw.milestone;
 
   const ht = calendar.halfTerms.find((h) => h.start <= asOf && asOf <= h.end);
   const since = ht?.start ?? addDays(asOf, -42);
@@ -38,16 +38,18 @@ export function MyWeek({ d, config, calendar, asOf, onLog }: { d: AthleteDerived
 
   return (
     <div className="my-week">
-      <div className="mw-box">
-        <div className="tiny muted">Weekly streak</div>
-        <div className="mw-big">🔥 {plural(s.currentStreak, 'week')}</div>
-        <div className="mw-weeks" aria-label="The last eight weeks">
-          {s.weeks.slice(-8).map((w) => (
-            <span key={w.week} title={`${w.week}: ${w.state}`} className={w.state === 'counted' ? 'on' : w.state === 'frozen' || w.state === 'holiday' ? 'frozen' : w.state === 'current' ? 'now' : ''} />
-          ))}
+      <div className="mw-box mw-trail">
+        <div className="tiny muted">Weekly trail</div>
+        <div className="mw-big mw-flame">
+          <Flame level={tw.status === 'kept' ? 'lit' : tw.streak > 0 ? 'waiting' : 'out'} size={24} /> {plural(tw.streak, 'week')}
         </div>
+        <TrailStrip tw={tw} light />
         <p className="small" style={{ margin: '6px 0 0' }}>{streakLine}</p>
-        {milestone && <p className="tiny muted" style={{ margin: '4px 0 0' }}>{plural(milestone - s.currentStreak, 'more week')} to the {milestone}-week badge. Missed a week for exams or illness? Ask your coach about a streak freeze.</p>}
+        {milestone && (
+          <p className="tiny muted" style={{ margin: '4px 0 0' }}>
+            {plural(milestone.toGo, 'more week')} to {milestone.held ? `${milestone.at} in a row` : `the ${milestone.at}-week badge`}. Missed a week for exams or illness? Ask your coach about a streak freeze.
+          </p>
+        )}
       </div>
       <div className="mw-box">
         <div className="tiny muted">Treadmill</div>

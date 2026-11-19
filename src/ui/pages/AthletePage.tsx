@@ -29,6 +29,7 @@ import { GldPanel } from '../components/GldPanel';
 import { WinterPanel } from '../components/WinterPanel';
 import { Placings } from '../components/Placings';
 import { paceOf } from '../../engine/explain';
+import { useAccount } from '../cloud/account';
 import { formatPace } from '../../engine/format';
 
 const SPARK_KEYS: RatingKey[] = ['RACE', 'SPD', 'END', 'CLB', 'DSC', 'NAV', 'ARM'];
@@ -104,6 +105,7 @@ export function AthletePage() {
   const [view, setView] = useState<'current' | 'vault' | 'deleted'>('current');
   const [why, setWhy] = useState<RatingKey | 'OVR' | null>(null);
   const scores = useMemo(() => new Map((d?.ratings.perfScores ?? []).map((s) => [s.perfId, s])), [d]);
+  const viewer = useAccount()?.viewer ?? false;
 
   if (!d) {
     return (
@@ -120,7 +122,7 @@ export function AthletePage() {
     return (
       <div className="stack">
         <div className="no-print">
-          <Link to={`/athlete/${a.id}`}>← Back to {fullName(a)}</Link>
+          {viewer ? <Link to="/">← Back to the trail</Link> : <Link to={`/athlete/${a.id}`}>← Back to {fullName(a)}</Link>}
         </div>
         <div className="panel no-print row" style={{ gap: 10, flexWrap: 'wrap', alignItems: 'center', padding: '10px 14px' }}>
           <span aria-hidden>🛡</span>

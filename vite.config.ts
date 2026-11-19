@@ -16,11 +16,25 @@ function renameSingleFile() {
   };
 }
 
+// The website build only: the Home Screen app (manifest, icons, service worker in public/). The single file
+// keeps none of it, so it stays one self-contained file with no network.
+function installable() {
+  return {
+    name: 'tasuki-installable',
+    transformIndexHtml: () => [
+      { tag: 'link', attrs: { rel: 'manifest', href: './manifest.webmanifest' }, injectTo: 'head' as const },
+      { tag: 'link', attrs: { rel: 'icon', type: 'image/png', sizes: '192x192', href: './icons/icon-192.png' }, injectTo: 'head' as const },
+      { tag: 'link', attrs: { rel: 'apple-touch-icon', href: './icons/apple-touch-icon.png' }, injectTo: 'head' as const },
+    ],
+  };
+}
+
 export default defineConfig(({ mode }) => {
   const single = mode === 'single';
   return {
     base: './',
-    plugins: [react(), ...(single ? [viteSingleFile(), renameSingleFile()] : [])],
+    publicDir: single ? false : 'public',
+    plugins: [react(), ...(single ? [viteSingleFile(), renameSingleFile()] : mode === 'production' ? [installable()] : [])],
     define: {
       // The website build (`vite build`) signs in with Firebase; the single file and dev stay offline.
       __WEB__: JSON.stringify(mode === 'production'),

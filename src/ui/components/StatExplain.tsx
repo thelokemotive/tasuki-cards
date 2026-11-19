@@ -124,7 +124,7 @@ export function ExplainModal({ d, stat, onClose }: { d: AthleteDerived; stat: Ra
 
 /** Student-readable sheet: every rating explained, display name only, no DOB, nothing coach-only. */
 export function StudentSheet({ d }: { d: AthleteDerived }) {
-  const { derived, snapshot } = useData();
+  const { derived, snapshot, today } = useData();
   const viewer = useAccount()?.viewer ?? false;
   const all = explainAll(d, derived.config, derived.lookup, { audience: 'student' });
   const ovr = explainOvr(d, derived.config);
@@ -145,7 +145,7 @@ export function StudentSheet({ d }: { d: AthleteDerived }) {
       </p>
       <section className="student-stat student-first">
         <h2>This week</h2>
-        <MyWeek d={d} config={derived.config} calendar={snapshot.calendar} asOf={derived.asOf} onLog={viewer ? () => navigate('/log') : undefined} />
+        <MyWeek d={d} config={derived.config} calendar={snapshot.calendar} asOf={viewer ? today : derived.asOf} onLog={viewer ? () => navigate('/log') : undefined} />
       </section>
       <section className="student-stat">
         <h2>Your next 5K</h2>

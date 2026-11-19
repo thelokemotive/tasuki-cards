@@ -1,4 +1,4 @@
-// Firestore rules check for the treadmill inbox (and the squad data staying coach-only), on the local emulator.
+// Firestore rules check for the treadmill inbox, trail reminders (and the squad data staying coach-only), on the local emulator.
 // Needs Java. From this folder: npm install, then npm test. Not part of `npm test` at the top level.
 import { readFileSync } from 'node:fs';
 import { initializeTestEnvironment, assertSucceeds, assertFails } from '@firebase/rules-unit-testing';
@@ -58,7 +58,35 @@ await new Promise((r) => setTimeout(r, 5));
 const b2 = id('pupilA1');
 await t('pupil sends another', assertSucceeds(setDoc(doc(pupil, 'inbox', b2), log('pupilA1'))));
 await t('pupil withdraws their own', assertSucceeds(deleteDoc(doc(pupil, 'inbox', b2))));
+// Trail reminders (one document per phone).
+const rem = (uid, extra = {}) => ({ uid, athleteId: 'ath-1', prefs: { thursday: true, saturday: false, monday: true }, companion: 'pika', endpoint: 'https://fcm.googleapis.com/fcm/send/abc123', p256dh: 'BKx'.padEnd(87, 'a'), auth: 'abcdefghijklmnopqrstuv', at: serverTimestamp(), ...extra });
+const rid = (uid) => `${uid}_dev0123456789`;
+await t('reminders off by default: refused', assertFails(setDoc(doc(pupil, 'reminders', rid('pupilA1')), rem('pupilA1'))));
+await t('a pupil cannot switch reminders on', assertFails(setDoc(doc(pupil, 'public', 'settings'), { reminders: true }, { merge: true })));
+await t('another coach cannot switch reminders on', assertFails(setDoc(doc(helper, 'public', 'settings'), { reminders: true }, { merge: true })));
+await t('the head coach switches reminders on', assertSucceeds(setDoc(doc(coach, 'public', 'settings'), { reminders: true, vapidKey: 'BPub' }, { merge: true })));
+await t('pupil saves a reminder for their phone', assertSucceeds(setDoc(doc(pupil, 'reminders', rid('pupilA1')), rem('pupilA1'))));
+await t('pupil changes their choices', assertSucceeds(setDoc(doc(pupil, 'reminders', rid('pupilA1')), rem('pupilA1', { prefs: { thursday: false, saturday: true, monday: true } }))));
+await t('pupil reads their own reminder', assertSucceeds(getDoc(doc(pupil, 'reminders', rid('pupilA1')))));
+await t('pupil reads a reminder they have not made yet', assertSucceeds(getDoc(doc(pupil, 'reminders', 'pupilA1_nophone000000'))));
+await t('another pupil cannot read it', assertFails(getDoc(doc(other, 'reminders', rid('pupilA1')))));
+await t('coaches cannot read reminders either', assertFails(getDoc(doc(coach, 'reminders', rid('pupilA1')))));
+await t('nobody lists the reminders', assertFails(getDocs(collection(coach, 'reminders'))));
+await t('a reminder for another pupil’s id', assertFails(setDoc(doc(pupil, 'reminders', rid('pupilC3')), rem('pupilA1'))));
+await t('another uid in the data', assertFails(setDoc(doc(pupil, 'reminders', rid('pupilA1')), rem('pupilC3'))));
+await t('a push address outside the push services', assertFails(setDoc(doc(pupil, 'reminders', rid('pupilA1')), rem('pupilA1', { endpoint: 'https://example.com/hook' }))));
+await t('a look-alike push host', assertFails(setDoc(doc(pupil, 'reminders', rid('pupilA1')), rem('pupilA1', { endpoint: 'https://fcm.googleapis.com.example.com/x' }))));
+await t('an extra field', assertFails(setDoc(doc(pupil, 'reminders', rid('pupilA1')), rem('pupilA1', { email: 'aiko.t@harrowappi.jp' }))));
+await t('an extra reminder slot', assertFails(setDoc(doc(pupil, 'reminders', rid('pupilA1')), rem('pupilA1', { prefs: { thursday: true, saturday: true, monday: true, midnight: true } }))));
+await t('a client clock time', assertFails(setDoc(doc(pupil, 'reminders', rid('pupilA1')), rem('pupilA1', { at: new Date() }))));
+await t('another pupil cannot delete it', assertFails(deleteDoc(doc(other, 'reminders', rid('pupilA1')))));
+await t('pupil turns reminders off (deletes it)', assertSucceeds(deleteDoc(doc(pupil, 'reminders', rid('pupilA1')))));
+await t('a Google account cannot save one', assertFails(setDoc(doc(google, 'reminders', rid('g1')), rem('g1'))));
+await env.withSecurityRulesDisabled(async (c) => setDoc(doc(c.firestore(), 'public', 'settings'), { reminders: false }, { merge: true }));
+await t('reminders switched off again: refused', assertFails(setDoc(doc(pupil, 'reminders', rid('pupilA1')), rem('pupilA1'))));
+await env.withSecurityRulesDisabled(async (c) => setDoc(doc(c.firestore(), 'public', 'settings'), { reminders: true }, { merge: true }));
 await env.withSecurityRulesDisabled(async (c) => setDoc(doc(c.firestore(), 'access', 'main'), { coaches: [], pupilView: false }));
+await t('pupil view closed: no new reminders', assertFails(setDoc(doc(pupil, 'reminders', rid('pupilA1')), rem('pupilA1'))));
 await t('pupil view closed: no new logs', assertFails(setDoc(doc(pupil, 'inbox', id('pupilA1')), log('pupilA1'))));
 await t('pupil view closed: coaches log in Quick Entry instead', assertFails(setDoc(doc(coach, 'inbox', id('coach1')), log('coach1', { email: 'floke@harrowappi.jp', name: 'F Loke' }))));
 await t('squad data still coach-only', assertFails(getDocs(collection(pupil, 'squad'))));

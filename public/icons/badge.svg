@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <!-- Notification badge (Android shows only its shape, in white): the mountain and the sash. -->
+  <path d="M6,82 C24,78 36,50 44,36 L48,33 L52,34 L56,37 C64,50 76,78 90,82 Z" fill="#fff"/>
+  <path d="M4,56 L56,4 L70,4 L4,70 Z" fill="#fff"/>
+</svg>

@@ -11,29 +11,15 @@ import { formatTime } from '../../engine/format';
 import { TreadmillForm, type TreadmillEntry } from '../treadmill/TreadmillForm';
 import { MyWeek } from '../treadmill/MyWeek';
 import { Link } from '../router';
-
-const MY_CARD = 'tasuki.myCard';
-function remembered(): string {
-  try {
-    return localStorage.getItem(MY_CARD) ?? '';
-  } catch {
-    return '';
-  }
-}
-function remember(id: string) {
-  try {
-    localStorage.setItem(MY_CARD, id);
-  } catch {
-    /* private window: the pupil picks again next time */
-  }
-}
+import { useMyCard } from '../pupil/local';
+import { buzz, chime } from '../pupil/juice';
 
 export function LogRunPage() {
-  const { derived, snapshot, config, asOf } = useData();
+  const { derived, snapshot, config, today } = useData();
   const account = useAccount();
   const toast = useToast();
   const cloud = account?.treadmill;
-  const [me, setMe] = useState(remembered);
+  const [me, setMe] = useMyCard();
   const [pending, setPending] = useState<TreadmillLog[] | null>(null);
   const [open, setOpen] = useState<boolean | null>(null);
   useEffect(() => {
@@ -53,7 +39,9 @@ export function LogRunPage() {
     if (!cloud || !mine) return;
     try {
       await cloud.submit({ athleteId: mine.athlete.id, date: e.date, ...e.values, read: e.read, edited: e.edited, flags: e.flags, ...(e.photo ? { photo: e.photo } : {}) });
-      toast('Sent to your coach. It shows on your card once it is approved.', 'ok');
+      chime('moment');
+      buzz([20, 40, 20]);
+      toast('Sent! Your trail is kindling: it lights up once your coach approves the run.', 'ok');
       refresh();
     } catch (err) {
       toast(`Not sent: ${err instanceof Error ? err.message : String(err)}`, 'err');
@@ -68,10 +56,7 @@ export function LogRunPage() {
         <select
           className="select"
           value={me}
-          onChange={(e) => {
-            setMe(e.target.value);
-            remember(e.target.value);
-          }}
+          onChange={(e) => setMe(e.target.value || null)}
           aria-label="Your card"
         >
           <option value="">Choose your name…</option>
@@ -87,7 +72,7 @@ export function LogRunPage() {
       </Panel>
       {mine && (
         <Panel title={`This week · ${displayName(mine.athlete)}`} actions={<Link className="btn btn-sm" to={`/athlete/${mine.athlete.id}/share`}>My card</Link>}>
-          <MyWeek d={mine} config={config} calendar={snapshot.calendar} asOf={asOf} />
+          <MyWeek d={mine} config={config} calendar={snapshot.calendar} asOf={today} />
         </Panel>
       )}
       {open === false ? (

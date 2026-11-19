@@ -33,3 +33,31 @@ describe('view-only website (pupils)', () => {
     await waitFor(() => expect(screen.getAllByText(/how your ratings are worked out/i).length).toBeGreaterThan(0));
   });
 });
+
+describe('the pupil app (Kemonomichi)', () => {
+  const snap = { ...emptySnapshot(), ...buildDemoData('2026-11-13'), configs: [DEFAULT_CONFIG] };
+  const pub = readPublicPack(makePublicPack(snap, deriveAll(snap, '2026-11-13', DEFAULT_CONFIG)));
+  const wrap = (ui: React.ReactNode) => (
+    <ToastProvider>
+      <DataProvider storeOverride={new ViewOnlyStore(pub.snapshot)} derivedOverride={pub.derived}>
+        {ui}
+      </DataProvider>
+    </ToastProvider>
+  );
+
+  it('asks which runner you are, then opens on your trail with missions and spirits', async () => {
+    const { TrailPage } = await import('../pupil/TrailPage');
+    localStorage.clear();
+    const first = render(wrap(<TrailPage />));
+    await waitFor(() => expect(screen.getByText('Which runner are you?')).toBeTruthy());
+    first.unmount();
+    const a = pub.snapshot.athletes.find((x) => x.active)!;
+    localStorage.setItem('tasuki.myCard', a.id);
+    const { container } = render(wrap(<TrailPage />));
+    await waitFor(() => expect(screen.getByText("This week's missions")).toBeTruthy());
+    expect(container.querySelectorAll('.mission').length).toBeGreaterThan(0);
+    expect(container.querySelectorAll('.spirit-chip').length).toBe(7);
+    // The first visit remembers where things stand, so later news can be revealed.
+    expect(localStorage.getItem(`tasuki.seen.${a.id}`)).toContain('"v":1');
+  });
+});

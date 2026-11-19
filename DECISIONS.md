@@ -345,6 +345,23 @@ The Lower Sixth (Stork and hop, before the Throne) and the Fifth Form (the Thron
 - **Fair comparison, revised the same evening (the coach's call).** The first version short-changed the Lower Sixth twice. (1) Their Wall was timed and converted at 2 s per rep (the 60 bpm beat), while the Fifth Form counted quick bounces; the coach chose **1 s = 1 bounce for both groups**, so a timed result is entered as its seconds (`calf 100/180`), with no halving. (2) One flat interim T2 treated a 2.15 m hop like a 1.20 m one. Now a **hop ladder** applies (`arm.interim.steps`): weaker-leg hop ≥ 120 cm → T2, ≥ 160 → T3, ≥ 180 → T4, never T5 (T5 needs the Throne itself). It gives the Lower Sixth about the same spread of control levels as the Fifth Form's real Throne results. It is still interim: provisional, replaced by the first Throne result, and lapses after 6 months. One config version (`armLadderMigration`); versions without the ladder read as one flat level, so their ratings reproduce. The stork still earns nothing.
 - **Prepared links for Paste & Match.** `#/paste?text=<line format>` opens Paste & Match with the box filled, so a block can be sent as one link: check the review, Approve. The text is removed from the address bar on arrival, and nothing is saved before Approve.
 
+## Kemonomichi: the pupil app (19 Nov 2026)
+
+The coach asked for the app pupils want on their phones: Duolingo's habit science, reminders to run, pure nature with Japan's wild animals, a less clumsy streak. Full write-up, research and next steps: `docs/KEMONOMICHI-PLAN.md`.
+
+- **Read-only on the engine.** Missions, the reveal, the squad quest, trail finds and reminders are pure views (`src/engine/trail.ts`, `moments.ts`, `reminders.ts`, `spirits.ts`, all tested). No rating, streak rule, config version or Growth Shield changes.
+- **The streak stays weekly.** Daily streaks reward junk miles and make rest look like failure. The clumsiness was presentation: an 8-dot strip on the Log page. It is now the first thing a pupil sees, as a trail of stepping stones, with this week's status and days left, and a celebration when a week is kept.
+- **Stale copies.** The pupil's ratings are worked out on a coach's device and can be days old. `trailWeek` reads the weeks after that copy from the calendar: a holiday week holds the trail, any other week is not known to be kept, this week is open. Same rule in the reminder sender (`streakBefore`).
+- **"Kindling".** A treadmill run waiting for the coach shows on the pupil's own phone as a lit ember for this week; it counts only once approved, as before.
+- **Only good news is revealed.** The phone keeps a small summary of what it last showed; a tier, an awakened spirit (stat unlocked), a stat or OVR up, a PB, a badge, a week kept. A dip (freshness, a corrected result) updates quietly. First visit on a phone: nothing, so a pupil is not flooded with a season at once.
+- **Squad quest** counts kept weeks against one more than the squad's best week of the last four (at least half the squad, at most all of it). Counts only, no names, staff and whole-school runners left out.
+- **Spirits** are one per stat plus the troop (RACE), the dugong (rest) and the Amami rabbit (comeback). The default companion is the strongest stat's spirit; a pupil can choose another. Facts were checked; the Amami mongoose eradication was declared by the Ministry of the Environment in 2024.
+- **Not built:** friend streaks and nudges (pupil-to-pupil contact, ruled out in the DSL note), selfie verification (see the plan: breaks "no photographs of pupils"), XP, hearts, anything random or bought, leagues with demotion, daily streaks.
+- **Home Screen app** (website only): manifest, icons, a service worker that caches the page and its scripts (never sign-in or the database; Firebase's public web config is kept so it opens offline), an install card (Chrome's prompt; three steps on an iPhone) and the app-icon dot while the week is open late in the week. Chrome reports no installability errors; the page reopens offline. The single file has none of it (`publicDir` off, no manifest link, `__WEB__` drops the registration).
+- **Reminders** (website only, off by default): see the plan. Firestore `reminders/{uid}_{device}`; the rules check every field and accept only the main push services; pupils read and delete only their own; coaches cannot read them. 23 new rule checks, 58 in all, pass on the emulator. Sent by a scheduled GitHub Action (no pay-as-you-go plan needed), keys made in the head coach's browser.
+- **Coach preview** (menu → Pupil app) builds the pupils' view from the squad's own data with `makePublicPack`, so what the coach sees is what pupils see. Nothing is published.
+- **Print check:** 8 of 9 pass in this Linux build environment; "one PDF page per sheet" fails here on the unchanged main branch too (Chromium on Linux), so it is not a regression. Check on the laptop with `npm run check:print`.
+
 ## Open questions for the coach
 
 1. Surge sanity gate: minimum of 3 legs with a baseline per event and distance (see above). Is that right?
@@ -359,3 +376,6 @@ The Lower Sixth (Stork and hop, before the Throne) and the Fifth Form (the Thron
 10. ARM interim control level (T2 from the hop, provisional, replaced by the first Throne test) for pupils tested before the Throne: keep it, or lock their ARM until they do the Throne?
 11. Ankle level 5 at 14 cm knee-to-wall: keep it, cap it, or flag very large values for a re-measure? Decide with the Season 0 spread.
 12. ~~ARM: when only one leg is recorded, that leg is used?~~ Since 19 Nov it does not count until both legs are in (fairer: the weaker side is unknown). Say if you would rather go back.
+13. Squad quest goal: one more than the squad's best week this month (at least half the squad). Clear enough, or a fixed share?
+14. Reminders: Thursday 17:00 and Monday 07:30 on by default once a pupil opts in, Saturday 08:30 off. Right for boarders?
+15. Should the projector Reveal use the spirit animals for each level-up?
