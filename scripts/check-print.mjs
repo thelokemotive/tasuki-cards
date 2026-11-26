@@ -112,6 +112,60 @@ try {
   check('PDF has one page per sheet (Chrome print, 100% scale)', pages === report.sheets, `${pages} PDF pages for ${report.sheets} sheets`);
   const box = /\/MediaBox\s*\[\s*0\s+0\s+([\d.]+)\s+([\d.]+)\s*\]/.exec(pdfText);
   if (box) check('PDF page size is A4 portrait', Math.abs(+box[1] - 595.28) < 2 && Math.abs(+box[2] - 841.89) < 2, `${box[1]} × ${box[2]} pt`);
+  // 3. White Season Gym Log sheet (spec §8, §13.11): 40 runners on one A4 landscape page, 45 on two, boxes at
+  // least 16 × 7 mm, nothing clipped, at 100% in Chrome print.
+  for (const n of [40, 45]) {
+    await page.emulateMediaType('screen');
+    await page.goto(`${url}#/cards?sheet=gym&sample=${n}`, { waitUntil: 'load' });
+    await page.waitForSelector('.gym-page .gs-table', { timeout: 15000 });
+    await page.emulateMediaType('print');
+    await new Promise((r) => setTimeout(r, 400));
+    const gym = await page.evaluate(() => {
+      const MM = 96 / 25.4;
+      const issues = [];
+      const pages = [...document.querySelectorAll('.gym-page')];
+      const inside = (a, b, tol = 0.6) => a.left >= b.left - tol && a.top >= b.top - tol && a.right <= b.right + tol && a.bottom <= b.bottom + tol;
+      let rows = 0;
+      pages.forEach((pg, pi) => {
+        const pr = pg.getBoundingClientRect();
+        if (Math.abs(pr.width - 297 * MM) > 1.5 * MM || Math.abs(pr.height - 210 * MM) > 1.5 * MM) issues.push(`page ${pi + 1} is ${(pr.width / MM).toFixed(1)}×${(pr.height / MM).toFixed(1)} mm`);
+        pg.querySelectorAll('.gs-header, .gs-legend, .gs-footer, .gs-table, th, td').forEach((el) => {
+          const er = el.getBoundingClientRect();
+          if (!inside(er, pr)) issues.push(`page ${pi + 1}: ${el.className || el.tagName} "${(el.textContent || '').trim().slice(0, 30)}" falls outside the page`);
+        });
+        pg.querySelectorAll('.gs-header h1, .gs-legend, .gs-footer, .gs-label, th').forEach((el) => {
+          if (el.scrollWidth > el.clientWidth + 1 && el.clientWidth > 0) issues.push(`page ${pi + 1}: "${(el.textContent || '').trim().slice(0, 30)}" is clipped`);
+        });
+        pg.querySelectorAll('.gs-name').forEach((el) => {
+          if (el.scrollWidth > el.clientWidth + 1) issues.push(`page ${pi + 1}: name "${el.textContent.trim()}" is clipped`);
+        });
+        pg.querySelectorAll('tbody tr').forEach((tr) => {
+          rows++;
+          tr.querySelectorAll('td:not(.gs-name)').forEach((td) => {
+            const r = td.getBoundingClientRect();
+            if (r.width < 16 * MM - 0.5 || r.height < 7 * MM - 0.5) issues.push(`box ${(r.width / MM).toFixed(1)}×${(r.height / MM).toFixed(1)} mm is under 16×7 mm`);
+          });
+        });
+      });
+      const text = document.querySelector('.gym-sheets')?.textContent ?? '';
+      return { pages: pages.length, rows, issues: [...new Set(issues)], leaks: /\b(OVR|streak|freeze|frost)\b/i.test(text) };
+    });
+    const want = n === 40 ? 1 : 2;
+    check(`Gym Log sheet: ${n} runners on ${want} A4 landscape page${want > 1 ? 's' : ''}`, gym.pages === want && gym.rows === n, `${gym.rows} rows on ${gym.pages} pages`);
+    check(`Gym Log sheet (${n}): boxes ≥ 16 × 7 mm, nothing clipped`, gym.issues.length === 0, gym.issues.slice(0, 12).join('\n'));
+    check(`Gym Log sheet (${n}): no ratings, streaks or freezes printed`, !gym.leaks);
+    const gpdf = await page.pdf({ preferCSSPageSize: true, printBackground: true, scale: 1 });
+    writeFileSync(join(outDir, `gym-sheet-${n}.pdf`), gpdf);
+    const gtext = Buffer.from(gpdf).toString('latin1');
+    const gpages = (gtext.match(/\/Type\s*\/Page[^s]/g) || []).length;
+    const gbox = /\/MediaBox\s*\[\s*0\s+0\s+([\d.]+)\s+([\d.]+)\s*\]/.exec(gtext);
+    check(`Gym Log sheet (${n}): PDF is ${want} A4 landscape page${want > 1 ? 's' : ''} at 100%`, gpages === want && !!gbox && Math.abs(+gbox[1] - 841.89) < 2 && Math.abs(+gbox[2] - 595.28) < 2, `${gpages} pages, ${gbox?.[1]} × ${gbox?.[2]} pt`);
+    if (n === 40) {
+      const first = await page.$('.gym-page');
+      if (first) await first.screenshot({ path: join(outDir, 'gym-sheet-40.png') });
+    }
+  }
+
   await page.emulateMediaType('screen');
   await page.screenshot({ path: join(outDir, 'print-studio.png'), fullPage: false });
   check('no page errors', errors.length === 0, errors.join('\n'));

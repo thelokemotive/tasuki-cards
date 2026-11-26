@@ -275,7 +275,7 @@ table.table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 @media print {
   body { background: #fff; }
   .nav, .topbar, .banner, .no-print, .toasts { display: none !important; }
-  .shell { display: block; }
+  .shell { display: block; min-height: 0; }
   .content { padding: 0; max-width: none; }
   .prov { display: none !important; }
 }
@@ -318,7 +318,11 @@ table.table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
   .btn { min-height: 38px; }
   .btn-sm { min-height: 32px; }
 }
-@media print { .acct { display: none !important; } }
+@media print {
+  .acct { display: none !important; }
+  /* A4 is narrower than the phone breakpoint: without this the phone layout's bottom padding adds a blank last page. */
+  .content { padding: 0 !important; }
+}
 
 /* Winter Mode */
 .winter-head { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
