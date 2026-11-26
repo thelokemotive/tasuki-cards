@@ -50,9 +50,18 @@ export function isLive(p: Performance): boolean {
   return !p.deleted;
 }
 
-/** Live and verified: the only performances that count toward ratings, caps and badges. */
+/**
+ * Live and verified: the only performances that count toward ratings, caps and badges. A White Season gym
+ * session never counts here (it never feeds a rating, PB, cap, prediction or the ordinary streak): the White
+ * Season engine (src/engine/white.ts) reads gym sessions with isGymSession instead.
+ */
 export function counts(p: Performance): boolean {
-  return !p.deleted && p.verified;
+  return !p.deleted && p.verified && p.kind !== 'gym_session';
+}
+
+/** A live White Season gym session. */
+export function isGymSession(p: Performance): boolean {
+  return !p.deleted && p.kind === 'gym_session' && !!p.gym;
 }
 
 /** Names that mean a stopwatch effort, not a race: "550 m time trial", "TT", タイムトライアル, 記録会. */

@@ -22,6 +22,7 @@ export const KIND_LABEL: Record<PerfKind, string> = {
   nav: 'Navigation',
   arm: 'ARM tests',
   treadmill: 'Treadmill',
+  gym_session: 'Gym session',
 };
 
 const TIMED: PerfKind[] = ['race', 'relay_leg', 'parkrun', 'long_run', 'circuit', 'climb', 'descent', 'nav', 'treadmill'];

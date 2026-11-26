@@ -7,7 +7,7 @@ import { BLEEP_PERCENTILES } from './config';
 import type { PerfScore, RatingKey } from './types';
 import { ageOnDate } from './age';
 import { armTestDetail, type ArmDomain } from './arm';
-import { isISODate, monthsBetween } from './dates';
+import { addDays, isISODate, monthsBetween } from './dates';
 import { isOfficialRace, type PerfContext } from './perf';
 import { isAgeGradeProvisional, standardTime } from './standards';
 
@@ -38,6 +38,7 @@ export const UNSCORED = {
   noRoute: 'no route distance',
   noArm: 'no ARM measurements',
   noDate: 'no valid date',
+  gym: 'gym session (White Season: streaks and the team board only, never a rating)',
   noAge: "age or sex unknown (check the athlete's year group, date of birth and sex)",
   badNavErrors: 'nav errors must be a whole number of 0 or more',
   unknownKind: 'unknown result kind',
@@ -101,12 +102,28 @@ export interface Freshness {
  * (monthsOld − grace) × decayPointsPerMonth; monthsOld > expireMonths: expired.
  * Defaults: 3 months → −0; 12 months → −6; 30 months → expired.
  */
-export function freshness(score: number, perfDate: ISODate, asOf: ISODate, config: Config): Freshness {
+export function freshness(score: number, perfDate: ISODate, asOf: ISODate, config: Config, pausedDays = 0): Freshness {
   const { decayGraceMonths, decayPointsPerMonth, expireMonths } = config.freshness;
-  const monthsOld = monthsBetween(perfDate, asOf);
+  const monthsOld = agedMonths(perfDate, asOf, pausedDays);
   const penalty = Math.max(0, monthsOld - decayGraceMonths) * decayPointsPerMonth;
   const expired = monthsOld > expireMonths;
   return { fresh: expired ? undefined : clampScore(score - penalty, config), penalty, monthsOld, expired };
+}
+
+/**
+ * Months a result has aged by `asOf`, leaving out `pausedDays` (White Season freshness pause, spec §4:
+ * monthsOld = (asOf − date − pausedDays) in months). Whole calendar months, as everywhere else in freshness
+ * (DECISIONS: Scoring), counted to the as-of date moved back by the paused days. With no paused days this is
+ * exactly monthsBetween(date, asOf).
+ */
+export function agedMonths(perfDate: ISODate, asOf: ISODate, pausedDays = 0): number {
+  return monthsBetween(perfDate, pausedDays > 0 ? addDays(asOf, -pausedDays) : asOf);
+}
+
+/** The spec's continuous form, (asOf − date − pausedDays) / 30.4375, for display and tests. */
+export function agedMonthsExact(perfDate: ISODate, asOf: ISODate, pausedDays = 0): number {
+  const days = Math.max(0, (Date.parse(asOf) - Date.parse(perfDate)) / 86_400_000 - pausedDays);
+  return days / 30.4375;
 }
 
 /** Bleep table row (laps at P5…P95) for floor(age), clamped to the table's ages (under 11 → 11, 18+ → 18). */
@@ -289,10 +306,11 @@ export function placeClimbScore(place: number, fieldSize: number): number {
  * that is not a real ISO date, an unknown kind, or (for age-graded, fixed and bleep scores) an athlete
  * whose age or sex cannot be worked out.
  */
-export function scorePerformance(ctx: PerfContext, athlete: Athlete, config: Config, asOf: ISODate, refs: { navRefPaceSecPerKm?: number } = {}): PerfScore {
+export function scorePerformance(ctx: PerfContext, athlete: Athlete, config: Config, asOf: ISODate, refs: { navRefPaceSecPerKm?: number; pausedDays?: number } = {}): PerfScore {
   const p = ctx.perf;
   const { age, estimated } = ageOnDate(athlete, p.date, config, asOf);
-  const monthsOld = monthsBetween(p.date, asOf);
+  const paused = refs.pausedDays ?? 0;
+  const monthsOld = agedMonths(p.date, asOf, paused);
   const base: PerfScore = {
     perfId: p.id,
     athleteId: p.athleteId,
@@ -310,11 +328,12 @@ export function scorePerformance(ctx: PerfContext, athlete: Athlete, config: Con
   };
   const unscored = (reason: string): PerfScore => ({ ...base, unscoredReason: reason });
   const scored = (score: number, provisional: boolean, extra: Partial<PerfScore> = {}): PerfScore => {
-    const f = freshness(score, p.date, asOf, config);
+    const f = freshness(score, p.date, asOf, config, paused);
     return { ...base, ...extra, feeds: perfFeeds(ctx, config), score, fresh: f.fresh, penalty: f.penalty, expired: f.expired, provisional };
   };
 
   if (p.deleted) return unscored(UNSCORED.deleted);
+  if (p.kind === 'gym_session') return unscored(UNSCORED.gym);
   if (!p.verified) return unscored(UNSCORED.unverified);
   if (!isISODate(p.date)) return unscored(UNSCORED.noDate);
   if (p.date > asOf) return unscored(UNSCORED.future);
@@ -360,7 +379,7 @@ export function scorePerformance(ctx: PerfContext, athlete: Athlete, config: Con
         const hill = WHOLE_SCHOOL_HILL.test(ctx.event?.name ?? '') || WHOLE_SCHOOL_HILL.test(ctx.course?.name ?? '');
         if (hill && p.kind === 'race' && p.place != null && p.fieldSize != null && p.fieldSize >= PLACE_CLB.minField && p.place >= 1 && p.place <= p.fieldSize) {
           const score = placeClimbScore(p.place, p.fieldSize);
-          const f = freshness(score, p.date, asOf, config);
+          const f = freshness(score, p.date, asOf, config, paused);
           return { ...base, feeds: ['CLB'], score, fresh: f.fresh, penalty: f.penalty, expired: f.expired, provisional: false, placeScore: { place: p.place, fieldSize: p.fieldSize } };
         }
         return unscored(UNSCORED.noTime);

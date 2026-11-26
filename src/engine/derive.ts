@@ -13,6 +13,7 @@ import { badgeRow, computeBadges } from './badges';
 import { computeAvatarUnlocks, type AvatarUnlocks } from './avatarUnlocks';
 import { predictFiveK, type Prediction } from './predict';
 import { computeWinter, type WinterSummary } from './winter';
+import { computeWhite, inWhiteSeason, inWinterProgramme, pausedDaysAfter, teamEkiden, whiteStreakStates, winterBadges, type TeamEkiden, type WhiteSummary, type WinterBadge } from './white';
 
 /** Badges shown on the card's badge row (spec 5: "badge row (up to 5 icons)"). */
 export const CARD_BADGE_ROW = 5;
@@ -39,6 +40,10 @@ export interface AthleteDerived {
   prediction?: Prediction;
   /** Winter Mode weeks, flame and nudges; undefined when no winter phase is set. */
   winter?: WinterSummary;
+  /** White Season (gym programme) weeks, streak status, Winter Shield; undefined outside it or not in the programme. Coach-only. */
+  white?: WhiteSummary;
+  /** Cosmetic winter badges (Comeback Thaw, All Four, Holiday Hero, Winter Ekiden Finisher). */
+  winterBadges: WinterBadge[];
 }
 
 export interface Derived {
@@ -52,6 +57,8 @@ export interface Derived {
   /** Every counted relay leg on or before asOf, oldest first. */
   surges: SurgeResult[];
   courseRecords: CourseRecord[];
+  /** The Winter Ekiden team board (undefined before White Season starts). */
+  ekiden?: TeamEkiden;
 }
 
 function groupBy<T>(rows: T[], key: (r: T) => string): Map<string, T[]> {
@@ -87,24 +94,30 @@ export function deriveAll(snapshot: DataSnapshot, asOf: ISODate, configOverride?
     const winter = computeWinter({ athlete, perfs: own, participation: parts, calendar, config, asOf });
     const winterKept = winter && config.winter.countsTowardStreak ? new Set(winter.weeks.filter((w) => w.state === 'kept').map((w) => w.week)) : undefined;
     const winterRest = winter && config.winter.countsTowardStreak ? new Set(winter.weeks.filter((w) => w.state === 'rest').map((w) => w.week)) : undefined;
-    const streak = computeStreak({ athleteId: athlete.id, perfs: own, participation: parts, calendar, config, asOf, lookup, winterKept, winterRest });
+    const white = inWinterProgramme(athlete) ? computeWhite({ athlete, perfs: own, participation: parts, config, asOf }) : undefined;
+    const streak = computeStreak({ athleteId: athlete.id, perfs: own, participation: parts, calendar, config, asOf, lookup, winterKept, winterRest, white: white && whiteStreakStates(white) });
+    // In White Season the Growth Shield follows the Winter Shield (qualifying and neutral weeks are active).
+    const shieldOn = white && inWhiteSeason(asOf, config.winter.season) ? white.shield === 'on' : streak.status === 'active' || streak.status === 'frozen';
     const ratings = computeAthleteRatings({
       athlete,
       perfs: own,
       lookup,
       config,
       asOf,
-      streakActiveOrFrozen: streak.status === 'active' || streak.status === 'frozen',
+      streakActiveOrFrozen: shieldOn,
+      pausedDaysAfter: white && white.pausedDays > 0 ? (date) => pausedDaysAfter(white.weeks, date, asOf) : undefined,
     });
-    return { athlete, own, streak, ratings, winter };
+    return { athlete, own, streak, ratings, winter, white };
   });
 
   const surges = computeSurges({ perfs: perfs.filter((p) => p.date <= asOf), lookup, config });
   const surgesBy = groupBy(surges, (s) => s.athleteId);
   const courseRecords = computeCourseRecords({ athletes: snapshot.athletes, perfs, lookup, config, asOf });
 
+  const whites = base.map((b) => b.white).filter((x): x is WhiteSummary => !!x);
+  const ekiden = config.winter.whiteEnabled && asOf >= config.winter.season.start ? teamEkiden(whites, config) : undefined;
   const athletes = new Map<string, AthleteDerived>();
-  for (const { athlete, own, streak, ratings, winter } of base) {
+  for (const { athlete, own, streak, ratings, winter, white } of base) {
     const upToDate = own.filter((p) => p.date <= asOf);
     const { current, history } = computePersonalBests(upToDate, lookup);
     const inForm = computeInForm({ athleteId: athlete.id, perfs: own, perfScores: ratings.perfScores, lookup, config, asOf });
@@ -124,10 +137,12 @@ export function deriveAll(snapshot: DataSnapshot, asOf: ISODate, configOverride?
       avatarUnlocks: computeAvatarUnlocks(ratings, streak, mySurges, config),
       prediction: predictFiveK(athlete, own, lookup, config, asOf),
       winter,
+      white,
+      winterBadges: winterBadges(white, config, ekiden),
     });
   }
 
-  return { asOf, config, configVersion: config.version, lookup, athletes, surges, courseRecords };
+  return { asOf, config, configVersion: config.version, lookup, athletes, surges, courseRecords, ekiden };
 }
 
 export interface RatingChange {

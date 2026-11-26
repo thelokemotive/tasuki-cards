@@ -42,6 +42,11 @@ export function computeStreak(input: {
   winterKept?: Set<ISOWeek>;
   /** Winter Mode rest weeks (a rest pass or a coach rest): held like a freeze, using none of the half-term allowance. */
   winterRest?: Set<ISOWeek>;
+  /**
+   * White Season weeks (src/engine/white.ts, whiteStreakStates): their state replaces every other rule for that
+   * week. qualifying → counted, neutral → holiday, frosted → frozen (held), broken → missed.
+   */
+  white?: Map<ISOWeek, StreakWeekState>;
 }): StreakResult {
   const { athleteId, calendar, config, asOf, lookup } = input;
   const currentWeek = isoWeek(asOf);
@@ -64,7 +69,8 @@ export function computeStreak(input: {
     if (q.type === 'freeze' && q.isoWeek <= currentWeek) freezeWeeks.add(q.isoWeek);
   }
 
-  const relevant = [...activeWeeks, ...winterKept, ...freezeWeeks, ...[...bonusWeeks].filter((w) => holidays.has(w))].filter((w) => w <= currentWeek);
+  const whiteCounted = [...(input.white ?? [])].filter(([w, st]) => st === 'counted' && w <= currentWeek).map(([w]) => w);
+  const relevant = [...activeWeeks, ...winterKept, ...whiteCounted, ...freezeWeeks, ...[...bonusWeeks].filter((w) => holidays.has(w))].filter((w) => w <= currentWeek);
   if (relevant.length === 0) {
     return { athleteId, currentStreak: 0, bestStreak: 0, status: 'none', holidayBonusFlames: 0, weeks: [] };
   }
@@ -73,7 +79,9 @@ export function computeStreak(input: {
   const freezesUsed = new Map<string, number>();
   const weeks: StreakWeek[] = weeksInRange(first, currentWeek).map((week) => {
     let state: StreakWeekState;
-    if (winterKept.has(week)) state = 'counted';
+    const white = input.white?.get(week);
+    if (white) state = white;
+    else if (winterKept.has(week)) state = 'counted';
     else if (holidays.has(week)) state = 'holiday';
     else if (activeWeeks.has(week)) state = 'counted';
     else if (input.winterRest?.has(week)) state = 'frozen';
