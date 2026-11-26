@@ -5,12 +5,15 @@
 // - names as each runner's display setting shows them (full, first name + initial, or alias); no aliases
 // - no dates of birth, no coach notes, no raw pasted text, no correction history
 // - no winter soreness, pain flags or session notes (health information stays with the coach)
+// - nothing from White Season beyond the main streak count: no gym sessions (counts, cards, "!" flags), no
+//   freezes of any kind, no frost, no Winter Shield, no winter badges (coach-only, spec §11)
 // - ratings computed by the coach from the full data (so they match the printed cards), with every age
 //   rounded down to whole years.
 import type { Athlete, DataSnapshot, Participation, Performance } from '../types';
 import type { WinterSummary } from '../engine/winter';
 import type { AthleteDerived, Derived } from '../engine/derive';
 import { displayName } from '../engine/display';
+import { inWhiteSeason } from '../engine/white';
 
 export interface PublicData {
   snapshot: DataSnapshot;
@@ -21,7 +24,7 @@ export const HIDDEN_NAME = 'Hidden runner';
 
 function publicAthlete(a: Athlete): Athlete {
   const name = a.hiddenOnline ? HIDDEN_NAME : displayName(a);
-  return { ...a, givenName: name, familyName: '', preferredName: name, displayMode: 'full', publicAlias: undefined, aliases: [], dob: undefined, notes: undefined, schoolAccounts: undefined, heightCm: undefined, heightMeasuredOn: undefined };
+  return { ...a, givenName: name, familyName: '', preferredName: name, displayMode: 'full', publicAlias: undefined, aliases: [], dob: undefined, notes: undefined, schoolAccounts: undefined, heightCm: undefined, heightMeasuredOn: undefined, summitPass: undefined, winterProgramme: undefined };
 }
 
 function publicPerf(p: Performance): Performance {
@@ -48,27 +51,50 @@ function publicWinter(w: WinterSummary | undefined): WinterSummary | undefined {
   return { ...w, flags: w.flags.filter((f) => f.kind === 'return' || f.kind === 'spike'), next: health ? '' : w.next };
 }
 
+/**
+ * The streak without White Season detail: a White week that was frosted or frozen reads as a held (holiday)
+ * week, so the copy shows neither frost nor freezes.
+ */
+function publicStreak(d: AthleteDerived): AthleteDerived['streak'] {
+  if (!d.white) return d.streak;
+  const white = new Set(d.white.weeks.map((w) => w.week));
+  const weeks = d.streak.weeks.map((w) => (white.has(w.week) && w.state === 'frozen' ? { ...w, state: 'holiday' as const } : w));
+  const status = d.streak.status === 'frozen' && white.has(d.streak.weeks.at(-1)?.week ?? '') ? 'active' : d.streak.status;
+  return { ...d.streak, weeks, status };
+}
+
 export function makePublicPack(snapshot: DataSnapshot, derived: Derived): string {
   const keep = new Set(snapshot.athletes.filter((a) => !a.hiddenOnline).map((a) => a.id));
   const athletes = new Map<string, AthleteDerived>();
   for (const [id, d] of derived.athletes) {
     if (!keep.has(id)) continue;
-    athletes.set(id, { ...d, athlete: publicAthlete(d.athlete), perfs: d.perfs.filter((p) => !p.deleted).map(publicPerf), winter: publicWinter(d.winter) });
+    athletes.set(id, {
+      ...d,
+      athlete: publicAthlete(d.athlete),
+      perfs: d.perfs.filter((p) => !p.deleted && p.kind !== 'gym_session').map(publicPerf),
+      ratings: { ...d.ratings, perfScores: d.ratings.perfScores.filter((s) => s.kind !== 'gym_session') },
+      streak: publicStreak(d),
+      winter: publicWinter(d.winter),
+      white: undefined,
+      winterBadges: [],
+    });
   }
   const pub: PublicData = {
     snapshot: {
       ...snapshot,
       athletes: snapshot.athletes.filter((a) => keep.has(a.id)).map(publicAthlete),
-      performances: snapshot.performances.filter((p) => keep.has(p.athleteId) && !p.deleted).map(publicPerf),
-      participation: snapshot.participation.filter((p) => keep.has(p.athleteId)).map(publicParticipation),
+      performances: snapshot.performances.filter((p) => keep.has(p.athleteId) && !p.deleted && p.kind !== 'gym_session').map(publicPerf),
+      participation: snapshot.participation.filter((p) => keep.has(p.athleteId) && !(p.type === 'freeze' && (p.freezeKind || inWhiteSeason(p.date, derived.config.winter.season)))).map(publicParticipation),
       achievements: snapshot.achievements.filter((x) => keep.has(x.athleteId)),
       meta: { coachName: snapshot.meta.coachName },
+      // The athletes' Summit passes and winter roster flags stay with the coach too (publicAthlete).
     },
     derived: {
       ...derived,
       athletes,
       surges: derived.surges.filter((x) => keep.has(x.athleteId)),
       courseRecords: derived.courseRecords.filter((x) => keep.has(x.athleteId)),
+      ekiden: undefined,
     },
   };
   const to = (x: number, step: number) => Math.round(x / step) * step;

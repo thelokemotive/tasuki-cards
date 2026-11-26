@@ -10,10 +10,110 @@ import { navigate, useRoute } from '../router';
 import { buildCardData } from '../cards/cardData';
 import { PrintSheets, CARDS_PER_SHEET } from '../cards/PrintSheet';
 import { fullName } from '../../engine/display';
+import { GymSheets } from '../cards/GymSheet';
+import { gymSheetPages, gymSheetRows, gymSheetWeeks, type GymSheetRow } from '../../engine/gymSheet';
+import { seasonWeeks, whiteWeekKind } from '../../engine/white';
+import { formatLongDate, isoWeek, weekMonday } from '../../engine/dates';
+
+/** What to print: trading cards, or the White Season Gym Log sheet. */
+function StudioSwitch({ value }: { value: 'cards' | 'gym' }) {
+  return (
+    <Seg<'cards' | 'gym'>
+      value={value}
+      onChange={(v) => navigate(v === 'gym' ? '/cards?sheet=gym' : '/cards')}
+      options={[
+        { value: 'cards', label: 'Trading cards' },
+        { value: 'gym', label: 'Gym Log sheet (White Season)' },
+      ]}
+    />
+  );
+}
+
+/** Gym Log sheets for a range of counted weeks (holiday weeks are skipped). `?sample=45` previews with sample names. */
+function GymSheetStudio() {
+  const { snapshot, config, today } = useData();
+  const route = useRoute();
+  const season = config.winter.season;
+  const terms = seasonWeeks(season).filter((w) => whiteWeekKind(w, season) === 'term');
+  const next = terms.find((w) => w >= isoWeek(today)) ?? terms[0];
+  const [from, setFrom] = useState<string>(next ?? '');
+  const [to, setTo] = useState<string>(next ?? '');
+  const sample = Number(route.query.get('sample') ?? 0);
+  const rows: GymSheetRow[] = useMemo(
+    () => (sample > 0 ? Array.from({ length: Math.min(200, sample) }, (_, i) => ({ athleteId: `sample-${i}`, yearGroup: (['Y7', 'Y8', 'Y9', 'Y10', 'Y11', 'Y12', 'Y13'] as const)[Math.floor((i * 7) / sample)], label: `Testrunner${i + 1} W.${i % 5 === 0 ? ' ▲' : ''}` })) : gymSheetRows(snapshot.athletes)),
+    [sample, snapshot.athletes],
+  );
+  const weeks = from && to ? gymSheetWeeks(config, weekMonday(from <= to ? from : to), weekMonday(from <= to ? to : from)) : [];
+  const pages = weeks.length * gymSheetPages(rows).length;
+  return (
+    <div className="stack">
+      <div className="no-print stack">
+        <PageHeader
+          title="Cards & Print Studio"
+          subtitle="Gym Log sheet: one A4 landscape sheet per counted week (holiday weeks are skipped), up to 40 runners a page. In the print dialog choose A4, landscape, scale 100% and tick “Background graphics”."
+          actions={
+            <button className="btn btn-primary btn-lg" disabled={!pages || !rows.length} onClick={() => window.print()} data-testid="print-gym">
+              Print {pages} sheet{pages === 1 ? '' : 's'}
+            </button>
+          }
+        />
+        <Panel>
+          <div className="row">
+            <StudioSwitch value="gym" />
+            <label className="small">
+              From{' '}
+              <select className="select" style={{ width: 'auto' }} value={from} onChange={(e) => setFrom(e.target.value)} data-testid="gym-from">
+                {terms.map((w) => (
+                  <option key={w} value={w}>
+                    {formatLongDate(weekMonday(w))}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="small">
+              to{' '}
+              <select className="select" style={{ width: 'auto' }} value={to} onChange={(e) => setTo(e.target.value)} data-testid="gym-to">
+                {terms.map((w) => (
+                  <option key={w} value={w}>
+                    {formatLongDate(weekMonday(w))}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <span className="small muted">
+              {rows.length} runner{rows.length === 1 ? '' : 's'} on the winter roster{sample > 0 ? ' (sample names)' : ''}. ▲ = Summit pass. Change the roster in Settings → White Season.
+            </span>
+          </div>
+        </Panel>
+      </div>
+      {!rows.length ? (
+        <Panel>
+          <Empty title="Nobody on the winter roster">
+            <p>Add runners in Settings → White Season.</p>
+          </Empty>
+        </Panel>
+      ) : !weeks.length ? (
+        <Panel>
+          <Empty title="No counted weeks in that range">
+            <p>Holiday weeks have no sheet. Check the season in Settings → White Season.</p>
+          </Empty>
+        </Panel>
+      ) : (
+        <GymSheets rows={rows} weeks={weeks} config={config} />
+      )}
+    </div>
+  );
+}
 
 type Mode = 'all' | 'inform' | 'year' | 'pick';
 
 export function PrintStudioPage() {
+  const route = useRoute();
+  if (route.query.get('sheet') === 'gym') return <GymSheetStudio />;
+  return <CardStudio />;
+}
+
+function CardStudio() {
   const { derived } = useData();
   const route = useRoute();
   const sel = route.query.get('select') ?? 'all';
@@ -45,6 +145,9 @@ export function PrintStudioPage() {
           }
         />
         <Panel>
+          <div className="row" style={{ marginBottom: 10 }}>
+            <StudioSwitch value="cards" />
+          </div>
           <div className="row">
             <Seg<Mode>
               value={mode}

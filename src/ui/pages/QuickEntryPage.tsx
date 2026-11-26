@@ -23,7 +23,7 @@ import { TreadmillPhotoButton } from '../treadmill/TreadmillPhotoButton';
 
 const TIMED: PerfKind[] = ['race', 'relay_leg', 'parkrun', 'long_run', 'circuit', 'climb', 'descent', 'nav', 'treadmill'];
 const COURSE_KIND: Partial<Record<PerfKind, string>> = { circuit: 'circuit', climb: 'climb', descent: 'descent', nav: 'nav' };
-const EVENT_KIND: Record<PerfKind, TasukiEvent['kind']> = { race: 'race', relay_leg: 'relay', parkrun: 'parkrun', long_run: 'session', circuit: 'time_trial', climb: 'time_trial', descent: 'time_trial', nav: 'test', bleep: 'test', arm: 'test', treadmill: 'session' };
+const EVENT_KIND: Record<PerfKind, TasukiEvent['kind']> = { race: 'race', relay_leg: 'relay', parkrun: 'parkrun', long_run: 'session', circuit: 'time_trial', climb: 'time_trial', descent: 'time_trial', nav: 'test', bleep: 'test', arm: 'test', treadmill: 'session', gym_session: 'session' };
 
 interface Draft {
   athleteId: string | null;

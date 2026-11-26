@@ -18,8 +18,13 @@ export interface StatsInput {
   lookup: Lookup;
   config: Config;
   asOf: ISODate;
-  /** Streak status is 'active' or 'frozen' (enables the Growth Shield). */
+  /** Streak status is 'active' or 'frozen' (enables the Growth Shield). In White Season: the Winter Shield is on. */
   streakActiveOrFrozen: boolean;
+  /**
+   * White Season freshness pause: days after `perfDate` (up to asOf) that do not age this athlete's results.
+   * Absent: none (every result ages normally).
+   */
+  pausedDaysAfter?: (perfDate: ISODate) => number;
 }
 
 interface Entry {
@@ -481,7 +486,7 @@ export function computeAthleteRatings(input: StatsInput): AthleteRatings {
     // later must not lower an old NAV score. With no Circuit or short race by then, the route gets its own
     // Riegel-predicted reference pace.
     const ref = perf.kind === 'nav' ? navReferenceFor(perf, own, lookup, config, athlete, asOf, perf.routeKmEff ?? ctx.dEff) : undefined;
-    return { perf, ctx, ps: scorePerformance(ctx, athlete, config, asOf, { navRefPaceSecPerKm: ref?.secPerKm }) };
+    return { perf, ctx, ps: scorePerformance(ctx, athlete, config, asOf, { navRefPaceSecPerKm: ref?.secPerKm, pausedDays: input.pausedDaysAfter?.(perf.date) ?? 0 }) };
   });
 
   const { levels, byDomain } = armLevelsInWindow(entries, config);

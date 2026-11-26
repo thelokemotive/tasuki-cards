@@ -61,6 +61,8 @@ Three tests, each on **both legs**; the weaker leg counts. **The Lunge** (ankle,
 
 ## 4b. Winter Mode (holidays and the snow season)
 
+**From 7 Dec 2026 the White Season gym programme (4c) runs the winter streak for everyone on the winter roster.** Winter Mode below still works outside White Season weeks; for 2026–27 there is no need to set its winter weeks.
+
 **Winter Mode** (❄ in the menu). Add the winter weeks once: the Christmas holiday (kind *Holiday*) and the snow season (kind *Snow season*). From then on:
 
 - **The rule for everyone**: 2 sessions a week on different days, at least one a run of 15+ minutes (outdoors, treadmill, parkrun, Circuit). One armour session (10 minutes of calf raises, pogo hops, ankle work) or gym session can be the other. Staff need 3. Ski days are logged but do not count. Extra sessions earn nothing.
@@ -74,6 +76,14 @@ Three tests, each on **both legs**; the weaker leg counts. **The Lunge** (ankle,
 - **Sore heel or knee** (Y7–Y10, 4/10 or more) goes to **For the coach** with no session suggested.
 
 Top-ups never change a rating, a PB or the 5K prediction (treadmills are not calibrated). The spring time trial shows whether the winter worked.
+
+## 4c. Winter routine (White Season, 7 Dec – 11 Apr)
+
+1. **Launch, once:** Settings → **White Season**: check the winter roster, then **Confirm** km per session (the suggestion gets the team to Ōtemachi in late March). Print the term's **Gym Log sheets** (Cards & Print → Gym Log sheet).
+2. **Each week:** photograph last week's sheet, send it to Claude, paste the block into **Paste & Match**, check the amber "!" rows and the suggestions, **Approve**. In the holidays, paste the holiday Form's CSV instead.
+3. **Winter Ekiden:** move the paper pin as the coach line says, then **Copy weekly post** for Teams. Project or print the board itself: it shows team numbers only.
+4. **Coach radar:** have a quiet word with anyone listed ("!", quiet for 2 weeks, 4+ sessions, Summit without a pass). Never project or print it.
+5. **Every ~4 weeks:** after the ARM Upgrade Clinic, add Summit passes with `# summit | date` (or on the athlete page). Medical freezes: `# freeze: medical | date` or **Apply freeze…**.
 
 ## 5. The fun bits (Yama)
 

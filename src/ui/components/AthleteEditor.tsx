@@ -9,6 +9,7 @@ import { defaultAvatar } from '../../engine/avatarDefaults';
 import { academicYearOf, isISODate } from '../../engine/dates';
 import { displayName } from '../../engine/display';
 import { findDuplicateAthlete } from '../../engine/names';
+import { inWinterProgramme } from '../../engine/white';
 
 export function newAthlete(id: string, today: string, startMonth = 9, startDay = 1): Athlete {
   return {
@@ -151,6 +152,15 @@ export function AthleteEditor({ athlete, onClose, onSaved }: { athlete: Athlete;
               <input type="checkbox" checked={a.active} onChange={(e) => set('active', e.target.checked)} />
               Active
             </label>
+          </Field>
+          <Field label="White Season (Dec–Apr gym programme)">
+            <label className="check">
+              <input type="checkbox" checked={inWinterProgramme(a)} onChange={(e) => set('winterProgramme', e.target.checked)} />
+              On the winter roster (Gym Log sheet, winter streak, team board)
+            </label>
+          </Field>
+          <Field label="Summit pass (may log tier 3)" hint="The date the pass was given. Leave blank for none.">
+            <input className="input" type="date" value={a.summitPass?.date ?? ''} onChange={(e) => set('summitPass', isISODate(e.target.value) ? { date: e.target.value } : undefined)} />
           </Field>
         </div>
         <Field label="Coach notes (private)">

@@ -46,6 +46,22 @@ export function HelpPage() {
         </ul>
       </Panel>
 
+      <Panel title="White Season (Dec–Apr)">
+        <p>
+          From December to April the squad skis, and keeps fit with two 20–30 minute gym sessions a week. A week <strong>qualifies</strong> with credited sessions on {c.winter.minDaysPerWeek} different days (at most 1 credited per day, {c.winter.weeklyCap} per week).
+          Holiday weeks and frozen weeks are <strong>neutral</strong>. The first miss is <strong>frosted</strong> (streak held); a second miss in a row <strong>breaks</strong> it. A good week straight after earns a <strong>Comeback Thaw</strong>.
+          While the Winter Shield is on (qualifying and neutral weeks), results do not age. Gym sessions never change a rating.
+        </p>
+        <ol>
+          <li>Print the <Link to="/cards?sheet=gym">Gym Log sheets</Link> for the coming weeks (holiday weeks are skipped).</li>
+          <li>Each week, paste the block Claude makes from the photo of the sheet into <Link to="/paste">Paste &amp; Match</Link>, check and approve.</li>
+          <li>Open the <Link to="/ekiden">Winter Ekiden</Link> board: move the pin on the paper board, copy the weekly post for Teams.</li>
+          <li>Check the <Link to="/radar">Coach radar</Link> and have a quiet word with anyone it lists.</li>
+          <li>In the holidays, paste the holiday Form's CSV export instead.</li>
+        </ol>
+        <p className="small muted">Set the season, the cards, km per session and the winter roster in <Link to="/settings?tab=white">Settings → White Season</Link>. The line formats are below.</p>
+      </Panel>
+
       <Panel title="Tasuki line format">
         <Markdown source={lineFormat} />
       </Panel>

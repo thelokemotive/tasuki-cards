@@ -8,6 +8,103 @@ export const BLEEP_PERCENTILES = [5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 95] as 
 
 export type AgeGradeTableId = 'alan_jones_2025' | 'fallback_provisional';
 
+/** One laminated workout card (White Season). */
+export interface WinterCard {
+  code: string;
+  name: string;
+  /** No tier digit (e.g. "Run outside"). */
+  tierless?: boolean;
+}
+
+export interface RouteStation {
+  name: string;
+  /** Cumulative km from the start. */
+  km: number;
+  /** The last station of Day 1. */
+  dayFinish?: boolean;
+}
+
+export interface WhiteHalfTerm {
+  id: string;
+  name: string;
+  start: string;
+  end: string;
+}
+
+/** The White Season calendar (weeks Monday–Sunday, Asia/Tokyo). */
+export interface WhiteSeason {
+  name: string;
+  /** First Monday and last Sunday of the season. */
+  start: string;
+  end: string;
+  /** Mondays of the counted term weeks. */
+  termWeeks: string[];
+  /** Mondays of the neutral holiday weeks. */
+  holidayWeeks: string[];
+  /** Half-terms for the self-RF allowance. */
+  halfTerms: WhiteHalfTerm[];
+}
+
+export const WHITE_DEFAULTS = {
+  whiteEnabled: true,
+  season: {
+    name: 'White Season 2026–27',
+    start: '2026-12-07',
+    end: '2027-04-11',
+    termWeeks: ['2026-12-07', '2027-01-11', '2027-01-18', '2027-01-25', '2027-02-01', '2027-02-08', '2027-03-01', '2027-03-08', '2027-03-15', '2027-03-22', '2027-03-29'],
+    holidayWeeks: ['2026-12-14', '2026-12-21', '2026-12-28', '2027-01-04', '2027-02-15', '2027-02-22', '2027-04-05'],
+    halfTerms: [
+      { id: 'autumn-2026', name: 'Autumn (to Fri 11 Dec)', start: '2026-11-02', end: '2026-12-11' },
+      { id: 'spring1-2027', name: 'Spring 1', start: '2027-01-11', end: '2027-02-12' },
+      { id: 'spring2-2027', name: 'Spring 2', start: '2027-03-01', end: '2027-04-07' },
+    ],
+  } as WhiteSeason,
+  cards: [
+    { code: 'E', name: 'Engine' },
+    { code: 'A', name: 'Armour' },
+    { code: 'S', name: 'Ski Fix' },
+    { code: 'X', name: 'Express' },
+    { code: 'H', name: 'Holiday Express' },
+    { code: 'R', name: 'Run outside (20 min+)', tierless: true },
+  ] as WinterCard[],
+  tierNames: ['Base', 'Mid', 'Summit'],
+  slogan: 'Keep the tasuki moving',
+  weeklyCap: 3,
+  minDaysPerWeek: 2,
+  selfRfPerHalfTerm: 2,
+  missGraceWeeks: 1,
+  kmPerSession: null as number | null,
+  route: [
+    { name: 'Ōtemachi', km: 0 },
+    { name: 'Tsurumi', km: 21.3 },
+    { name: 'Totsuka', km: 44.4 },
+    { name: 'Hiratsuka', km: 65.8 },
+    { name: 'Odawara', km: 86.7 },
+    { name: 'Ashinoko', km: 107.5, dayFinish: true },
+    { name: 'Odawara', km: 128.3 },
+    { name: 'Hiratsuka', km: 149.6 },
+    { name: 'Totsuka', km: 171.0 },
+    { name: 'Tsurumi', km: 194.1 },
+    { name: 'Ōtemachi', km: 217.1 },
+  ] as RouteStation[],
+  radarSessionsFlag: 4,
+  radarQuietWeeks: 2,
+  holidayHeroSessions: 4,
+  postTemplates: [
+    'Winter Ekiden: {cardsWeek} cards this week moved our tasuki {kmWeek} km. We are on leg {leg}, {kmToNext} km from {nextStation}. Keep the tasuki moving!',
+    '{kmWeek} km this week from {cardsWeek} cards. Next stop: {nextStation}, {kmToNext} km away. Two cards a week keeps the tasuki moving.',
+    'Leg {leg} of the Hakone route. {cardsWeek} cards logged, {kmWeek} km added. {nextStation} is {kmToNext} km ahead. Comeback Thaws: {thawNames}.',
+    'The tasuki has travelled {kmTotal} km. This week: {cardsWeek} cards, {kmWeek} km. Next station {nextStation} in {kmToNext} km.',
+    'Gym cards done: {cardsWeek} this week. That is {kmWeek} km on the road to {nextStation} ({kmToNext} km to go). Write your code in today’s box!',
+    '{thawCount} Comeback Thaws this week ({thawNames}). Team total {kmTotal} km, leg {leg}, {kmToNext} km to {nextStation}. Keep the tasuki moving.',
+  ],
+  postTotalTemplates: [
+    'Winter Ekiden: the tasuki has now travelled {kmTotal} km along the Hakone route. Next station {nextStation}, {kmToNext} km away. Keep the tasuki moving!',
+    '{kmTotal} km and counting. Leg {leg}, {kmToNext} km to {nextStation}. Two cards a week keeps the tasuki moving.',
+  ],
+  postMaxWords: 60,
+};
+
 export interface Config {
   version: number;
   createdAt: string;
@@ -258,6 +355,40 @@ export interface Config {
     growthYears: string[];
     /** Treadmill incline (%) that makes belt pace roughly match outdoor pace (Jones & Doust 1996). */
     treadmillInclinePct: number;
+
+    // ---- White Season (Dec–Apr gym programme, src/engine/white.ts). Gym sessions never change a rating. ----
+    /** White Season rules on. Config versions from before White Season read as off (their ratings reproduce). */
+    whiteEnabled: boolean;
+    /** The season calendar: counted term weeks and neutral holiday weeks, each listed by its Monday. */
+    season: WhiteSeason;
+    /** The laminated workout cards. A tierless card (e.g. run outside) takes no tier digit. */
+    cards: WinterCard[];
+    /** Names of tiers 1, 2, 3 (Base, Mid, Summit). Tier 3 needs a Summit pass. */
+    tierNames: string[];
+    slogan: string;
+    /** At most this many credited sessions per week (and at most 1 per date). */
+    weeklyCap: number;
+    /** Credited sessions on at least this many different dates make a qualifying week. */
+    minDaysPerWeek: number;
+    /** Self recovery freezes (RF) honoured per half-term. */
+    selfRfPerHalfTerm: number;
+    /** Consecutive non-qualifying, non-neutral weeks that are frosted (held) before the next one breaks the streak. */
+    missGraceWeeks: number;
+    /** Team km per credited session on the Winter Ekiden board. null until the coach confirms it at launch. */
+    kmPerSession: number | null;
+    /** Stations along the route with cumulative km; dayFinish marks the end of Day 1. */
+    route: RouteStation[];
+    /** Coach radar: this many sessions logged in one week is flagged (a check for compulsive training). */
+    radarSessionsFlag: number;
+    /** Coach radar: no credited session in this many counted weeks. */
+    radarQuietWeeks: number;
+    /** Holiday Hero badge: credited sessions in one holiday. */
+    holidayHeroSessions: number;
+    /** Weekly Teams post templates (one per week, in rotation). Placeholders in braces. */
+    postTemplates: string[];
+    /** Used instead when this week's cards are fewer than last week's (built on {kmTotal}). */
+    postTotalTemplates: string[];
+    postMaxWords: number;
   };
 
   streak: {
@@ -479,6 +610,7 @@ export const DEFAULT_CONFIG: Config = {
     painFlag: 6,
     growthYears: ['Y7', 'Y8', 'Y9', 'Y10'],
     treadmillInclinePct: 1,
+    ...WHITE_DEFAULTS,
   },
 
   surge: {
@@ -592,6 +724,8 @@ export function evidenceMigration(configs: Config[] | undefined, createdAt: stri
  * (withDefaults would otherwise fill the new keys with today's defaults.)
  */
 function legacyRules(stored: Partial<Config>): Partial<Config> {
+  // Versions from before White Season (Dec 2026) are read with it off, so their ratings reproduce.
+  if (stored.winter && (stored.winter as Partial<Config['winter']>).season === undefined) stored = { ...stored, winter: { ...DEFAULT_CONFIG.winter, ...stored.winter, whiteEnabled: false } };
   // Versions from before the race rule in the 5K prediction (18 Nov 2026) are read with it off.
   let raced: Partial<Config> =
     stored.predict?.raceOnlyRuledOutByLonger === undefined
@@ -703,6 +837,22 @@ export function armLadderMigration(configs: Config[] | undefined, createdAt: str
   const draft = cloneConfig(cur);
   draft.arm.interim.steps = [...DEFAULT_CONFIG.arm.interim.steps];
   return { ...nextConfigVersion(cur, draft, createdAt, ARM_LADDER_NOTE), migration: ARM_LADDER_MIGRATION };
+}
+
+/** Marks the version that brought in White Season (the Dec–Apr gym programme). */
+export const WHITE_MIGRATION = 'white-season-2026-12';
+export const WHITE_NOTE = 'White Season 2026–27: gym streak, Winter Shield, Winter Ekiden board (gym sessions never change a rating)';
+
+/** One-off: a store whose current version has no White Season gets a new version with it on. Runs at most once. */
+export function whiteMigration(configs: Config[] | undefined, createdAt: string): Config | undefined {
+  if (!configs || configs.length === 0) return undefined;
+  if (configs.some((c) => c.migration === WHITE_MIGRATION)) return undefined;
+  const cur = currentConfig(configs);
+  const stored = configs.reduce((a, b) => (b.version > a.version ? b : a));
+  if ((stored.winter as Partial<Config['winter']> | undefined)?.season !== undefined) return undefined;
+  const draft = cloneConfig(cur);
+  draft.winter = { ...draft.winter, ...cloneConfig({ winter: WHITE_DEFAULTS } as unknown as Config).winter, whiteEnabled: true };
+  return { ...nextConfigVersion(cur, draft, createdAt, WHITE_NOTE), migration: WHITE_MIGRATION };
 }
 
 /** The ARM rules as they were before Season 0 (stork balance plate, calf 10–30). For tests and comparisons. */

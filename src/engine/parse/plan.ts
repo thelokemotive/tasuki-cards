@@ -94,6 +94,7 @@ const EVENT_KIND: Record<PerfKind, EventKind> = {
   bleep: 'test',
   arm: 'test',
   treadmill: 'session',
+  gym_session: 'session',
 };
 
 const COURSE_KINDS: PerfKind[] = ['circuit', 'climb', 'descent', 'nav'];

@@ -25,6 +25,8 @@ import { HandicapPage } from './pages/HandicapPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { ScenesPage } from './pages/ScenesPage';
 import { WinterPage } from './pages/WinterPage';
+import { EkidenPage } from './pages/EkidenPage';
+import { RadarPage } from './pages/RadarPage';
 import { ArmouryPage } from './pages/ArmouryPage';
 import { ArmourPage } from './pages/ArmourPage';
 import { SquadPage } from './pages/SquadPage';
@@ -57,6 +59,8 @@ const NAV: (NavItem | 'sep')[] = [
   { page: 'boards', to: '/boards', label: 'Boards', icon: '≡' },
   { page: 'handicap', to: '/handicap', label: 'Handicap Start', icon: '⏱' },
   { page: 'winter', to: '/winter', label: 'Winter Mode', icon: '❄' },
+  { page: 'ekiden', to: '/ekiden', label: 'Winter Ekiden', icon: '🎌' },
+  { page: 'radar', to: '/radar', label: 'Coach radar', icon: '◎' },
   'sep',
   { page: 'settings', to: '/settings', label: 'Settings', icon: '⚙' },
   { page: 'help', to: '/help', label: 'Help', icon: '?' },
@@ -79,6 +83,8 @@ const TITLES: Record<string, string> = {
   handicap: 'Circuit Handicap Start',
   settings: 'Settings',
   help: 'Help',
+  ekiden: 'Winter Ekiden',
+  radar: 'Coach radar',
 };
 
 // Everyone at school who is not a coach: view only. The pupil app: their Trail, their card, logging a
@@ -157,6 +163,10 @@ function renderPage(route: Route): ReactNode {
       return <SquadPage />;
     case 'winter':
       return <WinterPage />;
+    case 'ekiden':
+      return <EkidenPage />;
+    case 'radar':
+      return <RadarPage />;
     case 'armoury':
       return <ArmouryPage />;
     case 'armour':
@@ -233,6 +243,7 @@ function Shell() {
   const preview = usePreview();
   const [me] = useMyCard();
   if (route.page === 'projector') return <ProjectorPage />;
+  if (route.page === 'ekiden' && route.query.get('projector') === '1' && !viewer) return <EkidenPage />;
   const nav = viewer ? VIEWER_NAV : NAV;
   const activePage = viewer
     ? route.page === 'athlete'

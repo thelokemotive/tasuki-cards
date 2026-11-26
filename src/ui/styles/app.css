@@ -275,7 +275,7 @@ table.table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 @media print {
   body { background: #fff; }
   .nav, .topbar, .banner, .no-print, .toasts { display: none !important; }
-  .shell { display: block; }
+  .shell { display: block; min-height: 0; }
   .content { padding: 0; max-width: none; }
   .prov { display: none !important; }
 }
@@ -318,7 +318,11 @@ table.table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
   .btn { min-height: 38px; }
   .btn-sm { min-height: 32px; }
 }
-@media print { .acct { display: none !important; } }
+@media print {
+  .acct { display: none !important; }
+  /* A4 is narrower than the phone breakpoint: without this the phone layout's bottom padding adds a blank last page. */
+  .content { padding: 0 !important; }
+}
 
 /* Winter Mode */
 .winter-head { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
@@ -345,3 +349,10 @@ td .winter-strip { flex-wrap: nowrap; }
 .winter-session ol { margin: 6px 0 0; padding-left: 18px; }
 @media print { .winter-session { break-inside: avoid; } }
 .winter-next-cell { min-width: 260px; }
+
+/* Settings → White Season: winter roster */
+.white-roster { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.white-roster-group { display: flex; flex-direction: column; gap: 2px; border: 1px solid var(--line, #dde); border-radius: 8px; padding: 8px; }
+
+/* Coach-only pages (the coach radar): never printed. */
+@media print { .no-print-page { display: none !important; } }

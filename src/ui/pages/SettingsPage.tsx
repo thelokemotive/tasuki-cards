@@ -5,8 +5,9 @@ import { DataTab } from './settings/DataTab';
 import { CoursesTab } from './settings/CoursesTab';
 import { CalendarTab } from './settings/CalendarTab';
 import { ScoringTab } from './settings/ScoringTab';
+import { WhiteSeasonTab } from './settings/WhiteSeasonTab';
 
-type Tab = 'data' | 'courses' | 'calendar' | 'scoring';
+type Tab = 'data' | 'courses' | 'calendar' | 'white' | 'scoring';
 
 export function SettingsPage() {
   const route = useRoute();
@@ -22,6 +23,7 @@ export function SettingsPage() {
             { value: 'data', label: 'Data & backups' },
             { value: 'courses', label: 'Courses' },
             { value: 'calendar', label: 'Calendar' },
+            { value: 'white', label: 'White Season' },
             { value: 'scoring', label: 'Scoring constants' },
           ]}
         />
@@ -29,6 +31,7 @@ export function SettingsPage() {
       {tab === 'data' && <DataTab />}
       {tab === 'courses' && <CoursesTab />}
       {tab === 'calendar' && <CalendarTab />}
+      {tab === 'white' && <WhiteSeasonTab />}
       {tab === 'scoring' && <ScoringTab />}
     </div>
   );

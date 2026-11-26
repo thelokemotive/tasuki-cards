@@ -8,12 +8,16 @@ import { useData } from '../data/DataContext';
 import { formatLongDate, isISODate, isoWeek, weekMonday } from '../../engine/dates';
 import { halfTermOfWeek } from '../../engine/streak';
 import { fullName } from '../../engine/display';
+import { inWhiteSeason } from '../../engine/white';
 
 export function FreezeModal({ athlete, onClose }: { athlete: Athlete; onClose: () => void }) {
-  const { snapshot, commit, today } = useData();
+  const { snapshot, commit, today, config } = useData();
   const toast = useToast();
   const [date, setDate] = useState(today);
+  const [kind, setKind] = useState<'coach' | 'medical' | 'self_rf'>('coach');
   const week = isISODate(date) ? isoWeek(date) : '';
+  // White Season weeks follow the White rules: coach and medical freezes have no limit; a self RF uses the half-term allowance.
+  const white = config.winter.whiteEnabled && isISODate(date) && inWhiteSeason(weekMonday(week), config.winter.season);
   const term = week ? halfTermOfWeek(week, snapshot.calendar.halfTerms) : undefined;
   const mine = snapshot.participation.filter((p) => p.athleteId === athlete.id && p.type === 'freeze');
   const usedInTerm = term ? mine.filter((p) => halfTermOfWeek(p.isoWeek, snapshot.calendar.halfTerms)?.id === term.id) : [];
@@ -34,9 +38,10 @@ export function FreezeModal({ athlete, onClose }: { athlete: Athlete; onClose: (
           </button>
           <button
             className="btn btn-primary"
-            disabled={!week || already || !term}
+            disabled={!week || already || (!term && !white)}
             onClick={async () => {
-              const p: Participation = { id: newId('part'), athleteId: athlete.id, isoWeek: week, type: 'freeze', date };
+              // A freeze never stores a reason.
+              const p: Participation = { id: newId('part'), athleteId: athlete.id, isoWeek: week, type: 'freeze', date, ...(white ? { freezeKind: kind } : {}) };
               await commit({ put: { participation: [p] } });
               toast('Freeze applied', 'ok');
               onClose();
@@ -51,8 +56,23 @@ export function FreezeModal({ athlete, onClose }: { athlete: Athlete; onClose: (
       <Field label="Any date in the week to freeze">
         <input className="input" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
       </Field>
+      {white && (
+        <Field label="White Season freeze">
+          <select className="select" value={kind} onChange={(e) => setKind(e.target.value as typeof kind)}>
+            <option value="coach">Coach freeze (no limit)</option>
+            <option value="medical">Medical (no limit)</option>
+            <option value="self_rf">Self recovery week (RF: {config.winter.selfRfPerHalfTerm} per half-term)</option>
+          </select>
+        </Field>
+      )}
       <p className="small" style={{ marginTop: 8 }}>
-        {!term ? (
+        {white ? (
+          already ? (
+            <span style={{ color: 'var(--warn)' }}>This week is already frozen.</span>
+          ) : (
+            <span className="muted">The week is neutral: the streak is unchanged. No reason is stored, anywhere.</span>
+          )
+        ) : !term ? (
           <span style={{ color: 'var(--err)' }}>This week is not inside a half-term. Add half-terms in Settings → Calendar first.</span>
         ) : already ? (
           <span style={{ color: 'var(--warn)' }}>This week is already frozen.</span>

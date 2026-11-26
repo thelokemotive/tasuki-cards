@@ -70,6 +70,13 @@ export interface Athlete {
   heightMeasuredOn?: ISODate;
   avatar: Avatar;
   active: boolean;
+  /**
+   * In the White Season gym programme (Dec–Apr). Absent: true for an active Y7–Y13 pupil, false for Staff
+   * (see inWinterProgramme in src/engine/white.ts).
+   */
+  winterProgramme?: boolean;
+  /** Holds a Summit pass (may log tier 3, the Summit level). Date the pass was given. */
+  summitPass?: { date: ISODate };
   notes?: string;
   demo?: boolean;
   createdAt?: ISOTimestamp;
@@ -132,10 +139,23 @@ export type PerfKind =
   | 'nav'
   | 'arm'
   /** A session on a school treadmill, logged by the pupil from a photo of the console. Habit, not ratings. */
-  | 'treadmill';
+  | 'treadmill'
+  /** White Season gym session (a laminated workout card). Never feeds any rating: streaks, board and badges only. */
+  | 'gym_session';
+/** Kinds a coach can enter as a result (gym sessions come from the Gym Log sheet or the holiday Form). */
 export const PERF_KINDS: PerfKind[] = ['race', 'relay_leg', 'parkrun', 'long_run', 'circuit', 'climb', 'descent', 'bleep', 'nav', 'arm', 'treadmill'];
 
-export type PerfSource = 'coach' | 'paste' | 'voice' | 'form';
+export type PerfSource = 'coach' | 'paste' | 'voice' | 'form' | 'sheet';
+
+/** One White Season gym session: the card code, its tier (none for a tierless card), and the "!" flag. */
+export interface GymSession {
+  card: string;
+  tier?: 1 | 2 | 3;
+  /** "!" on the sheet or "Yes" on the Form: something hurt. Coach-only. */
+  hurt: boolean;
+  /** The session falls in a holiday week. */
+  holiday: boolean;
+}
 
 /** One leg's ARM results (Season 0 onwards). */
 /** One leg (also exported as ArmSide, its name in the 18 Nov 2026 build). */
@@ -224,6 +244,8 @@ export interface Performance {
   inclinePct?: number;
   /** How hard it felt, 1 (very easy) to 10 (flat out): the pupil's own word, never a heart rate. */
   effort?: number;
+  // gym_session
+  gym?: GymSession;
   /** Coach entry defaults true; student-reported defaults false until the coach ticks it. */
   verified: boolean;
   source: PerfSource;
@@ -272,6 +294,12 @@ export interface Participation {
   date: ISODate;
   /** Set when type is 'top_up'. */
   topUp?: TopUp;
+  /**
+   * Set on a 'freeze': who applied it. 'self_rf' is a pupil's recovery week (allowance per half-term), 'medical'
+   * is applied by the coach with no limit. Absent on freezes made before White Season: read as 'coach'.
+   * A freeze never stores a reason, anywhere.
+   */
+  freezeKind?: 'coach' | 'self_rf' | 'medical';
   demo?: boolean;
 }
 
@@ -321,6 +349,12 @@ export interface AppMeta {
    * is offered as a new athlete instead of being treated as an outsider.
    */
   ourSchoolNames?: string[];
+  /** Holiday Form CSV: column mapping (field → header text), remembered between imports. */
+  gymFormMapping?: Record<string, string>;
+  /** Holiday Form rows that could not be matched to a runner (shown on the coach radar until dismissed). */
+  gymUnmatched?: { key: string; name: string; email?: string; date?: ISODate; card?: string; at: ISOTimestamp }[];
+  /** The week of the last weekly post copied (for the template rotation). */
+  lastPostWeek?: ISOWeek;
 }
 
 /** Everything the app stores. Export/import uses exactly this shape. */

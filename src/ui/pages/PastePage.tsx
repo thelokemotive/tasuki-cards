@@ -15,6 +15,10 @@ import { VoiceButton } from '../components/VoiceButton';
 import { buildImportPlan, decisionFor, evaluateRow, MATCH_LABEL, planToChanges, willCommit, type PlanRow, type RowDecision, type RowStatus } from '../../engine/parse/plan';
 import { ourSchoolNames, type NewAthleteDraft } from '../../engine/parse/newAthletes';
 import { NewAthletesDialog } from '../components/NewAthletesDialog';
+import { GymReview } from '../components/GymReview';
+import { looksLikeGymFormat, parseGymLines } from '../../engine/parse/gymLine';
+import { looksLikeGymForm } from '../../engine/parse/gymForm';
+import { GymFormImport } from '../components/GymFormImport';
 import { academicYearOf } from '../../engine/dates';
 import type { ParseFormat } from '../../engine/parse/types';
 import { formatKm, formatTime } from '../../engine/format';
@@ -114,8 +118,12 @@ export function PastePage() {
   const deferredText = useDeferredValue(text);
   const existing = snapshot.events.find((e) => e.id === eventId);
 
+  // White Season: a Gym Log sheet block (# gym / # summit / # freeze) has its own review table.
+  const gymImport = useMemo(() => (looksLikeGymFormat(deferredText) ? parseGymLines(deferredText, snapshot.athletes, config, today) : null), [deferredText, snapshot.athletes, config, today]);
+  // White Season: the holiday Microsoft Form export (one response per gym session).
+  const gymForm = !gymImport && looksLikeGymForm(deferredText, snapshot.meta.gymFormMapping);
   const plan = useMemo(() => {
-    if (!deferredText.trim()) return null;
+    if (!deferredText.trim() || looksLikeGymFormat(deferredText) || looksLikeGymForm(deferredText, snapshot.meta.gymFormMapping)) return null;
     return buildImportPlan(deferredText, {
       snapshot,
       config,
@@ -482,6 +490,8 @@ export function PastePage() {
           </div>
         </Panel>
       )}
+      {gymImport && <GymReview imp={gymImport} onDone={() => setText('')} />}
+      {gymForm && <GymFormImport key={deferredText.slice(0, 200)} text={deferredText} onDone={() => setText('')} />}
       {editingDrafts && <NewAthletesDialog drafts={editingDrafts} onClose={() => setEditingDrafts(null)} onConfirm={confirmDrafts} />}
       {plan && rows.length === 0 && (
         <Panel>

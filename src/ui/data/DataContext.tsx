@@ -2,7 +2,7 @@
 // — the only way pages change data. Every commit autosaves through the Store.
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { DataSnapshot, ISODate } from '../../types';
-import { armCalfMigration, armLadderMigration, armS0Migration, currentConfig, DEFAULT_CONFIG, engagementMigration, evidenceMigration, goLiveMigration, raceAnchorMigration, type Config } from '../../engine/config';
+import { armCalfMigration, armLadderMigration, armS0Migration, currentConfig, DEFAULT_CONFIG, engagementMigration, evidenceMigration, goLiveMigration, raceAnchorMigration, whiteMigration, type Config } from '../../engine/config';
 import { yearRollover } from '../../engine/display';
 import { todayTokyo } from '../../engine/dates';
 import { deriveAll, type Derived } from '../../engine/derive';
@@ -65,7 +65,9 @@ export function withSeed(s: DataSnapshot, now: string = new Date().toISOString()
     const armS0 = armS0Migration(beforeArm, now);
     const armCalf = armCalfMigration(armS0 ? [...beforeArm, armS0] : beforeArm, now);
     const armLadder = armLadderMigration([...beforeArm, armS0, armCalf].filter((c): c is Config => !!c), now);
-    const added = [goLive, evidence, engagement, raceAnchor, armS0, armCalf, armLadder].filter((c): c is Config => !!c);
+    const beforeWhite = [...beforeArm, armS0, armCalf, armLadder].filter((c): c is Config => !!c);
+    const white = whiteMigration(beforeWhite, now);
+    const added = [goLive, evidence, engagement, raceAnchor, armS0, armCalf, armLadder, white].filter((c): c is Config => !!c);
     if (added.length) changes.put!.configs = added;
   }
   if (s.courses.length === 0) changes.put!.courses = seedCourses();
