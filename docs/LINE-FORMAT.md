@@ -63,3 +63,38 @@ Coach Example 9:45:00
 ### Names
 
 Names are matched against the roster using every stored alias: romaji or kanji or kana, either name order, initials (`Ken S`, `H. Mockridge`), and spelling slips. Kanji names match only through a stored alias. A fuzzy match is only ever a suggestion: you confirm it, and the app then remembers that spelling as a new alias.
+
+## White Season: the Gym Log sheet (Dec–Apr)
+
+Claude turns the photo of the paper Gym Log sheet into this block. Paste it into **Paste & Match**; it gets its own review table and nothing is saved until you approve.
+
+```
+# gym | 2027-01-11
+Aiko Tanaka | Mon A2 | Thu E1!
+Ben Carter | Tue S1 | Fri X2 | Sat A3
+Chika Mori | RF
+```
+
+- `# gym | date`: the date is the **Monday** of the week. Any other date is moved to its Monday, with a warning.
+- Each line: the runner's name, then day tokens (`Mon` to `Sun`, any case), each followed by a code. The `|` bars are optional.
+- A **code** is a card letter, a tier digit, and an optional `!`: `A2` = Armour, Mid; `E1!` = Engine, Base, something hurt. A tierless card (`R`, run outside) has no digit. One day can hold several codes (`Mon A2 E1`).
+- `RF` anywhere on a line is a self recovery week (freeze) for that week.
+- Cards and tier names come from **Settings → White Season** (default E Engine, A Armour, S Ski Fix, X Express, H Holiday Express, R Run outside; tiers 1 Base, 2 Mid, 3 Summit).
+- Warnings in the review: unknown code or day, the same date twice (the second is not credited), over the weekly cap, Summit without a pass, `!` (amber), RF over the half-term allowance, RF in a week that already qualifies, a date outside White Season, and already imported (same runner, date and card: skipped, so pasting the same block twice adds nothing).
+- Gym sessions never change any rating. They drive the streak, freezes, the freshness pause, badges and the Winter Ekiden board.
+
+## White Season: Summit passes and medical freezes
+
+```
+# summit | 2027-01-12
+Aiko Tanaka, Ben Carter
+# freeze: medical | 2027-01-18
+Chika Mori
+```
+
+- `# summit | date`: gives each runner a Summit pass (▲) from that date, so they may log tier 3. Names separated by commas or one per line.
+- `# freeze: medical | date`: a medical freeze for that week (no limit). `# freeze: coach` is a coach freeze. A freeze never stores a reason.
+
+## White Season: the holiday Form
+
+Paste (or drop) the Microsoft Form's CSV export into **Paste & Match**. Choose the columns once (they are remembered), check the review and approve. "Family, Given" names are matched; a confirmed respondent's email is remembered as an alias. Responses that cannot be matched are listed on the **Coach radar**.

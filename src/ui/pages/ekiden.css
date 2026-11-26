@@ -13,8 +13,9 @@
 .ek-turn { font-size: 20px; }
 .ek-stn-km { font-size: 14px; fill: #6b665c; }
 .ek-day { font-size: 16px; font-weight: 700; fill: #6b665c; letter-spacing: 0.06em; text-transform: uppercase; }
-.ek-marker-ring { fill: #fff; stroke: var(--shu, #c8402a); stroke-width: 4; }
-.ek-sash { fill: var(--shu, #c8402a); }
+.ek-pin { fill: var(--ink, #1d2233); stroke: #fff; stroke-width: 2.5; }
+.ek-sash { fill: var(--shu, #c8402a); stroke: #fff; stroke-width: 1.5; }
+.ek-pin-label { font-size: 16px; font-weight: 800; fill: var(--ink, #1d2233); paint-order: stroke; stroke: #fff; stroke-width: 4px; }
 .ek-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
 .ek-fact { display: flex; flex-direction: column; border: 1px solid var(--line, #dde); border-radius: 10px; padding: 8px 12px; }
 .ek-fact span { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: #6b665c; font-weight: 700; }

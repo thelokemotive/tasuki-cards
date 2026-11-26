@@ -16,7 +16,7 @@ import { Link, navigate, useRoute } from '../router';
 
 // Route drawing: Day 1 runs left → right along the top, Day 2 returns right → left along the bottom.
 const X0 = 70;
-const X1 = 930;
+const X1 = 840;
 const Y1 = 120;
 const Y2 = 300;
 
@@ -55,25 +55,31 @@ function RouteSvg({ km, config }: { km: number; config: Config }) {
         const p = pointAt(s.km, route);
         const top = p.y === Y1;
         const passed = km >= s.km;
-        const labelY = s.dayFinish ? Y1 + (Y2 - Y1) / 2 + 6 : top ? p.y - 30 : p.y + 40;
-        const labelX = s.dayFinish ? p.x + 66 : p.x;
+        // The Day 1 finish sits at the turn: its label goes inside the U, beside the bend.
+        const labelY = s.dayFinish ? (Y1 + Y2) / 2 + 16 : top ? p.y - 42 : p.y + 42;
+        const labelX = s.dayFinish ? X1 + (Y2 - Y1) / 2 - 22 : p.x;
         return (
           <g key={`${s.name}-${s.km}`}>
             <circle cx={p.x} cy={p.y} r={s.dayFinish || i === 0 || i === route.length - 1 ? 12 : 9} className={passed ? 'ek-stn ek-stn-done' : 'ek-stn'} />
-            <text x={labelX} y={labelY} textAnchor="middle" className={`ek-stn-name${s.dayFinish ? ' ek-turn' : ''}`}>
+            <text x={labelX} y={labelY} textAnchor={s.dayFinish ? 'end' : 'middle'} className={`ek-stn-name${s.dayFinish ? ' ek-turn' : ''}`}>
               {s.name}
             </text>
-            <text x={labelX} y={labelY + 20} textAnchor="middle" className="ek-stn-km">
+            <text x={labelX} y={labelY + 20} textAnchor={s.dayFinish ? 'end' : 'middle'} className="ek-stn-km">
               {s.km.toFixed(1)} km{s.dayFinish ? ' · Day 1 finish' : ''}
             </text>
           </g>
         );
       })}
-      {/* The tasuki: a sash looped over the marker. */}
-      <g transform={`translate(${marker.x} ${marker.y})`} className="ek-marker">
-        <circle r={20} className="ek-marker-ring" />
-        <path d="M -14 -12 Q 0 -2 14 12 L 9 16 Q -4 4 -18 -6 Z" className="ek-sash" />
-        <path d="M 9 16 L 6 26 L 12 24 L 15 30 L 16 18 Z" className="ek-sash" />
+      {/* The tasuki marker: a pin whose head carries a red sash. */}
+      {/* On Day 1 the station names are above the line, so the pin hangs below it; on Day 2 it stands above. */}
+      <g transform={`translate(${marker.x} ${marker.y === Y1 ? marker.y + 4 : marker.y - 4})`} className="ek-marker">
+        <g transform={marker.y === Y1 ? 'scale(1 -1)' : undefined}>
+          <path d="M 0 0 C -10 -12 -17 -20 -17 -31 A 17 17 0 1 1 17 -31 C 17 -20 10 -12 0 0 Z" className="ek-pin" />
+          <rect x={-15} y={-36} width={30} height={10} rx={2} transform="rotate(-32 0 -31)" className="ek-sash" />
+        </g>
+        <text y={marker.y === Y1 ? 68 : -52} textAnchor="middle" className="ek-pin-label">
+          {km1(km).toFixed(1)} km
+        </text>
       </g>
     </svg>
   );
@@ -150,7 +156,7 @@ export function EkidenBoard({ bw, config, big }: { bw: BoardWeek; config: Config
 }
 
 export function EkidenPage() {
-  const { derived, config, snapshot, today, commit } = useData();
+  const { derived, config, snapshot, asOf: today, commit } = useData();
   const toast = useToast();
   const route = useRoute();
   const team = derived.ekiden;

@@ -35,7 +35,7 @@ function Section({ title, hint, names, children }: { title: string; hint: string
 }
 
 export function RadarPage() {
-  const { derived, config, snapshot, today, commit } = useData();
+  const { derived, config, snapshot, asOf: today, commit } = useData();
   const season = config.winter.season;
   const weeks = seasonWeeks(season).filter((w) => w <= isoWeek(today));
   const def = [...weeks].reverse().find((w) => w < isoWeek(today)) ?? weeks.at(-1);
