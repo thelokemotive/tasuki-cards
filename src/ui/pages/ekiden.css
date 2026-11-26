@@ -1,0 +1,37 @@
+/* Winter Ekiden board: an original, simple route line (not a map). */
+.ek-board { background: var(--surface, #fff); border: 1px solid var(--line, #dde); border-radius: 14px; padding: 18px 22px; color: var(--ink, #1b1b1b); }
+.ek-title { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+.ek-title h2 { margin: 2px 0 0; font-size: 1.6rem; }
+.ek-kicker { font-size: 0.8rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--shu, #c8402a); }
+.ek-slogan { font-style: italic; font-weight: 600; }
+.ek-svg { width: 100%; height: auto; display: block; margin: 6px 0 4px; }
+.ek-road { fill: none; stroke: #d8d4ca; stroke-width: 14; stroke-linecap: round; stroke-linejoin: round; }
+.ek-done { fill: none; stroke: var(--shu, #c8402a); stroke-width: 14; stroke-linecap: round; stroke-linejoin: round; }
+.ek-stn { fill: #fff; stroke: #8a857a; stroke-width: 3; }
+.ek-stn-done { stroke: var(--shu, #c8402a); fill: #fde9e3; }
+.ek-stn-name { font-size: 19px; font-weight: 700; fill: var(--ink, #1b1b1b); }
+.ek-turn { font-size: 20px; }
+.ek-stn-km { font-size: 14px; fill: #6b665c; }
+.ek-day { font-size: 16px; font-weight: 700; fill: #6b665c; letter-spacing: 0.06em; text-transform: uppercase; }
+.ek-marker-ring { fill: #fff; stroke: var(--shu, #c8402a); stroke-width: 4; }
+.ek-sash { fill: var(--shu, #c8402a); }
+.ek-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
+.ek-fact { display: flex; flex-direction: column; border: 1px solid var(--line, #dde); border-radius: 10px; padding: 8px 12px; }
+.ek-fact span { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: #6b665c; font-weight: 700; }
+.ek-fact strong { font-size: 1.6rem; line-height: 1.2; }
+.ek-fact em { font-style: normal; font-size: 0.9rem; color: #4d493f; }
+.ek-finished { background: #fde9e3; border-color: var(--shu, #c8402a); }
+.ek-finished strong { color: var(--shu, #c8402a); letter-spacing: 0.1em; }
+.ek-thaws { margin-top: 10px; font-size: 1rem; }
+.ek-coach { margin-top: 10px; padding: 8px 12px; border-radius: 8px; background: #fff6dc; border: 1px dashed #c99a2e; }
+.ek-projector { position: fixed; inset: 0; background: #0f1a2b; display: flex; align-items: center; justify-content: center; padding: 3vh 3vw; overflow: auto; }
+.ek-projector .ek-board { width: min(96vw, 170vh); }
+.ek-big { font-size: 1.25rem; }
+.ek-big .ek-title h2 { font-size: 2.4rem; }
+.ek-big .ek-fact strong { font-size: 2.4rem; }
+.ek-exit { position: fixed; top: 12px; right: 12px; opacity: 0.6; }
+
+@media print {
+  .ek-print { page: ekiden; }
+  .ek-board { border: none; padding: 0; break-inside: avoid; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}

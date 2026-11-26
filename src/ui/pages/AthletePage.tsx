@@ -27,6 +27,7 @@ import { DevelopmentFocus, StatRadar, SummitLadder } from '../components/Mountai
 import { NextFiveK } from '../components/NextFiveK';
 import { GldPanel } from '../components/GldPanel';
 import { WinterPanel } from '../components/WinterPanel';
+import { FrostFrame, WhitePanel } from '../components/WhitePanel';
 import { Placings } from '../components/Placings';
 import { paceOf } from '../../engine/explain';
 import { useAccount } from '../cloud/account';
@@ -163,12 +164,24 @@ export function AthletePage() {
       .map((s) => ({ date: s.date, score: s.score }))
       .sort((x, y) => (x.date < y.date ? -1 : 1)),
   }));
-  const perfs = [...d.perfs].reverse().filter((p) => (view === 'deleted' ? p.deleted : !p.deleted && (view === 'vault' || !scores.get(p.id)?.expired)));
+  // Gym sessions are listed in the White Season panel, not with results (they are never rated).
+  const perfs = [...d.perfs].reverse().filter((p) => p.kind !== 'gym_session' && (view === 'deleted' ? p.deleted : !p.deleted && (view === 'vault' || !scores.get(p.id)?.expired)));
   const eventName = (p: Performance) => {
     const ctx = resolveContext(p, derived.lookup);
     return ctx.event?.name ?? ctx.course?.name ?? '';
   };
   const unverified = d.perfs.filter((p) => !p.deleted && !p.verified);
+  /** Print just this card (with the frost border when frosted): the one print that may show frost. */
+  const printCard = () => {
+    document.body.classList.add('printing-card');
+    const done = () => {
+      document.body.classList.remove('printing-card');
+      window.removeEventListener('afterprint', done);
+    };
+    window.addEventListener('afterprint', done);
+    window.print();
+    setTimeout(done, 1000);
+  };
 
   return (
     <div className="stack">
@@ -189,6 +202,9 @@ export function AthletePage() {
             <Link className="btn" to={`/athlete/${a.id}/share`}>
               Student version
             </Link>
+            <button className="btn" onClick={printCard} data-testid="print-one-card">
+              Print this card
+            </button>
             <button className="btn" onClick={() => setAvatarOpen(true)}>
               Edit avatar
             </button>
@@ -201,7 +217,9 @@ export function AthletePage() {
 
       <div className="athlete-top">
         <div className="athlete-card">
-          <TradingCard data={card} coach />
+          <FrostFrame on={!!d.white?.frosted}>
+            <TradingCard data={card} coach />
+          </FrostFrame>
           <div className="tiny muted" style={{ marginTop: 6, textAlign: 'center' }}>
             Config v{r.configVersion} · as of {formatLongDate(r.asOf)}
           </div>
@@ -318,11 +336,23 @@ export function AthletePage() {
         </Panel>
       </div>
 
+      {d.white && (
+        <Panel title={`White Season (coach view) · ${derived.config.winter.season.name}`}>
+          <WhitePanel d={d} config={derived.config} />
+        </Panel>
+      )}
+
       {d.winter && (
         <Panel title="Winter Mode">
           <WinterPanel d={d} config={derived.config} coach />
         </Panel>
       )}
+
+      <div className="single-card-print" aria-hidden="true">
+        <FrostFrame on={!!d.white?.frosted}>
+          <TradingCard data={card} />
+        </FrostFrame>
+      </div>
 
       <div className="grid-2">
         <Panel title={`Streak: ${d.streak.currentStreak} week${d.streak.currentStreak === 1 ? '' : 's'} (best ${d.streak.bestStreak})`} actions={<button className="btn btn-sm" onClick={() => setFreezeOpen(true)}>Apply freeze…</button>}>

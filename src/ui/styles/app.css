@@ -353,3 +353,6 @@ td .winter-strip { flex-wrap: nowrap; }
 /* Settings → White Season: winter roster */
 .white-roster { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
 .white-roster-group { display: flex; flex-direction: column; gap: 2px; border: 1px solid var(--line, #dde); border-radius: 8px; padding: 8px; }
+
+/* Coach-only pages (the coach radar): never printed. */
+@media print { .no-print-page { display: none !important; } }

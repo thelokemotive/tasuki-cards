@@ -115,3 +115,30 @@
 .arm-bar { height: 12px; border-radius: 3px; background: var(--moss, #7a8f5a); min-width: 2px; }
 .arm-bar.is-zero { background: var(--warn); }
 .arm-bar.is-none { background: var(--line-strong); }
+
+/* White Season (coach view) */
+.white-weeks { display: flex; flex-wrap: wrap; gap: 4px; }
+.white-wk { display: inline-flex; flex-direction: column; align-items: center; min-width: 54px; padding: 3px 5px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface-2); font-size: 0.72rem; line-height: 1.25; }
+.white-key { display: inline-block; min-width: 14px; height: 12px; padding: 0; vertical-align: middle; }
+.white-date { font-weight: 700; }
+.white-codes { font-family: var(--mono); }
+.white-qualifying { background: #fde3d9; border-color: #e0582f; }
+.white-neutral { background: #e6eef9; border-color: #a9c3e6; }
+.white-frosted { background: #e7f6fb; border-color: #57b5d2; border-style: dashed; }
+.white-broken { background: #f1eee7; color: var(--ink-3); }
+.white-current { border-style: dotted; background: #fff; }
+
+/* Frost frame: a subtle ice-crystal border (athlete page and its single-card print only) */
+.frost-frame { position: relative; display: inline-flex; flex-direction: column; align-items: center; padding: 2.2mm; border-radius: 4mm; background: linear-gradient(135deg, #f2fbff, #dff1fa 40%, #f7fdff 60%, #d6edf8); box-shadow: inset 0 0 0 0.5mm #b9e0f0, 0 0 3mm rgb(120 190 225 / 45%); }
+.frost-c { position: absolute; width: 7mm; height: 7mm; z-index: 2; pointer-events: none; }
+.frost-crystal { width: 100%; height: 100%; stroke: #6cb8d8; stroke-width: 1.1; stroke-linecap: round; fill: none; opacity: 0.9; }
+.frost-tl { top: -1.5mm; left: -1.5mm; } .frost-tr { top: -1.5mm; right: -1.5mm; } .frost-bl { bottom: 4mm; left: -1.5mm; } .frost-br { bottom: 4mm; right: -1.5mm; }
+.frost-line { margin-top: 1.5mm; font-size: 2.6mm; font-weight: 800; letter-spacing: 0.25mm; color: #2f7fa4; }
+
+/* Single-card print from the athlete page */
+.single-card-print { display: none; }
+@page singlecard { size: A4 portrait; margin: 20mm; }
+@media print {
+  body.printing-card .stack > *:not(.single-card-print) { display: none !important; }
+  body.printing-card .single-card-print { display: flex !important; justify-content: center; page: singlecard; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}

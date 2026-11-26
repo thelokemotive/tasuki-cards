@@ -329,7 +329,8 @@ function streakBoard(derived: Derived): BoardGroup[] {
     const s = d.streak;
     if (s.currentStreak < min) return [];
     const bits = [`best ${s.bestStreak}`];
-    if (s.status === 'frozen') bits.push('frozen');
+    // White Season: frost and freezes are coach-only, so a held winter streak shows no label on the board.
+    if (s.status === 'frozen' && !d.white) bits.push('frozen');
     if (s.holidayBonusFlames > 0) bits.push(`${s.holidayBonusFlames} holiday flame${s.holidayBonusFlames === 1 ? '' : 's'}`);
     return [{ d, value: `${s.currentStreak} weeks`, sortValue: s.currentStreak, detail: bits.join(' · '), tie: s.bestStreak }];
   });

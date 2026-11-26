@@ -114,7 +114,7 @@ export function HomePage() {
   for (const d of all) camps[d.ratings.tier] = (camps[d.ratings.tier] ?? 0) + 1;
   const win = currentWindow(snapshot, derived.asOf);
   const houses = houseCup(derived, win.from, win.to);
-  const recent = [...snapshot.performances].filter((p) => !p.deleted).sort((a, b) => ((a.createdAt ?? a.date) < (b.createdAt ?? b.date) ? 1 : -1)).slice(0, 8);
+  const recent = [...snapshot.performances].filter((p) => !p.deleted && p.kind !== 'gym_session').sort((a, b) => ((a.createdAt ?? a.date) < (b.createdAt ?? b.date) ? 1 : -1)).slice(0, 8);
   const name = (id: string) => {
     const d = derived.athletes.get(id);
     return d ? displayName(d.athlete) : '';
